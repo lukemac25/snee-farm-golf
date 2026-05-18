@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<meta name="theme-color" content="#050a05"/>
+<meta name="theme-color" content="#030806"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>⛳ Thursday Crew Golf</title>
@@ -15,160 +15,149 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overscroll-behavior:none}
-body{background:#050a05;color:#f0f0f0;font-family:'Inter',sans-serif;overflow-x:hidden}
+body{background:#030806;color:#f0f0f0;font-family:'Inter',sans-serif;overflow-x:hidden}
 input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 input,select,button,textarea{font-family:'Inter',sans-serif}
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:#1a3a1a;border-radius:2px}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(46,204,113,.3)}50%{box-shadow:0 0 40px rgba(46,204,113,.6)}}
-@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes countUp{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
-@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,230,118,.3)}50%{box-shadow:0 0 50px rgba(0,230,118,.6)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes celebrate{0%{transform:scale(1)}25%{transform:scale(1.3) rotate(-5deg)}50%{transform:scale(1.1) rotate(3deg)}75%{transform:scale(1.2) rotate(-2deg)}100%{transform:scale(1)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+@keyframes shimmer{0%{opacity:.5}50%{opacity:1}100%{opacity:.5}}
+.birdie-pop{animation:celebrate .6s ease forwards}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const{useState,useEffect,useRef,useCallback}=React;
+const{useState,useEffect,useRef,useCallback,useMemo}=React;
  
-// ═══════════════════════════════════════════════════════
-// CONFIG
-// ═══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════════
 const SUPABASE_URL='https://wukjeyluqkzbseuynovp.supabase.co';
 const SUPABASE_KEY='sb_publishable_3MDvGnJy46bP553PjZhZUQ_Bp8Bys-3';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
  
-// ═══════════════════════════════════════════════════════
-// SC COURSES
-// ═══════════════════════════════════════════════════════
-const COURSES={
-  snee:{
-    name:'Snee Farm CC',city:'Mount Pleasant',
-    holes:[
-      {hole:1,par:4,hcp:9,yards:389},{hole:2,par:4,hcp:3,yards:408},
-      {hole:3,par:3,hcp:17,yards:164},{hole:4,par:5,hcp:11,yards:523},
-      {hole:5,par:4,hcp:1,yards:435},{hole:6,par:3,hcp:15,yards:178},
-      {hole:7,par:4,hcp:5,yards:401},{hole:8,par:5,hcp:7,yards:546},
-      {hole:9,par:4,hcp:13,yards:362},{hole:10,par:4,hcp:10,yards:395},
-      {hole:11,par:4,hcp:4,yards:415},{hole:12,par:3,hcp:16,yards:157},
-      {hole:13,par:5,hcp:8,yards:511},{hole:14,par:4,hcp:2,yards:442},
-      {hole:15,par:4,hcp:14,yards:358},{hole:16,par:3,hcp:18,yards:143},
-      {hole:17,par:4,hcp:6,yards:420},{hole:18,par:5,hcp:12,yards:516},
-    ]
-  },
-  kiawah_ocean:{
-    name:'Kiawah Island — Ocean',city:'Kiawah Island',
-    holes:[
-      {hole:1,par:4,hcp:11,yards:395},{hole:2,par:5,hcp:3,yards:543},
-      {hole:3,par:4,hcp:7,yards:390},{hole:4,par:3,hcp:17,yards:195},
-      {hole:5,par:4,hcp:1,yards:468},{hole:6,par:4,hcp:13,yards:455},
-      {hole:7,par:5,hcp:9,yards:527},{hole:8,par:3,hcp:15,yards:197},
-      {hole:9,par:4,hcp:5,yards:430},{hole:10,par:4,hcp:6,yards:439},
-      {hole:11,par:4,hcp:2,yards:562},{hole:12,par:3,hcp:18,yards:186},
-      {hole:13,par:4,hcp:10,yards:404},{hole:14,par:4,hcp:14,yards:459},
-      {hole:15,par:4,hcp:4,yards:421},{hole:16,par:5,hcp:8,yards:579},
-      {hole:17,par:3,hcp:16,yards:221},{hole:18,par:4,hcp:12,yards:439},
-    ]
-  },
-  wild_dunes_links:{
-    name:'Wild Dunes — Links',city:'Isle of Palms',
-    holes:[
-      {hole:1,par:4,hcp:9,yards:374},{hole:2,par:5,hcp:5,yards:497},
-      {hole:3,par:3,hcp:15,yards:153},{hole:4,par:4,hcp:1,yards:406},
-      {hole:5,par:4,hcp:11,yards:390},{hole:6,par:5,hcp:7,yards:510},
-      {hole:7,par:3,hcp:17,yards:145},{hole:8,par:4,hcp:3,yards:438},
-      {hole:9,par:4,hcp:13,yards:356},{hole:10,par:4,hcp:8,yards:371},
-      {hole:11,par:4,hcp:2,yards:422},{hole:12,par:3,hcp:14,yards:167},
-      {hole:13,par:5,hcp:6,yards:502},{hole:14,par:4,hcp:10,yards:393},
-      {hole:15,par:4,hcp:16,yards:342},{hole:16,par:3,hcp:18,yards:138},
-      {hole:17,par:4,hcp:4,yards:451},{hole:18,par:5,hcp:12,yards:501},
-    ]
-  },
-  caledonia:{
-    name:'Caledonia Golf & Fish Club',city:'Pawleys Island',
-    holes:[
-      {hole:1,par:4,hcp:7,yards:371},{hole:2,par:4,hcp:11,yards:386},
-      {hole:3,par:3,hcp:17,yards:161},{hole:4,par:5,hcp:3,yards:518},
-      {hole:5,par:4,hcp:1,yards:425},{hole:6,par:4,hcp:13,yards:367},
-      {hole:7,par:3,hcp:15,yards:177},{hole:8,par:5,hcp:9,yards:489},
-      {hole:9,par:4,hcp:5,yards:408},{hole:10,par:4,hcp:6,yards:396},
-      {hole:11,par:5,hcp:2,yards:524},{hole:12,par:3,hcp:16,yards:152},
-      {hole:13,par:4,hcp:10,yards:379},{hole:14,par:4,hcp:4,yards:432},
-      {hole:15,par:3,hcp:18,yards:143},{hole:16,par:5,hcp:8,yards:506},
-      {hole:17,par:4,hcp:14,yards:358},{hole:18,par:4,hcp:12,yards:415},
-    ]
-  },
-  tpc_myrtle:{
-    name:'TPC Myrtle Beach',city:'Murrells Inlet',
-    holes:[
-      {hole:1,par:4,hcp:9,yards:402},{hole:2,par:4,hcp:5,yards:430},
-      {hole:3,par:3,hcp:15,yards:185},{hole:4,par:5,hcp:1,yards:544},
-      {hole:5,par:4,hcp:11,yards:378},{hole:6,par:4,hcp:7,yards:421},
-      {hole:7,par:3,hcp:17,yards:162},{hole:8,par:5,hcp:3,yards:531},
-      {hole:9,par:4,hcp:13,yards:385},{hole:10,par:4,hcp:10,yards:398},
-      {hole:11,par:4,hcp:4,yards:448},{hole:12,par:3,hcp:16,yards:171},
-      {hole:13,par:5,hcp:8,yards:519},{hole:14,par:4,hcp:2,yards:455},
-      {hole:15,par:4,hcp:14,yards:362},{hole:16,par:3,hcp:18,yards:148},
-      {hole:17,par:5,hcp:6,yards:538},{hole:18,par:4,hcp:12,yards:431},
-    ]
-  },
-  barefoot_love:{
-    name:'Barefoot Resort — Love',city:'North Myrtle Beach',
-    holes:[
-      {hole:1,par:4,hcp:7,yards:412},{hole:2,par:5,hcp:3,yards:562},
-      {hole:3,par:3,hcp:15,yards:178},{hole:4,par:4,hcp:1,yards:445},
-      {hole:5,par:4,hcp:11,yards:389},{hole:6,par:5,hcp:9,yards:528},
-      {hole:7,par:3,hcp:17,yards:155},{hole:8,par:4,hcp:5,yards:421},
-      {hole:9,par:4,hcp:13,yards:367},{hole:10,par:4,hcp:8,yards:403},
-      {hole:11,par:4,hcp:2,yards:438},{hole:12,par:3,hcp:16,yards:163},
-      {hole:13,par:5,hcp:6,yards:541},{hole:14,par:4,hcp:4,yards:429},
-      {hole:15,par:4,hcp:14,yards:371},{hole:16,par:3,hcp:18,yards:147},
-      {hole:17,par:4,hcp:10,yards:394},{hole:18,par:5,hcp:12,yards:553},
-    ]
-  },
-  charleston_municipal:{
-    name:'Charleston Municipal',city:'Charleston',
-    holes:[
-      {hole:1,par:4,hcp:11,yards:362},{hole:2,par:4,hcp:5,yards:388},
-      {hole:3,par:3,hcp:17,yards:148},{hole:4,par:5,hcp:3,yards:498},
-      {hole:5,par:4,hcp:1,yards:418},{hole:6,par:4,hcp:13,yards:345},
-      {hole:7,par:3,hcp:15,yards:162},{hole:8,par:5,hcp:7,yards:512},
-      {hole:9,par:4,hcp:9,yards:379},{hole:10,par:4,hcp:10,yards:371},
-      {hole:11,par:4,hcp:4,yards:401},{hole:12,par:3,hcp:18,yards:141},
-      {hole:13,par:5,hcp:6,yards:487},{hole:14,par:4,hcp:2,yards:428},
-      {hole:15,par:4,hcp:14,yards:352},{hole:16,par:3,hcp:16,yards:156},
-      {hole:17,par:4,hcp:8,yards:384},{hole:18,par:5,hcp:12,yards:521},
-    ]
-  },
-  crowfield:{
-    name:'Crowfield Golf Club',city:'Goose Creek',
-    holes:[
-      {hole:1,par:4,hcp:9,yards:378},{hole:2,par:5,hcp:5,yards:508},
-      {hole:3,par:3,hcp:15,yards:169},{hole:4,par:4,hcp:1,yards:432},
-      {hole:5,par:4,hcp:11,yards:366},{hole:6,par:5,hcp:7,yards:495},
-      {hole:7,par:3,hcp:17,yards:152},{hole:8,par:4,hcp:3,yards:441},
-      {hole:9,par:4,hcp:13,yards:358},{hole:10,par:4,hcp:8,yards:385},
-      {hole:11,par:4,hcp:2,yards:419},{hole:12,par:3,hcp:16,yards:158},
-      {hole:13,par:5,hcp:6,yards:502},{hole:14,par:4,hcp:4,yards:436},
-      {hole:15,par:4,hcp:14,yards:364},{hole:16,par:3,hcp:18,yards:144},
-      {hole:17,par:4,hcp:10,yards:391},{hole:18,par:5,hcp:12,yards:518},
-    ]
-  },
+// ══════════════════════════════════════════════
+// SOUND ENGINE
+// ══════════════════════════════════════════════
+const Sound={
+  ctx:null,
+  init(){if(!this.ctx)this.ctx=new(window.AudioContext||window.webkitAudioContext)();},
+  play(type){
+    try{
+      this.init();const c=this.ctx;const t=c.currentTime;
+      if(type==='birdie'){
+        [523,659,784,1047].forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.setValueAtTime(.3,t+i*.1);g.gain.exponentialRampToValueAtTime(.01,t+i*.1+.3);o.start(t+i*.1);o.stop(t+i*.1+.3);});
+      }else if(type==='eagle'){
+        [523,659,784,1047,1319].forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.setValueAtTime(.4,t+i*.08);g.gain.exponentialRampToValueAtTime(.01,t+i*.08+.4);o.start(t+i*.08);o.stop(t+i*.08+.4);});
+      }else if(type==='bogey'){
+        [330,294,262].forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.type='sawtooth';o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.setValueAtTime(.2,t+i*.15);g.gain.exponentialRampToValueAtTime(.01,t+i*.15+.4);o.start(t+i*.15);o.stop(t+i*.15+.4);});
+      }else if(type==='ace'){
+        [262,330,392,523,659,784,1047,1319].forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.setValueAtTime(.5,t+i*.06);g.gain.exponentialRampToValueAtTime(.01,t+i*.06+.5);o.start(t+i*.06);o.stop(t+i*.06+.5);});
+      }else if(type==='click'){
+        const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=800;g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.01,t+.05);o.start(t);o.stop(t+.05);
+      }
+    }catch(e){}
+  }
 };
  
-// ═══════════════════════════════════════════════════════
-// PLAYERS & DATA
-// ═══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// HAPTICS
+// ══════════════════════════════════════════════
+const Haptic={
+  light(){if(navigator.vibrate)navigator.vibrate(10);},
+  medium(){if(navigator.vibrate)navigator.vibrate(30);},
+  heavy(){if(navigator.vibrate)navigator.vibrate([50,30,50]);},
+  celebrate(){if(navigator.vibrate)navigator.vibrate([100,50,100,50,200]);}
+};
+ 
+// ══════════════════════════════════════════════
+// SC COURSES
+// ══════════════════════════════════════════════
+const COURSES={
+  snee:{name:'Snee Farm CC',city:'Mount Pleasant',lat:32.858,lon:-79.819,holes:[
+    {hole:1,par:4,hcp:9,yards:389},{hole:2,par:4,hcp:3,yards:408},{hole:3,par:3,hcp:17,yards:164},
+    {hole:4,par:5,hcp:11,yards:523},{hole:5,par:4,hcp:1,yards:435},{hole:6,par:3,hcp:15,yards:178},
+    {hole:7,par:4,hcp:5,yards:401},{hole:8,par:5,hcp:7,yards:546},{hole:9,par:4,hcp:13,yards:362},
+    {hole:10,par:4,hcp:10,yards:395},{hole:11,par:4,hcp:4,yards:415},{hole:12,par:3,hcp:16,yards:157},
+    {hole:13,par:5,hcp:8,yards:511},{hole:14,par:4,hcp:2,yards:442},{hole:15,par:4,hcp:14,yards:358},
+    {hole:16,par:3,hcp:18,yards:143},{hole:17,par:4,hcp:6,yards:420},{hole:18,par:5,hcp:12,yards:516},
+  ]},
+  kiawah_ocean:{name:'Kiawah Island — Ocean',city:'Kiawah Island',lat:32.608,lon:-80.083,holes:[
+    {hole:1,par:4,hcp:11,yards:395},{hole:2,par:5,hcp:3,yards:543},{hole:3,par:4,hcp:7,yards:390},
+    {hole:4,par:3,hcp:17,yards:195},{hole:5,par:4,hcp:1,yards:468},{hole:6,par:4,hcp:13,yards:455},
+    {hole:7,par:5,hcp:9,yards:527},{hole:8,par:3,hcp:15,yards:197},{hole:9,par:4,hcp:5,yards:430},
+    {hole:10,par:4,hcp:6,yards:439},{hole:11,par:4,hcp:2,yards:562},{hole:12,par:3,hcp:18,yards:186},
+    {hole:13,par:4,hcp:10,yards:404},{hole:14,par:4,hcp:14,yards:459},{hole:15,par:4,hcp:4,yards:421},
+    {hole:16,par:5,hcp:8,yards:579},{hole:17,par:3,hcp:16,yards:221},{hole:18,par:4,hcp:12,yards:439},
+  ]},
+  wild_dunes_links:{name:'Wild Dunes — Links',city:'Isle of Palms',lat:32.797,lon:-79.738,holes:[
+    {hole:1,par:4,hcp:9,yards:374},{hole:2,par:5,hcp:5,yards:497},{hole:3,par:3,hcp:15,yards:153},
+    {hole:4,par:4,hcp:1,yards:406},{hole:5,par:4,hcp:11,yards:390},{hole:6,par:5,hcp:7,yards:510},
+    {hole:7,par:3,hcp:17,yards:145},{hole:8,par:4,hcp:3,yards:438},{hole:9,par:4,hcp:13,yards:356},
+    {hole:10,par:4,hcp:8,yards:371},{hole:11,par:4,hcp:2,yards:422},{hole:12,par:3,hcp:14,yards:167},
+    {hole:13,par:5,hcp:6,yards:502},{hole:14,par:4,hcp:10,yards:393},{hole:15,par:4,hcp:16,yards:342},
+    {hole:16,par:3,hcp:18,yards:138},{hole:17,par:4,hcp:4,yards:451},{hole:18,par:5,hcp:12,yards:501},
+  ]},
+  caledonia:{name:'Caledonia Golf & Fish',city:'Pawleys Island',lat:33.447,lon:-79.094,holes:[
+    {hole:1,par:4,hcp:7,yards:371},{hole:2,par:4,hcp:11,yards:386},{hole:3,par:3,hcp:17,yards:161},
+    {hole:4,par:5,hcp:3,yards:518},{hole:5,par:4,hcp:1,yards:425},{hole:6,par:4,hcp:13,yards:367},
+    {hole:7,par:3,hcp:15,yards:177},{hole:8,par:5,hcp:9,yards:489},{hole:9,par:4,hcp:5,yards:408},
+    {hole:10,par:4,hcp:6,yards:396},{hole:11,par:5,hcp:2,yards:524},{hole:12,par:3,hcp:16,yards:152},
+    {hole:13,par:4,hcp:10,yards:379},{hole:14,par:4,hcp:4,yards:432},{hole:15,par:3,hcp:18,yards:143},
+    {hole:16,par:5,hcp:8,yards:506},{hole:17,par:4,hcp:14,yards:358},{hole:18,par:4,hcp:12,yards:415},
+  ]},
+  tpc_myrtle:{name:'TPC Myrtle Beach',city:'Murrells Inlet',lat:33.576,lon:-79.017,holes:[
+    {hole:1,par:4,hcp:9,yards:402},{hole:2,par:4,hcp:5,yards:430},{hole:3,par:3,hcp:15,yards:185},
+    {hole:4,par:5,hcp:1,yards:544},{hole:5,par:4,hcp:11,yards:378},{hole:6,par:4,hcp:7,yards:421},
+    {hole:7,par:3,hcp:17,yards:162},{hole:8,par:5,hcp:3,yards:531},{hole:9,par:4,hcp:13,yards:385},
+    {hole:10,par:4,hcp:10,yards:398},{hole:11,par:4,hcp:4,yards:448},{hole:12,par:3,hcp:16,yards:171},
+    {hole:13,par:5,hcp:8,yards:519},{hole:14,par:4,hcp:2,yards:455},{hole:15,par:4,hcp:14,yards:362},
+    {hole:16,par:3,hcp:18,yards:148},{hole:17,par:5,hcp:6,yards:538},{hole:18,par:4,hcp:12,yards:431},
+  ]},
+  barefoot_love:{name:'Barefoot — Love Course',city:'North Myrtle Beach',lat:33.793,lon:-78.734,holes:[
+    {hole:1,par:4,hcp:7,yards:412},{hole:2,par:5,hcp:3,yards:562},{hole:3,par:3,hcp:15,yards:178},
+    {hole:4,par:4,hcp:1,yards:445},{hole:5,par:4,hcp:11,yards:389},{hole:6,par:5,hcp:9,yards:528},
+    {hole:7,par:3,hcp:17,yards:155},{hole:8,par:4,hcp:5,yards:421},{hole:9,par:4,hcp:13,yards:367},
+    {hole:10,par:4,hcp:8,yards:403},{hole:11,par:4,hcp:2,yards:438},{hole:12,par:3,hcp:16,yards:163},
+    {hole:13,par:5,hcp:6,yards:541},{hole:14,par:4,hcp:4,yards:429},{hole:15,par:4,hcp:14,yards:371},
+    {hole:16,par:3,hcp:18,yards:147},{hole:17,par:4,hcp:10,yards:394},{hole:18,par:5,hcp:12,yards:553},
+  ]},
+  charleston_muni:{name:'Charleston Municipal',city:'Charleston',lat:32.776,lon:-79.931,holes:[
+    {hole:1,par:4,hcp:11,yards:362},{hole:2,par:4,hcp:5,yards:388},{hole:3,par:3,hcp:17,yards:148},
+    {hole:4,par:5,hcp:3,yards:498},{hole:5,par:4,hcp:1,yards:418},{hole:6,par:4,hcp:13,yards:345},
+    {hole:7,par:3,hcp:15,yards:162},{hole:8,par:5,hcp:7,yards:512},{hole:9,par:4,hcp:9,yards:379},
+    {hole:10,par:4,hcp:10,yards:371},{hole:11,par:4,hcp:4,yards:401},{hole:12,par:3,hcp:18,yards:141},
+    {hole:13,par:5,hcp:6,yards:487},{hole:14,par:4,hcp:2,yards:428},{hole:15,par:4,hcp:14,yards:352},
+    {hole:16,par:3,hcp:16,yards:156},{hole:17,par:4,hcp:8,yards:384},{hole:18,par:5,hcp:12,yards:521},
+  ]},
+  crowfield:{name:'Crowfield Golf Club',city:'Goose Creek',lat:32.985,lon:-80.033,holes:[
+    {hole:1,par:4,hcp:9,yards:378},{hole:2,par:5,hcp:5,yards:508},{hole:3,par:3,hcp:15,yards:169},
+    {hole:4,par:4,hcp:1,yards:432},{hole:5,par:4,hcp:11,yards:366},{hole:6,par:5,hcp:7,yards:495},
+    {hole:7,par:3,hcp:17,yards:152},{hole:8,par:4,hcp:3,yards:441},{hole:9,par:4,hcp:13,yards:358},
+    {hole:10,par:4,hcp:8,yards:385},{hole:11,par:4,hcp:2,yards:419},{hole:12,par:3,hcp:16,yards:158},
+    {hole:13,par:5,hcp:6,yards:502},{hole:14,par:4,hcp:4,yards:436},{hole:15,par:4,hcp:14,yards:364},
+    {hole:16,par:3,hcp:18,yards:144},{hole:17,par:4,hcp:10,yards:391},{hole:18,par:5,hcp:12,yards:518},
+  ]},
+};
+ 
+// ══════════════════════════════════════════════
+// PLAYERS
+// ══════════════════════════════════════════════
 const PLAYERS=[
-  {id:'ben',name:'Ben',color:'#00e676',defaultHcp:72,avatar:'B'},
-  {id:'thomas',name:'Thomas',color:'#ff9100',defaultHcp:40,avatar:'T'},
-  {id:'max',name:'Max',color:'#40c4ff',defaultHcp:27,avatar:'M'},
-  {id:'luke',name:'Luke',color:'#ff4444',defaultHcp:22,avatar:'L'},
+  {id:'ben',name:'Ben',color:'#00e676',defaultHcp:72,avatar:'🏌️',emoji:'B'},
+  {id:'thomas',name:'Thomas',color:'#ff9100',defaultHcp:40,avatar:'🦊',emoji:'T'},
+  {id:'max',name:'Max',color:'#40c4ff',defaultHcp:27,avatar:'🦅',emoji:'M'},
+  {id:'luke',name:'Luke',color:'#ff4444',defaultHcp:22,avatar:'🔥',emoji:'L'},
 ];
  
 const FORMATS=[
@@ -178,18 +167,18 @@ const FORMATS=[
   {id:'stableford',label:'Stableford',icon:'⭐',desc:'Points based on score vs par',team:false},
   {id:'nassau',label:'Nassau',icon:'💰',desc:'Three bets: front 9, back 9, total',team:true},
   {id:'skins',label:'Skins',icon:'💀',desc:'Win a hole outright to take the skin',team:false},
-  {id:'match',label:'Match Play',icon:'⚔️',desc:'Hole-by-hole — most holes won wins',team:true},
+  {id:'match',label:'Match Play',icon:'⚔️',desc:'Hole by hole — most holes won wins',team:true},
   {id:'wolf',label:'Wolf',icon:'🐺',desc:'Rotating wolf picks partner or goes solo',team:false},
   {id:'bingo',label:'Bingo Bango Bongo',icon:'🎯',desc:'First on, closest pin, first in',team:false},
   {id:'chairman',label:'Chairman',icon:'👑',desc:'Defend or take the throne each hole',team:false},
   {id:'bloodsome',label:'Bloodsome',icon:'🩸',desc:'Worst drive played, alternate shots',team:true},
   {id:'vegas',label:'Vegas',icon:'🎰',desc:'Combine scores into numbers vs opponents',team:true},
   {id:'quota',label:'Quota',icon:'📊',desc:'Beat your personal quota of points',team:false},
-  {id:'shamble',label:'Shamble',icon:'🚶',desc:'Scramble drive, then individual play',team:true},
+  {id:'shamble',label:'Shamble',icon:'🚶',desc:'Scramble drive then individual play',team:true},
 ];
  
 const TEAM_CONFIGS=[
-  {id:'solo',label:'All Solo (Individual)',teams:[['ben'],['thomas'],['max'],['luke']]},
+  {id:'solo',label:'All Solo',teams:[['ben'],['thomas'],['max'],['luke']]},
   {id:'2v2_ab',label:'Ben & Thomas  vs  Max & Luke',teams:[['ben','thomas'],['max','luke']]},
   {id:'2v2_ac',label:'Ben & Max  vs  Thomas & Luke',teams:[['ben','max'],['thomas','luke']]},
   {id:'2v2_ad',label:'Ben & Luke  vs  Thomas & Max',teams:[['ben','luke'],['thomas','max']]},
@@ -199,53 +188,111 @@ const TEAM_CONFIGS=[
   {id:'3v1_th',label:'Thomas Solo  vs  Ben, Max & Luke',teams:[['thomas'],['ben','max','luke']]},
 ];
  
-// ═══════════════════════════════════════════════════════
+const TRASH_TALK=[
+  (p,s)=>`${p} shot ${s}? My grandma plays better and she's got a bad hip.`,
+  (p,s)=>`${p} with a ${s}. Bold strategy. Absolutely terrible, but bold.`,
+  (p,s)=>`${s} for ${p}. The course called, it wants its dignity back.`,
+  (p,s)=>`${p} put up a ${s}. That's not a golf score, that's a zip code.`,
+  (p,s)=>`${p} carded a ${s}. I've seen better rounds at a boxing match.`,
+  (p,s)=>`${s}?! ${p} was playing golf like it owed him money.`,
+  (p,s)=>`${p} with a ${s}. The birds were singing, and then they saw his scorecard and flew away.`,
+  (p,s)=>`${p} shot ${s}. Tiger's watching from home and shaking his head.`,
+];
+ 
+// ══════════════════════════════════════════════
 // HELPERS
-// ═══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 function scoreName(s,p){
-  if(!s||s<=0)return null;const d=s-p;
-  if(s===1)return{l:'ACE! 🎉',c:'#ffd700'};
-  if(d<=-3)return{l:'ALBATROSS 🦅🦅🦅',c:'#00e676'};
-  if(d===-2)return{l:'EAGLE 🦅🦅',c:'#00e676'};
-  if(d===-1)return{l:'BIRDIE 🐦',c:'#69f0ae'};
-  if(d===0)return{l:'PAR',c:'#888'};
-  if(d===1)return{l:'BOGEY',c:'#ff9100'};
-  if(d===2)return{l:'DOUBLE 😬',c:'#ff5252'};
-  if(d===3)return{l:'TRIPLE 😱',c:'#d32f2f'};
-  return{l:`+${d} 💀`,c:'#b71c1c'};
+  if(!s||s<=0)return null;
+  const d=s-p;
+  if(s===1)return{l:'ACE! 🎉',c:'#ffd700',type:'ace'};
+  if(d<=-3)return{l:'ALBATROSS 🦅🦅🦅',c:'#00e676',type:'eagle'};
+  if(d===-2)return{l:'EAGLE 🦅🦅',c:'#00e676',type:'eagle'};
+  if(d===-1)return{l:'BIRDIE 🐦',c:'#69f0ae',type:'birdie'};
+  if(d===0)return{l:'PAR',c:'#666',type:'par'};
+  if(d===1)return{l:'BOGEY',c:'#ff9100',type:'bogey'};
+  if(d===2)return{l:'DOUBLE 😬',c:'#ff5252',type:'bogey'};
+  if(d===3)return{l:'TRIPLE 😱',c:'#d32f2f',type:'bogey'};
+  return{l:`+${d} 💀`,c:'#b71c1c',type:'bogey'};
 }
 function sfPts(s,p){if(!s||s<=0)return 0;const d=s-p;if(d>=2)return 0;if(d===1)return 1;if(d===0)return 2;if(d===-1)return 3;if(d===-2)return 4;return 5;}
 function tpStr(tp){return tp===0?'E':tp>0?`+${tp}`:`${tp}`;}
 function scColor(d){
-  if(d<=-2)return{bg:'rgba(0,230,118,.15)',c:'#00e676',border:'rgba(0,230,118,.4)'};
-  if(d===-1)return{bg:'rgba(105,240,174,.1)',c:'#69f0ae',border:'rgba(105,240,174,.3)'};
-  if(d===0)return{bg:'transparent',c:'#555',border:'transparent'};
-  if(d===1)return{bg:'rgba(255,145,0,.1)',c:'#ff9100',border:'rgba(255,145,0,.3)'};
-  if(d===2)return{bg:'rgba(255,82,82,.1)',c:'#ff5252',border:'rgba(255,82,82,.3)'};
-  return{bg:'rgba(183,28,28,.15)',c:'#ef5350',border:'rgba(183,28,28,.4)'};
+  if(d<=-2)return{bg:'rgba(0,230,118,.2)',c:'#00e676'};
+  if(d===-1)return{bg:'rgba(105,240,174,.12)',c:'#69f0ae'};
+  if(d===0)return{bg:'transparent',c:'#555'};
+  if(d===1)return{bg:'rgba(255,145,0,.12)',c:'#ff9100'};
+  if(d===2)return{bg:'rgba(255,82,82,.12)',c:'#ff5252'};
+  return{bg:'rgba(183,28,28,.2)',c:'#ef5350'};
+}
+// Net score with handicap strokes
+function getNetScore(gross,par,hcp,playerHdcp,courseRating=72){
+  const strokes=Math.floor(playerHdcp/18)+(hcp<=playerHdcp%18?1:0);
+  return gross-strokes;
 }
  
-// ═══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// WEATHER WIDGET
+// ══════════════════════════════════════════════
+function WeatherWidget({lat,lon,courseName}){
+  const[weather,setWeather]=useState(null);
+  useEffect(()=>{
+    if(!lat||!lon)return;
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,weather_code&temperature_unit=fahrenheit&wind_speed_unit=mph`)
+      .then(r=>r.json()).then(d=>{
+        const c=d.current;
+        const code=c.weather_code;
+        let icon='☀️';
+        if(code>=61&&code<=67)icon='🌧️';
+        else if(code>=71&&code<=77)icon='❄️';
+        else if(code>=80&&code<=82)icon='🌦️';
+        else if(code>=95)icon='⛈️';
+        else if(code>=51&&code<=57)icon='🌦️';
+        else if(code>=1&&code<=3)icon=code===1?'🌤️':code===2?'⛅':'☁️';
+        else if(code===45||code===48)icon='🌫️';
+        setWeather({temp:Math.round(c.temperature_2m),wind:Math.round(c.wind_speed_10m),icon});
+      }).catch(()=>{});
+  },[lat,lon]);
+  if(!weather)return null;
+  return(
+    <div style={{display:'flex',alignItems:'center',gap:8,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:12,padding:'8px 12px'}}>
+      <span style={{fontSize:20}}>{weather.icon}</span>
+      <div>
+        <div style={{fontSize:13,fontWeight:700}}>{weather.temp}°F · {weather.wind} mph winds</div>
+        <div style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{courseName}</div>
+      </div>
+    </div>
+  );
+}
+ 
+// ══════════════════════════════════════════════
 // MAIN APP
-// ═══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 function App(){
   const[view,setView]=useState('home');
   const[activeRoundId,setActiveRoundId]=useState(null);
   const[rounds,setRounds]=useState([]);
   const[scores,setScores]=useState({});
+  const[extras,setExtras]=useState({});// closestPin, longDrive, mulligans per round
   const[playerSettings,setPlayerSettings]=useState({});
   const[loading,setLoading]=useState(true);
   const[toast,setToast]=useState(null);
  
-  const showToast=(msg,type='success')=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
+  const showToast=(msg,type='success',duration=3000)=>{
+    setToast({msg,type});
+    setTimeout(()=>setToast(null),duration);
+  };
  
   useEffect(()=>{loadAll();},[]);
  
   useEffect(()=>{
-    const s1=sb.channel('sc').on('postgres_changes',{event:'*',schema:'public',table:'scores'},p=>{
-      if(p.eventType==='INSERT'||p.eventType==='UPDATE'){const s=p.new;setScores(prev=>({...prev,[s.round_id]:{...(prev[s.round_id]||{}),[s.player_id]:s.holes}}));}
+    const s1=sb.channel('sc-v2').on('postgres_changes',{event:'*',schema:'public',table:'scores'},p=>{
+      if(p.eventType==='INSERT'||p.eventType==='UPDATE'){
+        const s=p.new;
+        setScores(prev=>({...prev,[s.round_id]:{...(prev[s.round_id]||{}),[s.player_id]:s.holes}}));
+      }
     }).subscribe();
-    const s2=sb.channel('rc').on('postgres_changes',{event:'*',schema:'public',table:'rounds'},p=>{
+    const s2=sb.channel('rc-v2').on('postgres_changes',{event:'*',schema:'public',table:'rounds'},p=>{
       if(p.eventType==='INSERT')setRounds(prev=>[p.new,...prev]);
       else if(p.eventType==='UPDATE')setRounds(prev=>prev.map(r=>r.id===p.new.id?p.new:r));
       else if(p.eventType==='DELETE')setRounds(prev=>prev.filter(r=>r.id!==p.old.id));
@@ -262,10 +309,14 @@ function App(){
         sb.from('player_settings').select('*'),
       ]);
       setRounds(rd||[]);
-      const m={};for(const s of(sd||[])){if(!m[s.round_id])m[s.round_id]={};m[s.round_id][s.player_id]=s.holes;}
+      const m={};
+      for(const s of(sd||[])){if(!m[s.round_id])m[s.round_id]={};m[s.round_id][s.player_id]=s.holes;}
       setScores(m);
-      const p={};for(const s of(ps||[]))p[s.player_id]=s.handicap;setPlayerSettings(p);
-      const live=(rd||[]).find(r=>!r.completed);if(live)setActiveRoundId(live.id);
+      const p={};
+      for(const s of(ps||[]))p[s.player_id]=s.handicap;
+      setPlayerSettings(p);
+      const live=(rd||[]).find(r=>!r.completed);
+      if(live)setActiveRoundId(live.id);
     }catch(e){console.error(e);}
     setLoading(false);
   };
@@ -278,24 +329,50 @@ function App(){
         tees:setup.tees,bet_amount:setup.betAmount,handicaps:hdcp,
         completed:false,course_id:setup.courseId,
         team_names:setup.teamNames||null,
+        mulligans_allowed:setup.mulligansAllowed||0,
       }).select().single();
       if(error)throw error;
       await sb.from('scores').insert(PLAYERS.map(p=>({round_id:round.id,player_id:p.id,holes:Array(18).fill(0)})));
-      setActiveRoundId(round.id);setView('scorecard');
+      // Init extras
+      setExtras(prev=>({...prev,[round.id]:{mulligans:{ben:0,thomas:0,max:0,luke:0},closestPin:{},longDrive:{}}}));
+      setActiveRoundId(round.id);
+      setView('scorecard');
       showToast('Round started! Good luck 🏌️');
-    }catch(e){showToast('Error starting round','error');console.error(e);}
+      Haptic.medium();
+    }catch(e){
+      console.error(e);
+      showToast('Error starting round. Try running the SQL update in Supabase.','error');
+    }
   };
  
   const updateScore=async(roundId,playerId,holeIdx,value)=>{
     const cur=scores[roundId]?.[playerId]||Array(18).fill(0);
-    const upd=[...cur];upd[holeIdx]=value===null?0:Math.max(1,parseInt(value)||0);
+    const upd=[...cur];
+    const newVal=value===null?0:Math.max(1,parseInt(value)||0);
+    const oldVal=upd[holeIdx];
+    upd[holeIdx]=newVal;
     setScores(prev=>({...prev,[roundId]:{...(prev[roundId]||{}),[playerId]:upd}}));
     await sb.from('scores').update({holes:upd,updated_at:new Date().toISOString()}).eq('round_id',roundId).eq('player_id',playerId);
+    // Sound & haptic
+    const round=rounds.find(r=>r.id===roundId);
+    const course=COURSES[round?.course_id]||COURSES.snee;
+    const hole=course.holes[holeIdx];
+    if(hole&&newVal>0&&newVal!==oldVal){
+      const d=newVal-hole.par;
+      if(newVal===1){Sound.play('ace');Haptic.celebrate();showToast('HOLE IN ONE!!! 🎉🎉🎉','success',5000);}
+      else if(d<=-2){Sound.play('eagle');Haptic.celebrate();showToast(`EAGLE! 🦅🦅`,'success');}
+      else if(d===-1){Sound.play('birdie');Haptic.medium();}
+      else if(d>=2){Sound.play('bogey');Haptic.light();}
+      else{Sound.play('click');Haptic.light();}
+    }
   };
  
   const finishRound=async(roundId)=>{
     await sb.from('rounds').update({completed:true}).eq('id',roundId);
-    setActiveRoundId(null);setView('leaderboard');showToast('Round complete! 🏆');
+    setActiveRoundId(null);
+    setView('leaderboard');
+    showToast('Round complete! 🏆');
+    Haptic.celebrate();
   };
  
   const deleteRound=async(roundId)=>{
@@ -310,75 +387,95 @@ function App(){
     await sb.from('player_settings').upsert({player_id:pid,handicap:hcp,updated_at:new Date().toISOString()});
   };
  
+  const updateExtras=(roundId,type,data)=>{
+    setExtras(prev=>({...prev,[roundId]:{...(prev[roundId]||{}),  [type]:{...((prev[roundId]||{})[type]||{}),...data}}}));
+  };
+ 
   const activeRound=rounds.find(r=>r.id===activeRoundId);
   const activeScores=activeRoundId?(scores[activeRoundId]||{}):{};
+  const activeExtras=activeRoundId?(extras[activeRoundId]||{}):{};
   const latestCompleted=rounds.find(r=>r.completed);
  
   if(loading)return(
-    <div style={{minHeight:'100vh',background:'#050a05',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16}}>
-      <div style={{fontSize:48,animation:'bounce 1s infinite'}}>⛳</div>
-      <div style={{color:'#00e676',fontSize:13,letterSpacing:3,fontWeight:600}}>LOADING...</div>
+    <div style={{minHeight:'100vh',background:'#030806',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16}}>
+      <div style={{fontSize:56,animation:'bounce 1s infinite'}}>⛳</div>
+      <div style={{color:'#00e676',fontSize:12,letterSpacing:4,fontWeight:700}}>LOADING...</div>
     </div>
   );
  
   return(
-    <div style={{minHeight:'100vh',background:'#050a05',paddingBottom:80}}>
-      {/* Toast */}
-      {toast&&<div style={{position:'fixed',top:20,left:'50%',transform:'translateX(-50%)',zIndex:999,background:toast.type==='error'?'#b71c1c':'#00e676',color:toast.type==='error'?'#fff':'#000',padding:'10px 20px',borderRadius:30,fontSize:13,fontWeight:700,boxShadow:'0 4px 20px rgba(0,0,0,.5)',whiteSpace:'nowrap',animation:'fadeUp .3s ease'}}>{toast.msg}</div>}
+    <div style={{minHeight:'100vh',background:'#030806',paddingBottom:100}}>
+      {toast&&(
+        <div style={{position:'fixed',top:16,left:'50%',transform:'translateX(-50%)',zIndex:9999,background:toast.type==='error'?'#c62828':'#00e676',color:toast.type==='error'?'#fff':'#000',padding:'11px 22px',borderRadius:30,fontSize:13,fontWeight:800,boxShadow:'0 8px 32px rgba(0,0,0,.6)',whiteSpace:'nowrap',animation:'slideDown .3s ease',letterSpacing:.5}}>{toast.msg}</div>
+      )}
  
-      {/* Header */}
-      <header style={{position:'sticky',top:0,zIndex:100,background:'rgba(5,10,5,.95)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(0,230,118,.1)',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+      <header style={{position:'sticky',top:0,zIndex:100,background:'rgba(3,8,6,.97)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(0,230,118,.08)',padding:'11px 15px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}} onClick={()=>setView('home')}>
-          <span style={{fontSize:24}}>⛳</span>
+          <span style={{fontSize:22}}>⛳</span>
           <div>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:3,color:'#00e676',lineHeight:1}}>THURSDAY CREW</div>
-            <div style={{fontSize:9,color:'#2a5a2a',letterSpacing:2,fontWeight:600}}>SOUTH CAROLINA GOLF</div>
+            <div style={{fontFamily:'Bebas Neue',fontSize:19,letterSpacing:3,color:'#00e676',lineHeight:1}}>THURSDAY CREW</div>
+            <div style={{fontSize:8,color:'#1a4a1a',letterSpacing:3,fontWeight:700}}>SOUTH CAROLINA GOLF</div>
           </div>
         </div>
         <div style={{display:'flex',gap:4}}>
-          {[{id:'home',icon:'🏠'},{id:'setup',icon:'🎯'},{id:'stats',icon:'📊'},{id:'history',icon:'📋'}].map(n=>(
-            <button key={n.id} onClick={()=>setView(n.id)} style={{background:view===n.id?'rgba(0,230,118,.15)':'transparent',border:`1px solid ${view===n.id?'rgba(0,230,118,.5)':'rgba(255,255,255,.05)'}`,color:view===n.id?'#00e676':'#555',padding:'7px 10px',borderRadius:8,cursor:'pointer',fontSize:14,transition:'all .2s'}}>{n.icon}</button>
+          {[{id:'home',i:'🏠'},{id:'setup',i:'🎯'},{id:'stats',i:'📊'},{id:'history',i:'📋'}].map(n=>(
+            <button key={n.id} onClick={()=>setView(n.id)} style={{background:view===n.id?'rgba(0,230,118,.12)':'transparent',border:`1px solid ${view===n.id?'rgba(0,230,118,.4)':'rgba(255,255,255,.04)'}`,color:view===n.id?'#00e676':'#444',padding:'7px 10px',borderRadius:8,cursor:'pointer',fontSize:14,transition:'all .2s'}}>{n.i}</button>
           ))}
-          {activeRound&&<button onClick={()=>setView('scorecard')} style={{background:'rgba(255,68,68,.15)',border:'1px solid rgba(255,68,68,.4)',color:'#ff4444',padding:'7px 10px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:700,animation:'pulse 2s infinite'}}>🔴 LIVE</button>}
+          {activeRound&&<button onClick={()=>setView('scorecard')} style={{background:'rgba(255,68,68,.15)',border:'1px solid rgba(255,68,68,.5)',color:'#ff4444',padding:'7px 10px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:700,animation:'pulse 2s infinite',letterSpacing:.5}}>🔴 LIVE</button>}
         </div>
       </header>
  
-      <div style={{maxWidth:700,margin:'0 auto',padding:'16px 14px'}}>
+      <div style={{maxWidth:700,margin:'0 auto',padding:'16px 13px'}}>
         {view==='home'&&<HomeView rounds={rounds} scores={scores} playerSettings={playerSettings} activeRound={activeRound} updateHandicap={updateHandicap} setView={setView} setActiveRoundId={setActiveRoundId}/>}
         {view==='setup'&&<SetupView startRound={startRound} playerSettings={playerSettings}/>}
-        {view==='scorecard'&&activeRound&&<ScorecardView round={activeRound} scores={activeScores} updateScore={updateScore} finishRound={finishRound}/>}
+        {view==='scorecard'&&activeRound&&<ScorecardView round={activeRound} scores={activeScores} extras={activeExtras} updateScore={updateScore} finishRound={finishRound} updateExtras={updateExtras} playerSettings={playerSettings} rounds={rounds}/>}
         {view==='history'&&<HistoryView rounds={rounds} scores={scores} deleteRound={deleteRound} setActiveRoundId={setActiveRoundId} setView={setView}/>}
         {view==='stats'&&<StatsView rounds={rounds} scores={scores} playerSettings={playerSettings}/>}
-        {view==='leaderboard'&&latestCompleted&&<LeaderboardView round={latestCompleted} scores={scores[latestCompleted.id]||{}} setView={setView}/>}
+        {view==='leaderboard'&&latestCompleted&&<LeaderboardView round={latestCompleted} scores={scores[latestCompleted.id]||{}} playerSettings={playerSettings} setView={setView}/>}
       </div>
     </div>
   );
 }
  
-// ═══════════════════════════════════════════════════════
-// HOME
-// ═══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// HOME VIEW
+// ══════════════════════════════════════════════
 function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setView,setActiveRoundId}){
   const[editHdcp,setEditHdcp]=useState(false);
   const completed=rounds.filter(r=>r.completed);
   const thisMonth=completed.filter(r=>r.date?.startsWith(new Date().toISOString().slice(0,7))).length;
  
-  const getBest=pid=>{let b=null;for(const r of completed){const s=scores[r.id]?.[pid];if(!s)continue;const t=s.reduce((a,b)=>a+(b||0),0);if(t>0&&(b===null||t<b))b=t;}return b;};
-  const getAvg=pid=>{const ts=completed.map(r=>{const s=scores[r.id]?.[pid];return s?s.reduce((a,b)=>a+(b||0),0):0;}).filter(Boolean);return ts.length?Math.round(ts.reduce((a,b)=>a+b,0)/ts.length):null;};
+  // Season standings
+  const seasonStandings=PLAYERS.map(p=>{
+    let wins=0,totalStrokes=0,rounds_played=0,best=null,streak=0,currentStreak=0;
+    const sorted=[...completed].sort((a,b)=>a.date>b.date?1:-1);
+    sorted.forEach(r=>{
+      const s=scores[r.id]?.[p.id];if(!s)return;
+      const tot=s.reduce((a,b)=>a+(b||0),0);if(!tot)return;
+      totalStrokes+=tot;rounds_played++;
+      if(best===null||tot<best)best=tot;
+      const allTots=PLAYERS.map(pp=>({id:pp.id,t:(scores[r.id]?.[pp.id]||[]).reduce((a,b)=>a+(b||0),0)})).filter(x=>x.t>0).sort((a,b)=>a.t-b.t);
+      if(allTots[0]?.id===p.id){wins++;currentStreak++;}else{streak=Math.max(streak,currentStreak);currentStreak=0;}
+    });
+    streak=Math.max(streak,currentStreak);
+    return{...p,wins,rounds_played,best,streak,avg:rounds_played?Math.round(totalStrokes/rounds_played):null};
+  }).sort((a,b)=>b.wins-a.wins);
+ 
+  const getBest=pid=>seasonStandings.find(p=>p.id===pid)?.best;
  
   return(
     <div style={{display:'flex',flexDirection:'column',gap:16,animation:'fadeUp .4s ease'}}>
       {/* Hero */}
-      <div style={{background:'linear-gradient(135deg,#0a1f0a,#0f2d0f)',border:'1px solid rgba(0,230,118,.2)',borderRadius:20,padding:'24px 20px',position:'relative',overflow:'hidden'}}>
-        <div style={{position:'absolute',top:-20,right:-20,fontSize:120,opacity:.05}}>⛳</div>
-        <div style={{fontSize:11,color:'#00e676',letterSpacing:3,fontWeight:700,marginBottom:8}}>MOUNT PLEASANT · SC</div>
-        <div style={{fontFamily:'Bebas Neue',fontSize:38,letterSpacing:2,color:'#fff',lineHeight:1,marginBottom:4}}>THURSDAY CREW</div>
-        <div style={{fontSize:13,color:'rgba(255,255,255,.4)',marginBottom:20}}>Weekly Golf Tracker</div>
-        <div style={{display:'flex',gap:12}}>
-          {[{n:completed.length,l:'ROUNDS'},{n:thisMonth,l:'THIS MONTH'},{n:rounds.filter(r=>!r.completed).length,l:'IN PLAY'}].map((s,i)=>(
-            <div key={i} style={{flex:1,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'10px 8px',textAlign:'center'}}>
-              <div style={{fontFamily:'Bebas Neue',fontSize:28,color:'#00e676'}}>{s.n}</div>
-              <div style={{fontSize:9,color:'#2a5a2a',letterSpacing:2,fontWeight:700}}>{s.l}</div>
+      <div style={{background:'linear-gradient(160deg,#071407,#0d2a0d,#071407)',border:'1px solid rgba(0,230,118,.15)',borderRadius:22,padding:'24px 20px',overflow:'hidden',position:'relative'}}>
+        <div style={{position:'absolute',top:-30,right:-30,fontSize:160,opacity:.04,transform:'rotate(-15deg)'}}>⛳</div>
+        <div style={{fontSize:10,color:'#00e676',letterSpacing:4,fontWeight:800,marginBottom:6}}>MOUNT PLEASANT · SC</div>
+        <div style={{fontFamily:'Bebas Neue',fontSize:42,letterSpacing:3,color:'#fff',lineHeight:1,marginBottom:2}}>THURSDAY CREW</div>
+        <div style={{fontSize:13,color:'rgba(255,255,255,.3)',marginBottom:20}}>Weekly Golf · Est. Every Thursday</div>
+        <div style={{display:'flex',gap:10}}>
+          {[{n:completed.length,l:'ROUNDS'},{n:thisMonth,l:'THIS MONTH'},{n:seasonStandings[0]?.wins||0,l:`${seasonStandings[0]?.name||''} LEADS`}].map((s,i)=>(
+            <div key={i} style={{flex:1,background:'rgba(0,0,0,.4)',borderRadius:14,padding:'12px 8px',textAlign:'center'}}>
+              <div style={{fontFamily:'Bebas Neue',fontSize:30,color:'#00e676',lineHeight:1}}>{s.n}</div>
+              <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginTop:2}}>{s.l}</div>
             </div>
           ))}
         </div>
@@ -386,13 +483,35 @@ function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setVi
  
       {/* Live alert */}
       {activeRound&&(
-        <div onClick={()=>{setActiveRoundId(activeRound.id);setView('scorecard');}} style={{background:'rgba(255,68,68,.1)',border:'1px solid rgba(255,68,68,.3)',borderRadius:14,padding:'14px 16px',cursor:'pointer',display:'flex',alignItems:'center',gap:12,animation:'pulse 3s infinite'}}>
+        <div onClick={()=>{setActiveRoundId(activeRound.id);setView('scorecard');Haptic.light();}} style={{background:'rgba(255,68,68,.08)',border:'1px solid rgba(255,68,68,.3)',borderRadius:16,padding:'15px 16px',cursor:'pointer',display:'flex',alignItems:'center',gap:12}}>
           <div style={{width:10,height:10,borderRadius:'50%',background:'#ff4444',animation:'pulse 1s infinite',flexShrink:0}}/>
           <div style={{flex:1}}>
-            <div style={{fontWeight:700,fontSize:14}}>{FORMATS.find(f=>f.id===activeRound.format)?.label} — IN PROGRESS</div>
-            <div style={{fontSize:11,color:'rgba(255,255,255,.4)',marginTop:2}}>{activeRound.date} · Tap to resume scoring</div>
+            <div style={{fontWeight:800,fontSize:14}}>{FORMATS.find(f=>f.id===activeRound.format)?.label} — IN PROGRESS</div>
+            <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:2}}>{activeRound.date} · {COURSES[activeRound.course_id]?.name||'Snee Farm'}</div>
           </div>
-          <div style={{color:'#ff4444',fontSize:20}}>→</div>
+          <div style={{color:'#ff4444',fontSize:22,fontWeight:700}}>→</div>
+        </div>
+      )}
+ 
+      {/* Season Standings */}
+      {completed.length>0&&(
+        <div style={{background:'rgba(255,215,0,.04)',border:'1px solid rgba(255,215,0,.12)',borderRadius:18,padding:'16px'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#ffd700',marginBottom:12}}>🏆 SEASON STANDINGS</div>
+          {seasonStandings.map((p,i)=>(
+            <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:i<3?10:0,padding:'10px 12px',background:'rgba(0,0,0,.3)',borderRadius:12,border:`1px solid ${i===0?p.color+'33':'transparent'}`}}>
+              <div style={{fontFamily:'Bebas Neue',fontSize:20,color:i===0?'#ffd700':i===1?'#c0c0c0':i===2?'#cd7f32':'#444',width:28}}>{i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`}</div>
+              <div style={{width:34,height:34,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:16,color:'#000'}}>{p.emoji}</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:14,color:i===0?p.color:'#fff'}}>{p.name}</div>
+                <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>Best: {p.best||'—'} · Avg: {p.avg||'—'}</div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontFamily:'Bebas Neue',fontSize:22,color:p.color}}>{p.wins}</div>
+                <div style={{fontSize:9,color:'rgba(255,255,255,.3)',letterSpacing:1}}>WINS</div>
+                {p.streak>1&&<div style={{fontSize:9,color:'#ffd700',fontWeight:700}}>🔥{p.streak}</div>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
  
@@ -400,26 +519,27 @@ function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setVi
       <div>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
           <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:2,color:'#00e676'}}>THE SQUAD</div>
-          <button onClick={()=>setEditHdcp(!editHdcp)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.1)',color:'#555',padding:'5px 12px',borderRadius:20,cursor:'pointer',fontSize:11,letterSpacing:1}}>{editHdcp?'✓ DONE':'✏ HANDICAPS'}</button>
+          <button onClick={()=>setEditHdcp(!editHdcp)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.08)',color:'#444',padding:'5px 12px',borderRadius:20,cursor:'pointer',fontSize:11,fontWeight:700,letterSpacing:1}}>{editHdcp?'✓ DONE':'✏ HCP'}</button>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
           {PLAYERS.map(p=>{
-            const best=getBest(p.id);const avg=getAvg(p.id);const hdcp=playerSettings[p.id]??p.defaultHcp;
+            const st=seasonStandings.find(s=>s.id===p.id);
+            const hdcp=playerSettings[p.id]??p.defaultHcp;
             return(
               <div key={p.id} style={{background:'rgba(255,255,255,.03)',border:`1px solid ${p.color}22`,borderRadius:16,padding:'16px 14px',position:'relative',overflow:'hidden'}}>
-                <div style={{position:'absolute',top:-10,right:-10,fontFamily:'Bebas Neue',fontSize:60,color:p.color,opacity:.07}}>{p.avatar}</div>
-                <div style={{width:40,height:40,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:18,color:'#000',marginBottom:10}}>{p.avatar}</div>
-                <div style={{fontSize:16,fontWeight:800,marginBottom:2}}>{p.name}</div>
+                <div style={{position:'absolute',top:-8,right:-5,fontSize:54,opacity:.07}}>{p.avatar}</div>
+                <div style={{fontSize:30,marginBottom:8}}>{p.avatar}</div>
+                <div style={{fontSize:16,fontWeight:900,marginBottom:2,color:p.color}}>{p.name}</div>
                 {editHdcp?(
                   <input type="number" min={0} max={100} value={hdcp} onChange={e=>updateHandicap(p.id,e.target.value)}
-                    style={{background:'rgba(0,0,0,.5)',border:`1px solid ${p.color}`,color:p.color,padding:'4px 8px',borderRadius:8,width:70,textAlign:'center',fontSize:18,fontWeight:900,marginTop:4}}/>
+                    style={{background:'rgba(0,0,0,.5)',border:`1px solid ${p.color}`,color:p.color,padding:'4px 8px',borderRadius:8,width:70,textAlign:'center',fontSize:18,fontWeight:900}}/>
                 ):(
                   <>
                     <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginBottom:6}}>HCP {hdcp}</div>
-                    <div style={{display:'flex',gap:8}}>
-                      {best&&<div style={{fontSize:10,color:p.color,background:`${p.color}15`,padding:'2px 8px',borderRadius:20,fontWeight:700}}>BEST {best}</div>}
-                      {avg&&<div style={{fontSize:10,color:'rgba(255,255,255,.3)',padding:'2px 8px'}}>AVG {avg}</div>}
-                    </div>
+                    {st&&<div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                      {st.wins>0&&<div style={{fontSize:10,color:'#ffd700',background:'rgba(255,215,0,.1)',padding:'2px 8px',borderRadius:20,fontWeight:700}}>🏆 {st.wins} W</div>}
+                      {st.best&&<div style={{fontSize:10,color:p.color,background:`${p.color}15`,padding:'2px 8px',borderRadius:20,fontWeight:700}}>BEST {st.best}</div>}
+                    </div>}
                   </>
                 )}
               </div>
@@ -428,154 +548,143 @@ function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setVi
         </div>
       </div>
  
-      {/* Start button */}
-      <button onClick={()=>setView('setup')} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:16,padding:'18px 24px',fontSize:18,fontWeight:900,cursor:'pointer',letterSpacing:2,boxShadow:'0 8px 30px rgba(0,230,118,.3)',fontFamily:'Bebas Neue',animation:'glow 3s infinite'}}>
-        🏌️ NEW ROUND
+      <button onClick={()=>{setView('setup');Haptic.medium();}} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:18,padding:'20px 24px',fontSize:20,fontWeight:900,cursor:'pointer',letterSpacing:3,boxShadow:'0 8px 40px rgba(0,230,118,.35)',fontFamily:'Bebas Neue',animation:'glow 3s infinite'}}>
+        ⛳ START NEW ROUND
       </button>
  
-      {/* Recent rounds */}
-      {completed.length>0&&(
+      {/* Recent */}
+      {rounds.length>0&&(
         <div>
-          <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:2,color:'#00e676',marginBottom:12}}>RECENT ROUNDS</div>
-          {rounds.slice(0,5).map(r=>{
+          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:10}}>RECENT ROUNDS</div>
+          {rounds.slice(0,4).map(r=>{
             const fmt=FORMATS.find(f=>f.id===r.format);
-            const course=COURSES[r.course_id];
-            const allScores=PLAYERS.map(p=>(scores[r.id]?.[p.id]||[]).reduce((a,b)=>a+(b||0),0));
-            const low=Math.min(...allScores.filter(Boolean));
+            const course=COURSES[r.course_id]||COURSES.snee;
+            const winner=PLAYERS.map(p=>({...p,t:(scores[r.id]?.[p.id]||[]).reduce((a,b)=>a+(b||0),0)})).filter(p=>p.t>0).sort((a,b)=>a.t-b.t)[0];
             return(
-              <div key={r.id} onClick={()=>{if(!r.completed){setActiveRoundId(r.id);setView('scorecard');}}} style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:14,padding:'14px 16px',marginBottom:8,cursor:r.completed?'default':'pointer',display:'flex',alignItems:'center',gap:14}}>
-                <div style={{fontSize:28,flexShrink:0}}>{fmt?.icon}</div>
+              <div key={r.id} style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.05)',borderRadius:14,padding:'13px 15px',marginBottom:8,display:'flex',alignItems:'center',gap:12}} onClick={()=>{if(!r.completed){setActiveRoundId(r.id);setView('scorecard');}}}>
+                <span style={{fontSize:24}}>{fmt?.icon}</span>
                 <div style={{flex:1}}>
-                  <div style={{fontWeight:700,fontSize:14}}>{fmt?.label}</div>
-                  <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:2}}>{r.date} · {course?.name||'Snee Farm'}</div>
+                  <div style={{fontWeight:700,fontSize:13}}>{fmt?.label}</div>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:1}}>{r.date} · {course.name}</div>
                 </div>
-                <div style={{textAlign:'right'}}>
-                  {r.completed?<div style={{color:'#00e676',fontSize:12,fontWeight:700}}>✓ {low||'—'}</div>:<div style={{color:'#ff4444',fontSize:11,fontWeight:700,animation:'pulse 2s infinite'}}>LIVE</div>}
-                </div>
+                {r.completed&&winner?<div style={{textAlign:'right'}}><div style={{fontSize:11,color:winner.color,fontWeight:700}}>{winner.name} 🏆</div><div style={{fontSize:12,color:'rgba(255,255,255,.4)',fontWeight:700}}>{winner.t}</div></div>:<div style={{color:'#ff4444',fontSize:11,fontWeight:700,animation:'pulse 2s infinite'}}>● LIVE</div>}
               </div>
             );
           })}
         </div>
       )}
  
-      {/* Add to home screen tip */}
-      <div style={{background:'rgba(0,230,118,.05)',border:'1px solid rgba(0,230,118,.1)',borderRadius:14,padding:'12px 16px',display:'flex',gap:12,alignItems:'center'}}>
-        <div style={{fontSize:24}}>📱</div>
+      {/* Add to home screen */}
+      <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.1)',borderRadius:14,padding:'13px 15px',display:'flex',gap:12,alignItems:'center'}}>
+        <span style={{fontSize:22}}>📱</span>
         <div>
-          <div style={{fontSize:12,fontWeight:700,color:'#00e676',marginBottom:2}}>ADD TO HOME SCREEN</div>
-          <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>Tap Share → Add to Home Screen for app-like access on iPhone</div>
+          <div style={{fontSize:12,fontWeight:800,color:'#00e676',marginBottom:2}}>PLAY LIKE A NATIVE APP</div>
+          <div style={{fontSize:11,color:'rgba(255,255,255,.25)'}}>Safari: tap Share → Add to Home Screen for instant access</div>
         </div>
       </div>
     </div>
   );
 }
  
-// ═══════════════════════════════════════════════════════
-// SETUP
-// ═══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// SETUP VIEW
+// ══════════════════════════════════════════════
 function SetupView({startRound,playerSettings}){
   const[tab,setTab]=useState('course');
   const[setup,setSetup]=useState({
     courseId:'snee',format:'stroke',teamConfig:'solo',
     date:new Date().toISOString().split('T')[0],
-    tees:'white',betAmount:5,teamNames:['Team 1','Team 2'],
+    tees:'white',betAmount:5,
+    teamNames:['Team 1','Team 2'],
+    mulligansAllowed:0,
   });
   const[spinning,setSpinning]=useState(false);
- 
-  const randomize=()=>{
-    setSpinning(true);
-    let i=0;const t=setInterval(()=>{
-      setSetup(s=>({...s,format:FORMATS[Math.floor(Math.random()*FORMATS.length)].id,teamConfig:TEAM_CONFIGS[Math.floor(Math.random()*TEAM_CONFIGS.length)].id}));
-      i++;if(i>10){clearInterval(t);setSpinning(false);}
-    },100);
-  };
- 
   const fmt=FORMATS.find(f=>f.id===setup.format);
   const team=TEAM_CONFIGS.find(t=>t.id===setup.teamConfig);
-  const isTeamFmt=fmt?.team;
-  const isTeamConfig=setup.teamConfig!=='solo';
+ 
+  const randomize=()=>{
+    setSpinning(true);let i=0;
+    const t=setInterval(()=>{
+      setSetup(s=>({...s,format:FORMATS[Math.floor(Math.random()*FORMATS.length)].id,teamConfig:TEAM_CONFIGS[Math.floor(Math.random()*TEAM_CONFIGS.length)].id}));
+      i++;if(i>12){clearInterval(t);setSpinning(false);Haptic.medium();}
+    },100);
+    Haptic.light();
+  };
  
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}>
-      <div style={{fontFamily:'Bebas Neue',fontSize:28,letterSpacing:3,color:'#00e676'}}>SET UP ROUND</div>
- 
-      {/* Summary card */}
-      <div style={{background:'linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,200,83,.04))',border:'1px solid rgba(0,230,118,.2)',borderRadius:16,padding:'16px'}}>
-        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+      <div style={{fontFamily:'Bebas Neue',fontSize:30,letterSpacing:3,color:'#00e676'}}>SET UP ROUND</div>
+      <div style={{background:'linear-gradient(135deg,rgba(0,230,118,.08),transparent)',border:'1px solid rgba(0,230,118,.15)',borderRadius:16,padding:'14px 16px'}}>
+        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',marginBottom:6}}>
           <span style={{fontSize:22}}>{fmt?.icon}</span>
-          <span style={{fontWeight:800,fontSize:15}}>{fmt?.label}</span>
-          <span style={{color:'rgba(255,255,255,.2)'}}>·</span>
-          <span style={{fontSize:13,color:'rgba(255,255,255,.5)'}}>{team?.label}</span>
+          <span style={{fontWeight:900,fontSize:15}}>{fmt?.label}</span>
+          <span style={{color:'rgba(255,255,255,.15)'}}>·</span>
+          <span style={{fontSize:12,color:'rgba(255,255,255,.4)'}}>{team?.label}</span>
         </div>
-        <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:6}}>{COURSES[setup.courseId]?.name} · {setup.date}</div>
+        <div style={{fontSize:11,color:'rgba(255,255,255,.25)'}}>{COURSES[setup.courseId]?.name} · {setup.date}</div>
       </div>
  
-      {/* Randomize */}
-      <button onClick={randomize} style={{background:'rgba(155,89,182,.15)',border:'1px solid rgba(155,89,182,.4)',color:'#9b59b6',padding:'12px 20px',borderRadius:12,cursor:'pointer',fontSize:14,fontWeight:700,letterSpacing:2,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
-        <span style={spinning?{animation:'spin .3s linear infinite',display:'inline-block'}:{}}>🎲</span> {spinning?'SPINNING...':'RANDOMIZE FORMAT & TEAMS'}
+      <button onClick={randomize} style={{background:'rgba(155,89,182,.12)',border:'1px solid rgba(155,89,182,.35)',color:'#9b59b6',padding:'13px',borderRadius:14,cursor:'pointer',fontSize:14,fontWeight:800,letterSpacing:2,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+        <span style={spinning?{animation:'spin .2s linear infinite',display:'inline-block'}:{}}>{spinning?'◐':'🎲'}</span>
+        {spinning?'SPINNING...':'RANDOMIZE FORMAT & TEAMS'}
       </button>
  
-      {/* Tabs */}
-      <div style={{display:'flex',gap:0,borderRadius:12,overflow:'hidden',border:'1px solid rgba(255,255,255,.06)'}}>
+      <div style={{display:'flex',borderRadius:12,overflow:'hidden',border:'1px solid rgba(255,255,255,.05)'}}>
         {['course','format','teams','options'].map(t=>(
-          <button key={t} onClick={()=>setTab(t)} style={{flex:1,background:tab===t?'rgba(0,230,118,.15)':'transparent',border:'none',color:tab===t?'#00e676':'#444',padding:'10px 4px',cursor:'pointer',fontSize:10,fontWeight:700,letterSpacing:1,transition:'all .2s'}}>{t.toUpperCase()}</button>
+          <button key={t} onClick={()=>setTab(t)} style={{flex:1,background:tab===t?'rgba(0,230,118,.12)':'transparent',border:'none',color:tab===t?'#00e676':'#333',padding:'11px 2px',cursor:'pointer',fontSize:10,fontWeight:800,letterSpacing:1,transition:'all .2s'}}>{t.toUpperCase()}</button>
         ))}
       </div>
  
-      {/* Course tab */}
       {tab==='course'&&(
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {Object.entries(COURSES).map(([id,c])=>(
-            <div key={id} onClick={()=>setSetup(s=>({...s,courseId:id}))} style={{background:setup.courseId===id?'rgba(0,230,118,.1)':'rgba(255,255,255,.03)',border:`1px solid ${setup.courseId===id?'rgba(0,230,118,.4)':'rgba(255,255,255,.06)'}`,borderRadius:14,padding:'14px 16px',cursor:'pointer',display:'flex',alignItems:'center',gap:14}}>
-              <div style={{fontSize:24,flexShrink:0}}>⛳</div>
+            <div key={id} onClick={()=>setSetup(s=>({...s,courseId:id}))} style={{background:setup.courseId===id?'rgba(0,230,118,.08)':'rgba(255,255,255,.02)',border:`1px solid ${setup.courseId===id?'rgba(0,230,118,.35)':'rgba(255,255,255,.05)'}`,borderRadius:14,padding:'14px 16px',cursor:'pointer',display:'flex',alignItems:'center',gap:14}}>
+              <span style={{fontSize:22,flexShrink:0}}>⛳</span>
               <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:14,color:setup.courseId===id?'#00e676':'#fff'}}>{c.name}</div>
-                <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:2}}>{c.city}, SC · {c.holes.length} holes · Par {c.holes.reduce((a,h)=>a+h.par,0)}</div>
+                <div style={{fontWeight:800,fontSize:14,color:setup.courseId===id?'#00e676':'#fff'}}>{c.name}</div>
+                <div style={{fontSize:11,color:'rgba(255,255,255,.25)',marginTop:2}}>{c.city} · Par {c.holes.reduce((a,h)=>a+h.par,0)} · {c.holes.length} holes</div>
               </div>
-              {setup.courseId===id&&<div style={{color:'#00e676',fontSize:18}}>✓</div>}
+              {setup.courseId===id&&<span style={{color:'#00e676',fontSize:20}}>✓</span>}
             </div>
           ))}
         </div>
       )}
  
-      {/* Format tab */}
       {tab==='format'&&(
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
           {FORMATS.map(f=>(
-            <div key={f.id} onClick={()=>setSetup(s=>({...s,format:f.id}))} style={{background:setup.format===f.id?'rgba(0,230,118,.1)':'rgba(255,255,255,.03)',border:`1px solid ${setup.format===f.id?'rgba(0,230,118,.4)':'rgba(255,255,255,.06)'}`,borderRadius:14,padding:'13px 12px',cursor:'pointer'}}>
-              <div style={{fontSize:24,marginBottom:6}}>{f.icon}</div>
-              <div style={{fontWeight:700,fontSize:12,marginBottom:4,color:setup.format===f.id?'#00e676':'#fff'}}>{f.label}</div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,.3)',lineHeight:1.4}}>{f.desc}</div>
-              {f.team&&<div style={{marginTop:6,fontSize:9,color:'#00e676',background:'rgba(0,230,118,.1)',padding:'2px 8px',borderRadius:20,display:'inline-block',fontWeight:700}}>TEAM FORMAT</div>}
+            <div key={f.id} onClick={()=>setSetup(s=>({...s,format:f.id}))} style={{background:setup.format===f.id?'rgba(0,230,118,.08)':'rgba(255,255,255,.02)',border:`1px solid ${setup.format===f.id?'rgba(0,230,118,.35)':'rgba(255,255,255,.05)'}`,borderRadius:14,padding:'13px 12px',cursor:'pointer'}}>
+              <div style={{fontSize:24,marginBottom:5}}>{f.icon}</div>
+              <div style={{fontWeight:800,fontSize:12,marginBottom:4,color:setup.format===f.id?'#00e676':'#fff'}}>{f.label}</div>
+              <div style={{fontSize:10,color:'rgba(255,255,255,.25)',lineHeight:1.4}}>{f.desc}</div>
+              {f.team&&<div style={{marginTop:6,fontSize:9,color:'#00e676',background:'rgba(0,230,118,.08)',padding:'2px 8px',borderRadius:20,display:'inline-block',fontWeight:700,letterSpacing:1}}>TEAM</div>}
             </div>
           ))}
         </div>
       )}
  
-      {/* Teams tab */}
       {tab==='teams'&&(
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {TEAM_CONFIGS.map(t=>(
-            <div key={t.id} onClick={()=>setSetup(s=>({...s,teamConfig:t.id}))} style={{background:setup.teamConfig===t.id?'rgba(0,230,118,.1)':'rgba(255,255,255,.03)',border:`1px solid ${setup.teamConfig===t.id?'rgba(0,230,118,.4)':'rgba(255,255,255,.06)'}`,borderRadius:14,padding:'14px 16px',cursor:'pointer'}}>
-              <div style={{fontWeight:700,fontSize:13,color:setup.teamConfig===t.id?'#00e676':'#fff',marginBottom:8}}>{t.label}</div>
+            <div key={t.id} onClick={()=>setSetup(s=>({...s,teamConfig:t.id}))} style={{background:setup.teamConfig===t.id?'rgba(0,230,118,.08)':'rgba(255,255,255,.02)',border:`1px solid ${setup.teamConfig===t.id?'rgba(0,230,118,.35)':'rgba(255,255,255,.05)'}`,borderRadius:14,padding:'14px 16px',cursor:'pointer'}}>
+              <div style={{fontWeight:800,fontSize:13,color:setup.teamConfig===t.id?'#00e676':'#fff',marginBottom:8}}>{t.label}</div>
               <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                 {t.teams.map((team,i)=>(
-                  <div key={i} style={{background:'rgba(0,230,118,.1)',border:'1px solid rgba(0,230,118,.2)',borderRadius:20,padding:'3px 10px',fontSize:11,color:'#00e676',fontWeight:600}}>
+                  <div key={i} style={{background:'rgba(0,230,118,.08)',border:'1px solid rgba(0,230,118,.2)',borderRadius:20,padding:'3px 10px',fontSize:11,color:'#00e676',fontWeight:700}}>
                     {team.map(id=>PLAYERS.find(p=>p.id===id)?.name).join(' & ')}
                   </div>
                 ))}
               </div>
             </div>
           ))}
-          {/* Team name customization */}
-          {isTeamConfig&&(
-            <div style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.08)',borderRadius:14,padding:'14px 16px',marginTop:4}}>
-              <div style={{fontSize:11,color:'#00e676',letterSpacing:2,fontWeight:700,marginBottom:10}}>CUSTOM TEAM NAMES</div>
-              {setup.teamNames.map((name,i)=>(
+          {setup.teamConfig!=='solo'&&(
+            <div style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.06)',borderRadius:14,padding:'14px 16px',marginTop:4}}>
+              <div style={{fontSize:10,color:'#00e676',letterSpacing:2,fontWeight:800,marginBottom:10}}>CUSTOM TEAM NAMES</div>
+              {['Team 1','Team 2'].map((_,i)=>(
                 <div key={i} style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-                  <div style={{fontSize:11,color:'rgba(255,255,255,.3)',width:60}}>TEAM {i+1}</div>
-                  <input value={name} onChange={e=>{const n=[...setup.teamNames];n[i]=e.target.value;setSetup(s=>({...s,teamNames:n}));}}
-                    style={{flex:1,background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'8px 12px',borderRadius:8,fontSize:14}}/>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,.25)',width:56}}>TEAM {i+1}</div>
+                  <input value={setup.teamNames[i]} onChange={e=>{const n=[...setup.teamNames];n[i]=e.target.value;setSetup(s=>({...s,teamNames:n}));}}
+                    style={{flex:1,background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'9px 12px',borderRadius:10,fontSize:14,fontWeight:600}}/>
                 </div>
               ))}
             </div>
@@ -583,64 +692,72 @@ function SetupView({startRound,playerSettings}){
         </div>
       )}
  
-      {/* Options tab */}
       {tab==='options'&&(
-        <div style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:14,padding:16,display:'flex',flexDirection:'column',gap:14}}>
-          {[
-            {label:'DATE',type:'date',key:'date'},
-            {label:'TEES',type:'select',key:'tees',opts:[{v:'black',l:'Black — Championship'},{v:'blue',l:'Blue'},{v:'white',l:'White'},{v:'gold',l:'Gold — Senior'},{v:'red',l:'Red — Forward'}]},
-          ].map(o=>(
-            <div key={o.key} style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <div style={{fontSize:11,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700}}>{o.label}</div>
-              {o.type==='select'?
-                <select value={setup[o.key]} onChange={e=>setSetup(s=>({...s,[o.key]:e.target.value}))} style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'8px 12px',borderRadius:8,fontSize:13,minWidth:180}}>{o.opts.map(op=><option key={op.v} value={op.v}>{op.l}</option>)}</select>:
-                <input type={o.type} value={setup[o.key]} onChange={e=>setSetup(s=>({...s,[o.key]:e.target.value}))} style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'8px 12px',borderRadius:8,fontSize:13,minWidth:160}}/>
-              }
-            </div>
-          ))}
+        <div style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.05)',borderRadius:14,padding:16,display:'flex',flexDirection:'column',gap:14}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            <div style={{fontSize:11,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700}}>BET / HOLE ($)</div>
-            <input type="number" value={setup.betAmount} min={0} max={500} onChange={e=>setSetup(s=>({...s,betAmount:parseInt(e.target.value)||0}))} style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,255,255,.1)',color:'#00e676',padding:'8px 12px',borderRadius:8,fontSize:18,fontWeight:900,width:80,textAlign:'center'}}/>
+            <div style={{fontSize:11,color:'rgba(255,255,255,.35)',letterSpacing:2,fontWeight:700}}>DATE</div>
+            <input type="date" value={setup.date} onChange={e=>setSetup(s=>({...s,date:e.target.value}))} style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'8px 12px',borderRadius:10,fontSize:13}}/>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{fontSize:11,color:'rgba(255,255,255,.35)',letterSpacing:2,fontWeight:700}}>TEES</div>
+            <select value={setup.tees} onChange={e=>setSetup(s=>({...s,tees:e.target.value}))} style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'8px 12px',borderRadius:10,fontSize:13}}>
+              {[{v:'black',l:'Black — Championship'},{v:'blue',l:'Blue'},{v:'white',l:'White'},{v:'gold',l:'Gold — Senior'},{v:'red',l:'Red — Forward'}].map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
+            </select>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{fontSize:11,color:'rgba(255,255,255,.35)',letterSpacing:2,fontWeight:700}}>BET / HOLE ($)</div>
+            <input type="number" value={setup.betAmount} min={0} max={500} onChange={e=>setSetup(s=>({...s,betAmount:parseInt(e.target.value)||0}))} style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(0,230,118,.3)',color:'#00e676',padding:'8px 12px',borderRadius:10,fontSize:20,fontWeight:900,width:80,textAlign:'center'}}/>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,.35)',letterSpacing:2,fontWeight:700}}>MULLIGANS / PLAYER</div>
+              <div style={{fontSize:10,color:'rgba(255,255,255,.2)',marginTop:2}}>0 = no mulligans</div>
+            </div>
+            <input type="number" value={setup.mulligansAllowed} min={0} max={6} onChange={e=>setSetup(s=>({...s,mulligansAllowed:parseInt(e.target.value)||0}))} style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,145,0,.3)',color:'#ff9100',padding:'8px 12px',borderRadius:10,fontSize:20,fontWeight:900,width:60,textAlign:'center'}}/>
           </div>
         </div>
       )}
  
-      <button onClick={()=>startRound(setup)} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:16,padding:'18px 24px',fontSize:20,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue',boxShadow:'0 8px 30px rgba(0,230,118,.3)'}}>
+      <button onClick={()=>startRound(setup)} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:18,padding:'20px 24px',fontSize:22,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue',boxShadow:'0 8px 40px rgba(0,230,118,.3)'}}>
         🏌️ START ROUND
       </button>
     </div>
   );
 }
  
-// ═══════════════════════════════════════════════════════
-// SCORECARD
-// ═══════════════════════════════════════════════════════
-function ScorecardView({round,scores,updateScore,finishRound}){
+// ══════════════════════════════════════════════
+// SCORECARD VIEW
+// ══════════════════════════════════════════════
+function ScorecardView({round,scores,extras,updateScore,finishRound,updateExtras,playerSettings,rounds}){
   const[holeIdx,setHoleIdx]=useState(0);
   const[showAll,setShowAll]=useState(false);
   const[showSkins,setShowSkins]=useState(false);
+  const[showBets,setShowBets]=useState(false);
+  const[wolfOrder,setWolfOrder]=useState(['ben','thomas','max','luke']);
+  const[lastScored,setLastScored]=useState(null);
  
   const course=COURSES[round.course_id]||COURSES.snee;
   const holes=course.holes;
   const fmt=FORMATS.find(f=>f.id===round.format);
   const hole=holes[holeIdx];
-  const isTeam=round.teamConfig!=='solo'&&round.team_config!=='solo';
-  const teamCfg=TEAM_CONFIGS.find(t=>t.id===round.team_config);
-  const teamNames=round.team_names||['Team 1','Team 2'];
+  const mulligansAllowed=round.mulligans_allowed||0;
+  const mulligans=extras.mulligans||{ben:0,thomas:0,max:0,luke:0};
+  const closestPin=extras.closestPin||{};
+  const longDrive=extras.longDrive||{};
  
   const holesPlayed=PLAYERS.reduce((max,p)=>{const pl=(scores[p.id]||[]).filter(s=>s>0).length;return Math.max(max,pl);},0);
  
   const getTP=pid=>{let tp=0;(scores[pid]||[]).forEach((s,i)=>{if(s>0&&holes[i])tp+=s-holes[i].par;});return tp;};
   const getSF=pid=>(scores[pid]||[]).reduce((a,s,i)=>a+(s>0&&holes[i]?sfPts(s,holes[i].par):0),0);
-  const getSkins=()=>{
+ 
+  const skinsList=useMemo(()=>{
     const sk=Array(18).fill(null);
-    holes.forEach((h,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1)sk[i]=w[0].id;}});
+    holes.forEach((_,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1)sk[i]=w[0].id;}});
     return sk;
-  };
-  const skinsList=getSkins();
+  },[scores,holes]);
+ 
   const skinsCount=pid=>skinsList.filter(s=>s===pid).length;
-  const skinsValue=round.bet_amount||5;
-  const totalSkinsPot=PLAYERS.length*skinsValue*18;
+  const skinsVal=round.bet_amount||5;
  
   const getDS=pid=>{
     if(round.format==='stableford')return{d:getSF(pid)+'pts',c:'#ffd700'};
@@ -648,53 +765,83 @@ function ScorecardView({round,scores,updateScore,finishRound}){
     const tp=getTP(pid);return{d:tpStr(tp),c:tp<0?'#00e676':tp>0?'#ff5252':'#555'};
   };
  
-  // Bet calculator
+  // Wolf logic
+  const wolfPlayer=round.format==='wolf'?PLAYERS.find(p=>p.id===wolfOrder[holeIdx%4]):null;
+ 
+  const handleScore=(pid,delta)=>{
+    const cur=(scores[pid]||[])[holeIdx]||hole.par;
+    updateScore(round.id,pid,holeIdx,cur+delta);
+    setLastScored(pid);
+  };
+ 
+  const handleInput=(pid,val)=>{
+    updateScore(round.id,pid,holeIdx,val===''?null:val);
+    setLastScored(pid);
+  };
+ 
+  const useMulligan=(pid)=>{
+    if(mulligans[pid]>=mulligansAllowed)return;
+    updateExtras(round.id,'mulligans',{[pid]:(mulligans[pid]||0)+1});
+    Haptic.medium();
+    Sound.play('click');
+  };
+ 
+  // Par 3 closest pin
+  const isPar3=hole.par===3;
+ 
+  // Running bet
   const getBetResults=()=>{
-    if(round.format==='skins'){
-      const earned={};PLAYERS.forEach(p=>{earned[p.id]=skinsCount(p.id)*skinsValue;});
-      const avg=(PLAYERS.length*skinsValue*holesPlayed)/PLAYERS.length;
-      return PLAYERS.map(p=>({...p,net:earned[p.id]-avg}));
-    }
-    const totals=PLAYERS.map(p=>({...p,tp:getTP(p.id)})).sort((a,b)=>a.tp-b.tp);
-    return totals.map((p,i)=>({...p,net:i===0?(PLAYERS.length-1)*round.bet_amount:-round.bet_amount}));
+    const ranked=[...PLAYERS].map(p=>({...p,tp:getTP(p.id),total:(scores[p.id]||[]).reduce((a,b)=>a+(b||0),0)})).sort((a,b)=>a.tp-b.tp);
+    return ranked.map((p,i)=>({...p,net:i===0?(PLAYERS.length-1)*round.bet_amount:-round.bet_amount}));
   };
  
   return(
-    <div style={{display:'flex',flexDirection:'column',gap:12,animation:'fadeUp .3s ease'}}>
+    <div style={{display:'flex',flexDirection:'column',gap:11,animation:'fadeUp .3s ease'}}>
       {/* Header */}
-      <div style={{background:'linear-gradient(135deg,rgba(0,230,118,.1),rgba(0,200,83,.05))',border:'1px solid rgba(0,230,118,.2)',borderRadius:16,padding:'14px 16px',display:'flex',alignItems:'center',gap:12}}>
-        <span style={{fontSize:28}}>{fmt?.icon}</span>
+      <div style={{background:'linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,200,83,.03))',border:'1px solid rgba(0,230,118,.15)',borderRadius:18,padding:'13px 15px',display:'flex',alignItems:'center',gap:12}}>
+        <span style={{fontSize:26}}>{fmt?.icon}</span>
         <div style={{flex:1}}>
           <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2}}>{fmt?.label}</div>
-          <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:1}}>{round.date} · {course.name} · {round.tees?.toUpperCase()} TEES</div>
+          <div style={{fontSize:10,color:'rgba(255,255,255,.25)',marginTop:1,letterSpacing:1}}>{round.date} · {course.name} · {round.tees?.toUpperCase()}</div>
         </div>
-        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
+        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3}}>
           <div style={{background:'#00e676',color:'#000',borderRadius:20,padding:'3px 12px',fontSize:13,fontWeight:900}}>{holesPlayed}/18</div>
-          <div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'#00e676'}}><div style={{width:6,height:6,borderRadius:'50%',background:'#00e676',animation:'pulse 2s infinite'}}/> LIVE</div>
+          <div style={{display:'flex',gap:4,alignItems:'center'}}><div style={{width:5,height:5,borderRadius:'50%',background:'#00e676',animation:'pulse 2s infinite'}}/><span style={{fontSize:9,color:'#00e676',letterSpacing:1,fontWeight:700}}>LIVE SYNC</span></div>
         </div>
       </div>
+ 
+      {/* Weather */}
+      <WeatherWidget lat={course.lat} lon={course.lon} courseName={course.name}/>
+ 
+      {/* Wolf indicator */}
+      {wolfPlayer&&<div style={{background:'rgba(155,89,182,.1)',border:'1px solid rgba(155,89,182,.3)',borderRadius:12,padding:'10px 14px',display:'flex',gap:10,alignItems:'center'}}>
+        <span style={{fontSize:20}}>🐺</span>
+        <div><span style={{fontWeight:800,color:wolfPlayer.color}}>{wolfPlayer.name}</span><span style={{color:'rgba(255,255,255,.4)',fontSize:13}}> is the Wolf this hole</span></div>
+      </div>}
  
       {/* Standings */}
       <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:2}}>
         {PLAYERS.map(p=>{const ds=getDS(p.id);return(
-          <div key={p.id} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:12,padding:'10px 12px',minWidth:72,flex:'0 0 auto'}}>
-            <div style={{width:32,height:32,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:14,color:'#000'}}>{p.avatar}</div>
+          <div key={p.id} style={{flex:'0 0 auto',display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.06)',borderRadius:12,padding:'9px 12px',minWidth:72}}>
+            <div style={{width:30,height:30,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#000'}}>{p.emoji}</div>
             <div style={{fontWeight:900,fontSize:15,color:ds.c}}>{ds.d}</div>
+            {mulligansAllowed>0&&<div style={{fontSize:9,color:'rgba(255,255,255,.25)'}}>🍀{mulligansAllowed-(mulligans[p.id]||0)}</div>}
           </div>
         );})}
       </div>
  
-      {/* Hole navigation */}
-      <div style={{background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <button onClick={()=>setHoleIdx(Math.max(0,holeIdx-1))} disabled={holeIdx===0} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:40,height:40,borderRadius:10,cursor:'pointer',fontSize:22,opacity:holeIdx===0?.3:1}}>‹</button>
+      {/* Hole nav */}
+      <div style={{background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.06)',borderRadius:15,padding:'13px 15px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <button onClick={()=>{setHoleIdx(Math.max(0,holeIdx-1));Haptic.light();}} disabled={holeIdx===0} style={{background:'rgba(255,255,255,.06)',border:'none',color:'#fff',width:42,height:42,borderRadius:12,cursor:'pointer',fontSize:24,opacity:holeIdx===0?.3:1}}>‹</button>
         <div style={{textAlign:'center'}}>
-          <div style={{display:'flex',gap:12,alignItems:'baseline',justifyContent:'center'}}>
-            <span style={{fontFamily:'Bebas Neue',fontSize:32,color:'#ffd700'}}>#{hole.hole}</span>
-            <span style={{fontSize:18,color:'#00e676',fontWeight:700}}>Par {hole.par}</span>
+          <div style={{display:'flex',gap:10,alignItems:'baseline',justifyContent:'center'}}>
+            <span style={{fontFamily:'Bebas Neue',fontSize:36,color:'#ffd700',lineHeight:1}}>#{hole.hole}</span>
+            <span style={{fontSize:19,color:'#00e676',fontWeight:800}}>Par {hole.par}</span>
           </div>
-          <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{hole.yards} yards · HCP {hole.hcp}</div>
+          <div style={{fontSize:11,color:'rgba(255,255,255,.25)',marginTop:2}}>{hole.yards} yds · HCP Stroke {hole.hcp}</div>
+          {isPar3&&<div style={{fontSize:10,color:'#ffd700',fontWeight:700,marginTop:2}}>📍 PAR 3 — TRACK CLOSEST PIN</div>}
         </div>
-        <button onClick={()=>setHoleIdx(Math.min(holes.length-1,holeIdx+1))} disabled={holeIdx===holes.length-1} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:40,height:40,borderRadius:10,cursor:'pointer',fontSize:22,opacity:holeIdx===holes.length-1?.3:1}}>›</button>
+        <button onClick={()=>{setHoleIdx(Math.min(holes.length-1,holeIdx+1));Haptic.light();}} disabled={holeIdx===holes.length-1} style={{background:'rgba(255,255,255,.06)',border:'none',color:'#fff',width:42,height:42,borderRadius:12,cursor:'pointer',fontSize:24,opacity:holeIdx===holes.length-1?.3:1}}>›</button>
       </div>
  
       {/* Score inputs */}
@@ -703,22 +850,39 @@ function ScorecardView({round,scores,updateScore,finishRound}){
           const sc=(scores[p.id]||[])[holeIdx]||null;
           const sn=sc?scoreName(sc,hole.par):null;
           const isSkin=skinsList[holeIdx]===p.id;
+          const isCP=closestPin[holeIdx]===p.id;
+          const isLD=longDrive[holeIdx]===p.id;
+          const hdcp=playerSettings[p.id]??p.defaultHcp;
+          const strokesOnHole=Math.floor(hdcp/18)+(hole.hcp<=hdcp%18?1:0);
+          const netSc=sc?sc-strokesOnHole:null;
+          const animated=lastScored===p.id&&sn&&(sn.type==='birdie'||sn.type==='eagle');
           return(
-            <div key={p.id} style={{background:'rgba(255,255,255,.04)',borderRadius:14,padding:'13px 14px',display:'flex',alignItems:'center',justifyContent:'space-between',borderLeft:`3px solid ${p.color}`,position:'relative',overflow:'hidden'}}>
-              {isSkin&&<div style={{position:'absolute',top:4,right:4,fontSize:10,color:'#9b59b6',fontWeight:700}}>💀 SKIN</div>}
-              <div style={{display:'flex',alignItems:'center',gap:10}}>
-                <div style={{width:36,height:36,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:15,color:'#000',flexShrink:0}}>{p.avatar}</div>
-                <div>
-                  <div style={{fontWeight:800,fontSize:14,color:p.color}}>{p.name}</div>
-                  {sn&&<div style={{fontSize:11,color:sn.c,fontWeight:700,marginTop:1}}>{sn.l}</div>}
+            <div key={p.id} style={{background:'rgba(255,255,255,.04)',borderRadius:15,padding:'12px 14px',borderLeft:`3px solid ${p.color}`,position:'relative',overflow:'hidden',transition:'all .2s',boxShadow:animated?`0 0 20px ${p.color}44`:'none'}}>
+              {isSkin&&<div style={{position:'absolute',top:5,right:5,fontSize:9,color:'#9b59b6',fontWeight:800,background:'rgba(155,89,182,.15)',padding:'2px 7px',borderRadius:20}}>💀 SKIN</div>}
+              {isCP&&<div style={{position:'absolute',top:5,right:isSkin?60:5,fontSize:9,color:'#ffd700',fontWeight:800,background:'rgba(255,215,0,.1)',padding:'2px 7px',borderRadius:20}}>📍 CLOSEST</div>}
+              {isLD&&<div style={{position:'absolute',top:5,right:5,fontSize:9,color:'#40c4ff',fontWeight:800,background:'rgba(64,196,255,.1)',padding:'2px 7px',borderRadius:20}}>💪 LONG DRIVE</div>}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10}}>
+                  <div style={{width:38,height:38,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:17,color:'#000',flexShrink:0,animation:animated?'celebrate .6s ease':''}}>{p.emoji}</div>
+                  <div>
+                    <div style={{fontWeight:900,fontSize:14,color:p.color}}>{p.name}</div>
+                    {sn&&<div style={{fontSize:11,color:sn.c,fontWeight:700,marginTop:1}}>{sn.l}</div>}
+                    {sc&&strokesOnHole>0&&<div style={{fontSize:10,color:'rgba(255,255,255,.25)'}}>Net: {netSc} ({strokesOnHole} stroke{strokesOnHole>1?'s':''})</div>}
+                  </div>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <button onPointerDown={()=>handleScore(p.id,-1)} style={{background:'rgba(255,255,255,.06)',border:'none',color:'#fff',width:38,height:44,borderRadius:11,cursor:'pointer',fontSize:26,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none',WebkitUserSelect:'none'}}>−</button>
+                  <input type="number" min={1} max={15} value={sc||''} placeholder={hole.par}
+                    onChange={e=>handleInput(p.id,e.target.value)}
+                    style={{background:'rgba(0,0,0,.7)',border:`2px solid ${sc?p.color:'rgba(255,255,255,.1)'}`,color:'#ffd700',width:54,height:50,textAlign:'center',fontSize:30,fontWeight:900,borderRadius:11,outline:'none',transition:'border-color .2s'}}/>
+                  <button onPointerDown={()=>handleScore(p.id,1)} style={{background:'rgba(255,255,255,.06)',border:'none',color:'#fff',width:38,height:44,borderRadius:11,cursor:'pointer',fontSize:26,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none',WebkitUserSelect:'none'}}>+</button>
                 </div>
               </div>
-              <div style={{display:'flex',alignItems:'center',gap:6}}>
-                <button onPointerDown={()=>updateScore(round.id,p.id,holeIdx,(sc||hole.par)-1)} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:36,height:42,borderRadius:10,cursor:'pointer',fontSize:24,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none'}}>−</button>
-                <input type="number" min={1} max={15} value={sc||''} placeholder={hole.par}
-                  onChange={e=>updateScore(round.id,p.id,holeIdx,e.target.value)}
-                  style={{background:'rgba(0,0,0,.6)',border:`2px solid ${sc?p.color:'rgba(255,255,255,.1)'}`,color:'#ffd700',width:52,height:48,textAlign:'center',fontSize:28,fontWeight:900,borderRadius:10,outline:'none'}}/>
-                <button onPointerDown={()=>updateScore(round.id,p.id,holeIdx,(sc||hole.par)+1)} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:36,height:42,borderRadius:10,cursor:'pointer',fontSize:24,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none'}}>+</button>
+              {/* Mulligan & bonus buttons */}
+              <div style={{display:'flex',gap:6,marginTop:8}}>
+                {mulligansAllowed>0&&<button onClick={()=>useMulligan(p.id)} disabled={(mulligans[p.id]||0)>=mulligansAllowed} style={{background:'rgba(255,145,0,.1)',border:'1px solid rgba(255,145,0,.3)',color:'#ff9100',padding:'4px 10px',borderRadius:20,cursor:'pointer',fontSize:10,fontWeight:700,opacity:(mulligans[p.id]||0)>=mulligansAllowed?.4:1}}>🍀 MULLIGAN ({mulligansAllowed-(mulligans[p.id]||0)} left)</button>}
+                {isPar3&&<button onClick={()=>updateExtras(round.id,'closestPin',{[holeIdx]:closestPin[holeIdx]===p.id?null:p.id})} style={{background:isCP?'rgba(255,215,0,.15)':'rgba(255,255,255,.04)',border:`1px solid ${isCP?'rgba(255,215,0,.4)':'rgba(255,255,255,.08)'}`,color:isCP?'#ffd700':'#555',padding:'4px 10px',borderRadius:20,cursor:'pointer',fontSize:10,fontWeight:700}}>📍 CLOSEST PIN</button>}
+                {!isPar3&&<button onClick={()=>updateExtras(round.id,'longDrive',{[holeIdx]:longDrive[holeIdx]===p.id?null:p.id})} style={{background:isLD?'rgba(64,196,255,.12)':'rgba(255,255,255,.04)',border:`1px solid ${isLD?'rgba(64,196,255,.35)':'rgba(255,255,255,.08)'}`,color:isLD?'#40c4ff':'#555',padding:'4px 10px',borderRadius:20,cursor:'pointer',fontSize:10,fontWeight:700}}>💪 LONG DRIVE</button>}
               </div>
             </div>
           );
@@ -726,94 +890,96 @@ function ScorecardView({round,scores,updateScore,finishRound}){
       </div>
  
       {/* Quick actions */}
-      <div style={{display:'flex',gap:8}}>
-        <button onClick={()=>PLAYERS.forEach(p=>{if(!((scores[p.id]||[])[holeIdx]>0))updateScore(round.id,p.id,holeIdx,hole.par);})} style={{flex:1,background:'rgba(255,255,255,.05)',border:'1px solid rgba(255,255,255,.08)',color:'rgba(255,255,255,.5)',padding:'10px',borderRadius:10,cursor:'pointer',fontSize:12,fontWeight:700}}>⚡ FILL PAR</button>
-        <button onClick={()=>setShowSkins(!showSkins)} style={{flex:1,background:'rgba(155,89,182,.1)',border:'1px solid rgba(155,89,182,.3)',color:'#9b59b6',padding:'10px',borderRadius:10,cursor:'pointer',fontSize:12,fontWeight:700}}>💀 SKINS ({skinsList.filter(Boolean).length})</button>
+      <div style={{display:'flex',gap:7}}>
+        <button onClick={()=>PLAYERS.forEach(p=>{if(!((scores[p.id]||[])[holeIdx]>0))updateScore(round.id,p.id,holeIdx,hole.par);}) } style={{flex:1,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',color:'rgba(255,255,255,.4)',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700,letterSpacing:1}}>⚡ FILL PAR</button>
+        <button onClick={()=>setShowSkins(!showSkins)} style={{flex:1,background:'rgba(155,89,182,.08)',border:'1px solid rgba(155,89,182,.25)',color:'#9b59b6',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700}}>💀 SKINS ({skinsList.filter(Boolean).length})</button>
+        {round.bet_amount>0&&<button onClick={()=>setShowBets(!showBets)} style={{flex:1,background:'rgba(0,230,118,.06)',border:'1px solid rgba(0,230,118,.2)',color:'#00e676',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700}}>💰 BETS</button>}
       </div>
  
-      {/* Skins tracker */}
+      {/* Skins panel */}
       {showSkins&&(
-        <div style={{background:'rgba(155,89,182,.08)',border:'1px solid rgba(155,89,182,.2)',borderRadius:14,padding:'14px 16px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#9b59b6',marginBottom:12}}>SKINS TRACKER · ${skinsValue}/SKIN</div>
-          <div style={{display:'flex',gap:10,marginBottom:12}}>
+        <div style={{background:'rgba(155,89,182,.06)',border:'1px solid rgba(155,89,182,.2)',borderRadius:16,padding:'14px 16px',animation:'fadeIn .3s ease'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#9b59b6',marginBottom:12}}>SKINS TRACKER · ${skinsVal}/SKIN</div>
+          <div style={{display:'flex',gap:8,marginBottom:10}}>
             {PLAYERS.map(p=>{const sk=skinsCount(p.id);return(
-              <div key={p.id} style={{flex:1,textAlign:'center',background:'rgba(0,0,0,.3)',borderRadius:10,padding:'10px 4px'}}>
-                <div style={{width:28,height:28,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:12,color:'#000',margin:'0 auto 6px'}}>{p.avatar}</div>
-                <div style={{fontFamily:'Bebas Neue',fontSize:22,color:sk>0?'#9b59b6':'#333'}}>{sk}</div>
-                <div style={{fontSize:9,color:'rgba(255,255,255,.3)',fontWeight:700}}>SKINS</div>
-                <div style={{fontSize:11,color:'#00e676',fontWeight:700}}>${sk*skinsValue}</div>
+              <div key={p.id} style={{flex:1,textAlign:'center',background:'rgba(0,0,0,.3)',borderRadius:12,padding:'10px 4px'}}>
+                <div style={{fontSize:20,marginBottom:4}}>{p.avatar}</div>
+                <div style={{fontFamily:'Bebas Neue',fontSize:26,color:sk>0?'#9b59b6':'#333'}}>{sk}</div>
+                <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:1,fontWeight:700}}>SKINS</div>
+                <div style={{fontSize:12,color:'#00e676',fontWeight:900,marginTop:2}}>${sk*skinsVal}</div>
               </div>
             );})}
           </div>
-          <div style={{fontSize:11,color:'rgba(255,255,255,.3)',textAlign:'center'}}>{skinsList.filter(Boolean).length} skins claimed · {18-holesPlayed} holes remaining</div>
+          <div style={{fontSize:11,color:'rgba(255,255,255,.25)',textAlign:'center'}}>{skinsList.filter(Boolean).length} claimed · {holes.length-holesPlayed} holes left · Pot: ${PLAYERS.length*skinsVal*holesPlayed}</div>
         </div>
       )}
  
-      {/* Bet calculator */}
-      {round.bet_amount>0&&holesPlayed>0&&(
-        <div style={{background:'rgba(0,230,118,.05)',border:'1px solid rgba(0,230,118,.1)',borderRadius:14,padding:'14px 16px'}}>
+      {/* Bets panel */}
+      {showBets&&round.bet_amount>0&&(
+        <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.12)',borderRadius:16,padding:'14px 16px',animation:'fadeIn .3s ease'}}>
           <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#00e676',marginBottom:10}}>💰 RUNNING BETS · ${round.bet_amount}/HOLE</div>
-          {getBetResults().map(p=>(
+          {getBetResults().map((p,i)=>(
             <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
-              <div style={{width:28,height:28,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:12,color:'#000',flexShrink:0}}>{p.avatar}</div>
-              <div style={{fontWeight:700,flex:1}}>{p.name}</div>
-              <div style={{fontWeight:900,fontSize:15,color:p.net>0?'#00e676':p.net<0?'#ff5252':'#555'}}>{p.net>0?`+$${p.net.toFixed(0)}`:`-$${Math.abs(p.net).toFixed(0)}`}</div>
+              <div style={{width:28,height:28,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:12,color:'#000'}}>{p.emoji}</div>
+              <div style={{fontWeight:700,flex:1,fontSize:13}}>{p.name}</div>
+              <div style={{fontWeight:900,fontSize:16,color:p.net>0?'#00e676':p.net<0?'#ff5252':'#555'}}>{p.net>0?`+$${p.net}`:p.net<0?`-$${Math.abs(p.net)}`:'EVEN'}</div>
             </div>
           ))}
         </div>
       )}
  
-      {/* Hole dots */}
+      {/* Hole progress dots */}
       <div style={{display:'flex',gap:4,justifyContent:'center',flexWrap:'wrap',padding:'4px 0'}}>
-        {holes.map((_,i)=>{const all=PLAYERS.every(p=>((scores[p.id]||[])[i]||0)>0);return(
-          <div key={i} onClick={()=>setHoleIdx(i)} style={{width:14,height:14,borderRadius:'50%',background:i===holeIdx?'#ffd700':all?'#00e676':'rgba(255,255,255,.1)',cursor:'pointer',transform:i===holeIdx?'scale(1.5)':'scale(1)',boxShadow:i===holeIdx?'0 0 8px #ffd700':'none',transition:'all .2s'}}/>
+        {holes.map((_,i)=>{const all=PLAYERS.every(p=>((scores[p.id]||[])[i]||0)>0);const skin=skinsList[i];return(
+          <div key={i} onClick={()=>{setHoleIdx(i);Haptic.light();}} style={{width:15,height:15,borderRadius:'50%',background:i===holeIdx?'#ffd700':all?(skin?'#9b59b6':'#00e676'):'rgba(255,255,255,.08)',cursor:'pointer',transform:i===holeIdx?'scale(1.5)':'scale(1)',boxShadow:i===holeIdx?'0 0 8px #ffd700':skin&&all?'0 0 5px #9b59b6':'none',transition:'all .2s'}}/>
         );})}
       </div>
  
-      {/* Full scorecard toggle */}
-      <button onClick={()=>setShowAll(!showAll)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.07)',color:'rgba(255,255,255,.3)',padding:'10px',borderRadius:10,cursor:'pointer',fontSize:12,fontWeight:700,letterSpacing:1}}>
+      <button onClick={()=>setShowAll(!showAll)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.06)',color:'rgba(255,255,255,.25)',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700,letterSpacing:1}}>
         {showAll?'▲ HIDE SCORECARD':'▼ FULL SCORECARD'}
       </button>
       {showAll&&<FullScorecard scores={scores} holes={holes}/>}
  
-      <button onClick={()=>{if(confirm('Finish and save this round?'))finishRound(round.id);}} style={{background:'linear-gradient(135deg,#7a1010,#c0392b)',color:'#fff',border:'none',borderRadius:14,padding:'16px 24px',fontSize:18,fontWeight:900,cursor:'pointer',letterSpacing:2,fontFamily:'Bebas Neue',marginTop:4}}>
+      <button onClick={()=>{if(confirm('Finish and save this round?'))finishRound(round.id);}} style={{background:'linear-gradient(135deg,#7a1010,#c0392b)',color:'#fff',border:'none',borderRadius:16,padding:'18px 24px',fontSize:20,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue',marginTop:4}}>
         🏁 FINISH ROUND
       </button>
     </div>
   );
 }
  
-// ═══════════════════════════════════════════════════════
-// FULL SCORECARD TABLE
-// ═══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// FULL SCORECARD
+// ══════════════════════════════════════════════
 function FullScorecard({scores,holes}){
   return(
-    <div style={{background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.06)',borderRadius:14,padding:12,overflowX:'auto'}}>
+    <div style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,255,255,.05)',borderRadius:16,padding:12,overflowX:'auto'}}>
       {[0,1].map(half=>{
         const hs=holes.slice(half*9,half*9+9);const pt=hs.reduce((a,h)=>a+h.par,0);
         return(
           <div key={half} style={{marginBottom:half===0?14:0}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:3,color:'#00e676',marginBottom:8}}>{half===0?'FRONT 9':'BACK 9'}</div>
+            <div style={{fontSize:9,fontWeight:800,letterSpacing:3,color:'#00e676',marginBottom:8}}>{half===0?'FRONT 9':'BACK 9'}</div>
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:11}}>
               <thead>
-                <tr><th style={{padding:'4px 5px',textAlign:'left',color:'rgba(255,255,255,.3)',fontWeight:600,borderBottom:'1px solid rgba(255,255,255,.06)'}}>PLAYER</th>
-                  {hs.map(h=><th key={h.hole} style={{padding:'4px 5px',textAlign:'center',color:'rgba(255,255,255,.3)',borderBottom:'1px solid rgba(255,255,255,.06)'}}>{h.hole}</th>)}
-                  <th style={{padding:'4px 5px',textAlign:'center',color:'rgba(255,255,255,.3)',borderBottom:'1px solid rgba(255,255,255,.06)'}}>TOT</th>
+                <tr>
+                  <th style={{padding:'4px 5px',textAlign:'left',color:'rgba(255,255,255,.25)',borderBottom:'1px solid rgba(255,255,255,.05)'}}>PLR</th>
+                  {hs.map(h=><th key={h.hole} style={{padding:'4px 4px',textAlign:'center',color:'rgba(255,255,255,.25)',borderBottom:'1px solid rgba(255,255,255,.05)',fontSize:10}}>{h.hole}</th>)}
+                  <th style={{padding:'4px 4px',textAlign:'center',color:'rgba(255,255,255,.25)',borderBottom:'1px solid rgba(255,255,255,.05)'}}>T</th>
                 </tr>
-                <tr><th style={{padding:'3px 5px',textAlign:'left',color:'#00e67666',fontWeight:600}}>PAR</th>
-                  {hs.map(h=><th key={h.hole} style={{padding:'3px 5px',textAlign:'center',color:'#00e67666'}}>{h.par}</th>)}
-                  <th style={{padding:'3px 5px',textAlign:'center',color:'#00e67666'}}>{pt}</th>
+                <tr>
+                  <th style={{padding:'2px 5px',textAlign:'left',color:'#00e67655',fontSize:10}}>PAR</th>
+                  {hs.map(h=><th key={h.hole} style={{padding:'2px 4px',textAlign:'center',color:'#00e67655',fontSize:10}}>{h.par}</th>)}
+                  <th style={{padding:'2px 4px',textAlign:'center',color:'#00e67655',fontSize:10}}>{pt}</th>
                 </tr>
               </thead>
               <tbody>{PLAYERS.map(p=>{
                 const ps=(scores[p.id]||[]).slice(half*9,half*9+9);const tot=ps.reduce((a,b)=>a+(b||0),0);
                 return(<tr key={p.id}>
-                  <td style={{padding:'4px 5px',color:p.color,fontWeight:700}}>{p.name}</td>
-                  {hs.map((h,i)=>{const sc=ps[i];const d=sc>0?sc-h.par:null;const col=d!==null?scColor(d):{bg:'transparent',c:'rgba(255,255,255,.2)',border:'transparent'};
-                    return<td key={h.hole} style={{padding:'4px 5px',textAlign:'center',background:col.bg,color:col.c,fontWeight:d!==null?700:400,borderRadius:4}}>{sc||'—'}</td>;})}
-                  <td style={{padding:'4px 5px',textAlign:'center',fontWeight:900,color:'#fff'}}>{tot||'—'}</td>
-                </tr>);
-              })}</tbody>
+                  <td style={{padding:'4px 5px',color:p.color,fontWeight:800,fontSize:11}}>{p.name}</td>
+                  {hs.map((h,i)=>{const sc=ps[i];const d=sc>0?sc-h.par:null;const col=d!==null?scColor(d):{bg:'transparent',c:'rgba(255,255,255,.15)'};
+                    return<td key={h.hole} style={{padding:'3px 3px',textAlign:'center',background:col.bg,color:col.c,fontWeight:d!==null?800:400,borderRadius:4,fontSize:11}}>{sc||'—'}</td>;})}
+                  <td style={{padding:'4px 4px',textAlign:'center',fontWeight:900,color:'#fff',fontSize:12}}>{tot||'—'}</td>
+                </tr>);})}
+              </tbody>
             </table>
           </div>
         );
@@ -822,100 +988,161 @@ function FullScorecard({scores,holes}){
   );
 }
  
-// ═══════════════════════════════════════════════════════
-// STATS
-// ═══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// STATS VIEW
+// ══════════════════════════════════════════════
 function StatsView({rounds,scores,playerSettings}){
   const completed=rounds.filter(r=>r.completed);
+  const[selectedPlayer,setSelectedPlayer]=useState('all');
  
   const getStats=pid=>{
-    let birdies=0,pars=0,bogeys=0,doubles=0,best=null,worst=null,rounds_played=0,totalStrokes=0;
+    let birdies=0,eagles=0,pars=0,bogeys=0,doubles=0,aces=0,best=null,worst=null,rp=0,totalStrokes=0,holesPlayed=0;
     for(const r of completed){
       const s=scores[r.id]?.[pid];if(!s)continue;
       const course=COURSES[r.course_id]||COURSES.snee;
-      s.forEach((sc,i)=>{if(sc>0&&course.holes[i]){const d=sc-course.holes[i].par;if(d<=-1)birdies++;else if(d===0)pars++;else if(d===1)bogeys++;else doubles++;}});
-      const tot=s.reduce((a,b)=>a+(b||0),0);if(tot>0){totalStrokes+=tot;rounds_played++;if(best===null||tot<best)best=tot;if(worst===null||tot>worst)worst=tot;}
+      let roundTotal=0,played=0;
+      s.forEach((sc,i)=>{if(sc>0&&course.holes[i]){const d=sc-course.holes[i].par;if(sc===1)aces++;else if(d<=-2)eagles++;else if(d===-1)birdies++;else if(d===0)pars++;else if(d===1)bogeys++;else doubles++;roundTotal+=sc;played++;}});
+      if(roundTotal>0){totalStrokes+=roundTotal;rp++;holesPlayed+=played;if(best===null||roundTotal<best)best=roundTotal;if(worst===null||roundTotal>worst)worst=roundTotal;}
     }
-    return{birdies,pars,bogeys,doubles,best,worst,rounds_played,avg:rounds_played?Math.round(totalStrokes/rounds_played):null};
+    const courseRecords={};
+    completed.forEach(r=>{const s=scores[r.id]?.[pid];if(!s)return;const t=s.reduce((a,b)=>a+(b||0),0);if(t>0){if(!courseRecords[r.course_id]||t<courseRecords[r.course_id])courseRecords[r.course_id]=t;}});
+    return{birdies,eagles,pars,bogeys,doubles,aces,best,worst,rp,avg:rp?Math.round(totalStrokes/rp):null,courseRecords};
   };
  
-  // Head to head
+  // Head to head matrix
   const h2h=(p1,p2)=>{let w1=0,w2=0,ties=0;
-    for(const r of completed){
-      const s1=scores[r.id]?.[p1];const s2=scores[r.id]?.[p2];if(!s1||!s2)continue;
-      const t1=s1.reduce((a,b)=>a+(b||0),0);const t2=s2.reduce((a,b)=>a+(b||0),0);
-      if(t1<t2)w1++;else if(t2<t1)w2++;else ties++;
-    }return{w1,w2,ties};
+    completed.forEach(r=>{const s1=scores[r.id]?.[p1];const s2=scores[r.id]?.[p2];if(!s1||!s2)return;const t1=s1.reduce((a,b)=>a+(b||0),0);const t2=s2.reduce((a,b)=>a+(b||0),0);if(!t1||!t2)return;if(t1<t2)w1++;else if(t2<t1)w2++;else ties++;});
+    return{w1,w2,ties};
   };
  
-  const mostCommonFmt=()=>{const c={};completed.forEach(r=>{c[r.format]=(c[r.format]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1])[0];};
-  const mcf=mostCommonFmt();
+  // Score trend (last 6 rounds)
+  const getTrend=pid=>completed.slice(0,6).reverse().map(r=>{const s=scores[r.id]?.[pid];return s?s.reduce((a,b)=>a+(b||0),0):null;});
+ 
+  // Most improved
+  const getMostImproved=()=>{
+    return PLAYERS.map(p=>{
+      const rs=completed.map(r=>{const s=scores[r.id]?.[p.id];return s?s.reduce((a,b)=>a+(b||0),0):null;}).filter(Boolean);
+      if(rs.length<2)return{...p,improvement:0};
+      const improvement=rs[0]-rs[rs.length-1];
+      return{...p,improvement};
+    }).sort((a,b)=>b.improvement-a.improvement)[0];
+  };
+ 
+  const improved=getMostImproved();
+ 
+  // Trash talk for worst round
+  const getTrashTalk=()=>{
+    let worst=null,worstPlayer=null;
+    completed.slice(0,3).forEach(r=>{
+      PLAYERS.forEach(p=>{const s=scores[r.id]?.[p.id];if(!s)return;const t=s.reduce((a,b)=>a+(b||0),0);if(t>0&&(worst===null||t>worst)){worst=t;worstPlayer={...p,score:t};}});
+    });
+    if(!worstPlayer)return null;
+    const line=TRASH_TALK[Math.floor(Math.random()*TRASH_TALK.length)](worstPlayer.name,worstPlayer.score);
+    return{player:worstPlayer,line};
+  };
+  const [trash]=useState(()=>getTrashTalk());
+ 
+  if(completed.length===0)return(
+    <div style={{display:'flex',flexDirection:'column',gap:16,animation:'fadeUp .4s ease'}}>
+      <div style={{fontFamily:'Bebas Neue',fontSize:30,letterSpacing:3,color:'#00e676'}}>STATS & RECORDS</div>
+      <div style={{textAlign:'center',color:'rgba(255,255,255,.2)',padding:60,fontSize:16}}>No completed rounds yet 🏌️<br/><span style={{fontSize:13,color:'rgba(255,255,255,.1)'}}>Finish a round to see your stats</span></div>
+    </div>
+  );
  
   return(
-    <div style={{display:'flex',flexDirection:'column',gap:16,animation:'fadeUp .4s ease'}}>
-      <div style={{fontFamily:'Bebas Neue',fontSize:28,letterSpacing:3,color:'#00e676'}}>STATS & RECORDS</div>
+    <div style={{display:'flex',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}>
+      <div style={{fontFamily:'Bebas Neue',fontSize:30,letterSpacing:3,color:'#00e676'}}>STATS & RECORDS</div>
  
-      {completed.length===0&&<div style={{textAlign:'center',color:'rgba(255,255,255,.2)',padding:40,fontSize:15}}>No completed rounds yet 🏌️</div>}
+      {/* Player selector */}
+      <div style={{display:'flex',gap:6,overflowX:'auto'}}>
+        <button onClick={()=>setSelectedPlayer('all')} style={{background:selectedPlayer==='all'?'rgba(0,230,118,.12)':'transparent',border:`1px solid ${selectedPlayer==='all'?'rgba(0,230,118,.35)':'rgba(255,255,255,.06)'}`,color:selectedPlayer==='all'?'#00e676':'#444',padding:'7px 14px',borderRadius:20,cursor:'pointer',fontSize:11,fontWeight:700,whiteSpace:'nowrap',flexShrink:0}}>ALL PLAYERS</button>
+        {PLAYERS.map(p=><button key={p.id} onClick={()=>setSelectedPlayer(p.id)} style={{background:selectedPlayer===p.id?`${p.color}20`:'transparent',border:`1px solid ${selectedPlayer===p.id?p.color+'55':'rgba(255,255,255,.06)'}`,color:selectedPlayer===p.id?p.color:'#444',padding:'7px 14px',borderRadius:20,cursor:'pointer',fontSize:11,fontWeight:700,whiteSpace:'nowrap',flexShrink:0}}>{p.name}</button>)}
+      </div>
  
-      {/* Player cards */}
-      {PLAYERS.map(p=>{
-        const st=getStats(p.id);
+      {/* Player stat cards */}
+      {PLAYERS.filter(p=>selectedPlayer==='all'||p.id===selectedPlayer).map(p=>{
+        const st=getStats(p.id);const trend=getTrend(p.id);
         return(
-          <div key={p.id} style={{background:'rgba(255,255,255,.03)',border:`1px solid ${p.color}22`,borderRadius:18,padding:'18px 16px',overflow:'hidden',position:'relative'}}>
-            <div style={{position:'absolute',top:-15,right:-10,fontFamily:'Bebas Neue',fontSize:80,color:p.color,opacity:.06}}>{p.avatar}</div>
+          <div key={p.id} style={{background:'rgba(255,255,255,.03)',border:`1px solid ${p.color}18`,borderRadius:20,padding:'18px 16px',overflow:'hidden',position:'relative'}}>
+            <div style={{position:'absolute',top:-10,right:-8,fontSize:70,opacity:.06}}>{p.avatar}</div>
+            {/* Header */}
             <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
-              <div style={{width:44,height:44,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#000'}}>{p.avatar}</div>
-              <div>
-                <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:1}}>{p.name}</div>
-                <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>HCP {playerSettings[p.id]??p.defaultHcp} · {st.rounds_played} rounds</div>
+              <div style={{width:46,height:46,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:22,color:'#000'}}>{p.emoji}</div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:'Bebas Neue',fontSize:24,letterSpacing:1,color:p.color}}>{p.name}</div>
+                <div style={{fontSize:11,color:'rgba(255,255,255,.25)'}}>HCP {playerSettings[p.id]??p.defaultHcp} · {st.rp} rounds</div>
               </div>
-              {st.best&&<div style={{marginLeft:'auto',textAlign:'right'}}>
-                <div style={{fontFamily:'Bebas Neue',fontSize:32,color:p.color}}>{st.best}</div>
-                <div style={{fontSize:9,color:'rgba(255,255,255,.3)',letterSpacing:2}}>BEST ROUND</div>
+              {st.best&&<div style={{textAlign:'right'}}>
+                <div style={{fontFamily:'Bebas Neue',fontSize:34,color:p.color,lineHeight:1}}>{st.best}</div>
+                <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2}}>BEST ROUND</div>
               </div>}
             </div>
-            {/* Stats grid */}
-            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:12}}>
-              {[{n:st.birdies,l:'BIRDIES',c:'#00e676'},{n:st.pars,l:'PARS',c:'#555'},{n:st.bogeys,l:'BOGEYS',c:'#ff9100'},{n:st.doubles,l:'DOUBLES+',c:'#ff5252'}].map((s,i)=>(
-                <div key={i} style={{background:'rgba(0,0,0,.3)',borderRadius:10,padding:'10px 6px',textAlign:'center'}}>
-                  <div style={{fontFamily:'Bebas Neue',fontSize:24,color:s.c}}>{s.n}</div>
-                  <div style={{fontSize:8,color:'rgba(255,255,255,.3)',fontWeight:700,letterSpacing:1}}>{s.l}</div>
+            {/* Score breakdown */}
+            <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:6,marginBottom:12}}>
+              {[{n:st.aces,l:'ACE',c:'#ffd700'},{n:st.eagles,l:'EAGLE',c:'#00e676'},{n:st.birdies,l:'BIRDIE',c:'#69f0ae'},{n:st.pars,l:'PAR',c:'#555'},{n:st.bogeys,l:'BOG+',c:'#ff5252'}].map((s,i)=>(
+                <div key={i} style={{background:'rgba(0,0,0,.3)',borderRadius:10,padding:'8px 4px',textAlign:'center'}}>
+                  <div style={{fontFamily:'Bebas Neue',fontSize:22,color:s.n>0?s.c:'#222'}}>{s.n}</div>
+                  <div style={{fontSize:8,color:'rgba(255,255,255,.25)',fontWeight:700,letterSpacing:1}}>{s.l}</div>
                 </div>
               ))}
             </div>
-            {/* Scoring bars */}
-            {st.rounds_played>0&&(()=>{const total=st.birdies+st.pars+st.bogeys+st.doubles;return(
+            {/* Scoring bar */}
+            {st.rp>0&&(()=>{const total=Math.max(1,st.eagles+st.birdies+st.pars+st.bogeys+st.doubles);return(
+              <div style={{height:8,borderRadius:4,overflow:'hidden',display:'flex',gap:2,marginBottom:12}}>
+                {[{v:st.eagles,c:'#00e676'},{v:st.birdies,c:'#69f0ae'},{v:st.pars,c:'#444'},{v:st.bogeys,c:'#ff9100'},{v:st.doubles,c:'#ff5252'}].map((b,i)=>b.v>0&&<div key={i} style={{flex:b.v/total,background:b.c,minWidth:3}}/>)}
+              </div>
+            );})()}
+            {/* Trend sparkline */}
+            {trend.filter(Boolean).length>1&&(
+              <div style={{marginBottom:10}}>
+                <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:6}}>SCORE TREND (LAST {trend.filter(Boolean).length} ROUNDS)</div>
+                <div style={{display:'flex',gap:4,alignItems:'flex-end',height:40}}>
+                  {trend.filter(Boolean).map((t,i)=>{const min=Math.min(...trend.filter(Boolean));const max=Math.max(...trend.filter(Boolean));const h=max===min?20:Math.round(((max-t)/(max-min))*32)+8;return(
+                    <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
+                      <div style={{width:'100%',background:i===trend.filter(Boolean).length-1?p.color:'rgba(255,255,255,.15)',borderRadius:'3px 3px 0 0',height:h,minHeight:4,transition:'height .5s ease'}}/>
+                      <div style={{fontSize:9,color:'rgba(255,255,255,.3)',fontWeight:700}}>{t}</div>
+                    </div>
+                  );})}
+                </div>
+              </div>
+            )}
+            {/* Course records */}
+            {Object.keys(st.courseRecords).length>0&&(
               <div>
-                <div style={{display:'flex',height:6,borderRadius:3,overflow:'hidden',gap:2}}>
-                  {[{v:st.birdies,c:'#00e676'},{v:st.pars,c:'#444'},{v:st.bogeys,c:'#ff9100'},{v:st.doubles,c:'#ff5252'}].map((b,i)=>(
-                    <div key={i} style={{flex:b.v/total,background:b.c,minWidth:b.v>0?2:0}}/>
+                <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:6}}>COURSE RECORDS</div>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                  {Object.entries(st.courseRecords).map(([cid,score])=>(
+                    <div key={cid} style={{background:'rgba(0,0,0,.3)',borderRadius:20,padding:'3px 10px',fontSize:10,fontWeight:700}}>
+                      <span style={{color:'rgba(255,255,255,.4)'}}>{COURSES[cid]?.name?.split(' ')[0]}</span>
+                      <span style={{color:p.color,marginLeft:4}}>{score}</span>
+                    </div>
                   ))}
                 </div>
               </div>
-            );})()}
-            {st.avg&&<div style={{marginTop:10,fontSize:11,color:'rgba(255,255,255,.3)'}}>Average: <span style={{color:p.color,fontWeight:700}}>{st.avg}</span> · Best: <span style={{color:'#00e676',fontWeight:700}}>{st.best}</span> · Worst: <span style={{color:'#ff5252',fontWeight:700}}>{st.worst}</span></div>}
+            )}
+            {st.avg&&<div style={{marginTop:8,fontSize:11,color:'rgba(255,255,255,.25)'}}>Average: <span style={{color:p.color,fontWeight:700}}>{st.avg}</span>{st.worst&&<> · Worst: <span style={{color:'#ff5252',fontWeight:700}}>{st.worst}</span></>}</div>}
           </div>
         );
       })}
  
       {/* Head to head */}
-      {completed.length>0&&(
-        <div style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:18,padding:'18px 16px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#ffd700',marginBottom:14}}>HEAD TO HEAD</div>
+      {selectedPlayer==='all'&&(
+        <div style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.05)',borderRadius:20,padding:'18px 16px'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#ffd700',marginBottom:14}}>HEAD TO HEAD RECORD</div>
           {[['ben','luke'],['ben','max'],['ben','thomas'],['thomas','luke'],['thomas','max'],['max','luke']].map(([p1id,p2id])=>{
             const p1=PLAYERS.find(p=>p.id===p1id);const p2=PLAYERS.find(p=>p.id===p2id);
             const{w1,w2,ties}=h2h(p1id,p2id);const total=w1+w2+ties;if(total===0)return null;
             return(
               <div key={p1id+p2id} style={{marginBottom:12}}>
-                <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                  <span style={{color:p1.color,fontWeight:700,fontSize:13}}>{p1.name} ({w1})</span>
-                  {ties>0&&<span style={{color:'#555',fontSize:11}}>{ties} ties</span>}
-                  <span style={{color:p2.color,fontWeight:700,fontSize:13}}>({w2}) {p2.name}</span>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:4,fontSize:13}}>
+                  <span style={{color:p1.color,fontWeight:800}}>{p1.name} ({w1})</span>
+                  {ties>0&&<span style={{color:'#555',fontSize:11}}>{ties} tie{ties>1?'s':''}</span>}
+                  <span style={{color:p2.color,fontWeight:800}}>({w2}) {p2.name}</span>
                 </div>
-                <div style={{display:'flex',height:8,borderRadius:4,overflow:'hidden',background:'rgba(255,255,255,.05)'}}>
-                  <div style={{flex:w1,background:p1.color,minWidth:w1>0?4:0}}/>
-                  <div style={{flex:ties,background:'rgba(255,255,255,.1)'}}/>
-                  <div style={{flex:w2,background:p2.color,minWidth:w2>0?4:0}}/>
+                <div style={{display:'flex',height:10,borderRadius:5,overflow:'hidden',background:'rgba(255,255,255,.04)'}}>
+                  <div style={{flex:Math.max(w1,.1),background:p1.color,transition:'flex .5s ease'}}/>
+                  <div style={{flex:Math.max(ties,.1),background:'rgba(255,255,255,.1)'}}/>
+                  <div style={{flex:Math.max(w2,.1),background:p2.color,transition:'flex .5s ease'}}/>
                 </div>
               </div>
             );
@@ -923,67 +1150,75 @@ function StatsView({rounds,scores,playerSettings}){
         </div>
       )}
  
-      {/* Favorite format */}
-      {mcf&&(
-        <div style={{background:'rgba(255,215,0,.05)',border:'1px solid rgba(255,215,0,.15)',borderRadius:14,padding:'14px 16px',display:'flex',gap:12,alignItems:'center'}}>
-          <span style={{fontSize:32}}>{FORMATS.find(f=>f.id===mcf[0])?.icon}</span>
+      {/* Most improved */}
+      {improved&&improved.improvement>0&&(
+        <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.12)',borderRadius:16,padding:'14px 16px',display:'flex',gap:12,alignItems:'center'}}>
+          <span style={{fontSize:30}}>📈</span>
           <div>
-            <div style={{fontSize:11,color:'rgba(255,215,0,.5)',letterSpacing:2,fontWeight:700}}>FAVORITE FORMAT</div>
-            <div style={{fontSize:16,fontWeight:800,color:'#ffd700'}}>{FORMATS.find(f=>f.id===mcf[0])?.label}</div>
-            <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>Played {mcf[1]} times</div>
+            <div style={{fontSize:10,color:'rgba(0,230,118,.5)',letterSpacing:2,fontWeight:700}}>MOST IMPROVED</div>
+            <div style={{fontSize:16,fontWeight:900,color:'#00e676'}}>{improved.name}</div>
+            <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>Improved by {improved.improvement} strokes</div>
           </div>
+        </div>
+      )}
+ 
+      {/* Trash talk */}
+      {trash&&(
+        <div style={{background:'rgba(255,145,0,.04)',border:'1px solid rgba(255,145,0,.15)',borderRadius:16,padding:'14px 16px'}}>
+          <div style={{fontSize:10,color:'rgba(255,145,0,.5)',letterSpacing:2,fontWeight:700,marginBottom:6}}>🎤 ROAST OF THE WEEK</div>
+          <div style={{fontSize:13,color:'rgba(255,255,255,.7)',lineHeight:1.6,fontStyle:'italic'}}>"{trash.line}"</div>
         </div>
       )}
     </div>
   );
 }
  
-// ═══════════════════════════════════════════════════════
-// HISTORY
-// ═══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// HISTORY VIEW
+// ══════════════════════════════════════════════
 function HistoryView({rounds,scores,deleteRound,setActiveRoundId,setView}){
   const[filter,setFilter]=useState('all');
   const unique=[...new Set(rounds.map(r=>r.format))];
   const filtered=rounds.filter(r=>filter==='all'||r.format===filter);
   return(
-    <div style={{display:'flex',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}>
-      <div style={{fontFamily:'Bebas Neue',fontSize:28,letterSpacing:3,color:'#00e676'}}>ROUND HISTORY</div>
+    <div style={{display:'flex',flexDirection:'column',gap:12,animation:'fadeUp .4s ease'}}>
+      <div style={{fontFamily:'Bebas Neue',fontSize:30,letterSpacing:3,color:'#00e676'}}>ROUND HISTORY</div>
       <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:4}}>
-        <button onClick={()=>setFilter('all')} style={{background:filter==='all'?'rgba(0,230,118,.15)':'transparent',border:`1px solid ${filter==='all'?'rgba(0,230,118,.4)':'rgba(255,255,255,.07)'}`,color:filter==='all'?'#00e676':'#444',padding:'6px 14px',borderRadius:20,cursor:'pointer',fontSize:11,fontWeight:700,letterSpacing:1,whiteSpace:'nowrap',flexShrink:0}}>ALL</button>
+        <button onClick={()=>setFilter('all')} style={{background:filter==='all'?'rgba(0,230,118,.12)':'transparent',border:`1px solid ${filter==='all'?'rgba(0,230,118,.35)':'rgba(255,255,255,.05)'}`,color:filter==='all'?'#00e676':'#333',padding:'6px 14px',borderRadius:20,cursor:'pointer',fontSize:10,fontWeight:800,letterSpacing:1,whiteSpace:'nowrap',flexShrink:0}}>ALL</button>
         {unique.map(f=>{const fmt=FORMATS.find(x=>x.id===f);return(
-          <button key={f} onClick={()=>setFilter(f)} style={{background:filter===f?'rgba(0,230,118,.15)':'transparent',border:`1px solid ${filter===f?'rgba(0,230,118,.4)':'rgba(255,255,255,.07)'}`,color:filter===f?'#00e676':'#444',padding:'6px 14px',borderRadius:20,cursor:'pointer',fontSize:11,fontWeight:700,whiteSpace:'nowrap',flexShrink:0}}>{fmt?.icon} {fmt?.label}</button>
+          <button key={f} onClick={()=>setFilter(f)} style={{background:filter===f?'rgba(0,230,118,.12)':'transparent',border:`1px solid ${filter===f?'rgba(0,230,118,.35)':'rgba(255,255,255,.05)'}`,color:filter===f?'#00e676':'#333',padding:'6px 14px',borderRadius:20,cursor:'pointer',fontSize:10,fontWeight:800,whiteSpace:'nowrap',flexShrink:0}}>{fmt?.icon} {fmt?.label}</button>
         );})}
       </div>
-      {filtered.length===0&&<div style={{textAlign:'center',color:'rgba(255,255,255,.2)',padding:40,fontSize:15}}>No rounds yet ⛳</div>}
+      {filtered.length===0&&<div style={{textAlign:'center',color:'rgba(255,255,255,.15)',padding:50,fontSize:15}}>No rounds yet ⛳</div>}
       {filtered.map(r=>{
         const fmt=FORMATS.find(f=>f.id===r.format);const course=COURSES[r.course_id]||COURSES.snee;
         const rsc=scores[r.id]||{};
         const ranked=[...PLAYERS].map(p=>({...p,total:(rsc[p.id]||[]).reduce((a,b)=>a+(b||0),0)})).sort((a,b)=>a.total-b.total);
         return(
-          <div key={r.id} style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:16,padding:'16px'}}>
+          <div key={r.id} style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.05)',borderRadius:18,padding:'16px'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
               <div style={{display:'flex',gap:10,alignItems:'center'}}>
-                <span style={{fontSize:24}}>{fmt?.icon}</span>
+                <span style={{fontSize:22}}>{fmt?.icon}</span>
                 <div>
-                  <div style={{fontWeight:800,fontSize:15}}>{fmt?.label}</div>
-                  <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:1}}>{r.date} · {course.name}</div>
+                  <div style={{fontWeight:800,fontSize:14}}>{fmt?.label}</div>
+                  <div style={{fontSize:10,color:'rgba(255,255,255,.25)',marginTop:2}}>{r.date} · {course.name}</div>
                 </div>
               </div>
-              <div style={{color:r.completed?'#00e676':'#ff4444',fontSize:11,fontWeight:700}}>{r.completed?'✓ COMPLETE':'● LIVE'}</div>
+              <div style={{color:r.completed?'#00e676':'#ff4444',fontSize:10,fontWeight:800,letterSpacing:1}}>{r.completed?'✓ DONE':'● LIVE'}</div>
             </div>
-            <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:12}}>
+            <div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:12}}>
               {ranked.map((p,i)=>(
-                <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,fontSize:13}}>
-                  <span style={{color:'rgba(255,255,255,.2)',fontSize:11,width:16}}>#{i+1}</span>
+                <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,fontSize:12}}>
+                  <span style={{color:'rgba(255,255,255,.15)',fontSize:10,width:14}}>#{i+1}</span>
                   <div style={{width:8,height:8,borderRadius:'50%',background:p.color,flexShrink:0}}/>
-                  <span style={{color:p.color,fontWeight:700,flex:1}}>{p.name}</span>
-                  <span style={{fontWeight:900,fontSize:16}}>{p.total||'—'}</span>
+                  <span style={{color:p.color,fontWeight:800,flex:1}}>{p.name}</span>
+                  <span style={{fontWeight:900,fontSize:15}}>{p.total||'—'}</span>
                 </div>
               ))}
             </div>
-            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-              {!r.completed&&<button onClick={()=>{setActiveRoundId(r.id);setView('scorecard');}} style={{background:'rgba(0,230,118,.1)',border:'1px solid rgba(0,230,118,.3)',color:'#00e676',padding:'7px 16px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:700}}>▶ RESUME</button>}
-              <button onClick={()=>{if(confirm('Delete this round?'))deleteRound(r.id);}} style={{background:'rgba(255,68,68,.1)',border:'1px solid rgba(255,68,68,.2)',color:'#ff4444',padding:'7px 10px',borderRadius:8,cursor:'pointer',fontSize:13}}>🗑️</button>
+            <div style={{display:'flex',gap:7,justifyContent:'flex-end'}}>
+              {!r.completed&&<button onClick={()=>{setActiveRoundId(r.id);setView('scorecard');Haptic.light();}} style={{background:'rgba(0,230,118,.08)',border:'1px solid rgba(0,230,118,.25)',color:'#00e676',padding:'7px 16px',borderRadius:10,cursor:'pointer',fontSize:11,fontWeight:800,letterSpacing:1}}>▶ RESUME</button>}
+              <button onClick={()=>{if(confirm('Delete this round?'))deleteRound(r.id);}} style={{background:'rgba(255,68,68,.08)',border:'1px solid rgba(255,68,68,.2)',color:'#ff4444',padding:'7px 11px',borderRadius:10,cursor:'pointer',fontSize:13}}>🗑️</button>
             </div>
           </div>
         );
@@ -992,13 +1227,15 @@ function HistoryView({rounds,scores,deleteRound,setActiveRoundId,setView}){
   );
 }
  
-// ═══════════════════════════════════════════════════════
-// LEADERBOARD
-// ═══════════════════════════════════════════════════════
-function LeaderboardView({round,scores,setView}){
+// ══════════════════════════════════════════════
+// LEADERBOARD VIEW
+// ══════════════════════════════════════════════
+function LeaderboardView({round,scores,playerSettings,setView}){
   const fmt=FORMATS.find(f=>f.id===round.format);
   const course=COURSES[round.course_id]||COURSES.snee;
   const holes=course.holes;
+  const[showShare,setShowShare]=useState(false);
+ 
   const getTotal=pid=>(scores[pid]||[]).reduce((a,b)=>a+(b||0),0);
   const getTP=pid=>{let tp=0;(scores[pid]||[]).forEach((s,i)=>{if(s>0&&holes[i])tp+=s-holes[i].par;});return tp;};
   const getSF=pid=>(scores[pid]||[]).reduce((a,s,i)=>a+(s>0&&holes[i]?sfPts(s,holes[i].par):0),0);
@@ -1010,58 +1247,125 @@ function LeaderboardView({round,scores,setView}){
     return{...p,val:getTotal(p.id),tp:getTP(p.id),disp:getTotal(p.id)+'',higher:false};
   }).sort((a,b)=>a.higher?b.val-a.val:a.val-b.val);
  
-  // Bet settlements
-  const betAmt=round.bet_amount||0;
   const winner=ranked[0];
-  const settlements=betAmt>0?ranked.slice(1).map(p=>({from:p,to:winner,amount:betAmt})):[];
+  const betAmt=round.bet_amount||0;
+ 
+  // MVP awards
+  const awards=[];
+  const mostBirdies=PLAYERS.map(p=>({...p,b:(scores[p.id]||[]).reduce((a,s,i)=>a+(s>0&&holes[i]&&s-holes[i].par===-1?1:0),0)})).sort((a,b)=>b.b-a.b)[0];
+  if(mostBirdies?.b>0)awards.push({icon:'🐦',label:'Most Birdies',player:mostBirdies,detail:`${mostBirdies.b} birdies`});
+ 
+  const fewestPutts=PLAYERS.map(p=>({...p,tot:getTotal(p.id)})).filter(p=>p.tot>0).sort((a,b)=>a.tot-b.tot)[0];
+  if(fewestPutts)awards.push({icon:'🎯',label:'Lowest Score',player:fewestPutts,detail:`${fewestPutts.tot} strokes`});
+ 
+  const mostConsistent=PLAYERS.map(p=>{const s=scores[p.id]||[];const played=s.filter(x=>x>0);if(played.length<9)return{...p,std:99};const avg=played.reduce((a,b)=>a+b,0)/played.length;const std=Math.sqrt(played.reduce((a,b)=>a+(b-avg)**2,0)/played.length);return{...p,std};}).sort((a,b)=>a.std-b.std)[0];
+  if(mostConsistent?.std<99)awards.push({icon:'📐',label:'Most Consistent',player:mostConsistent,detail:'Steadiest round'});
+ 
+  // Share text
+  const shareText=`⛳ Thursday Crew Golf\n${round.date} · ${course.name}\n\n${ranked.map((p,i)=>['🥇','🥈','🥉','4️⃣'][i]+' '+p.name+': '+p.disp).join('\n')}\n\nwinner: ${winner.name} 🏆`;
  
   const medals=['🥇','🥈','🥉','💀'];
  
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}>
-      <div style={{background:'linear-gradient(135deg,rgba(255,215,0,.1),rgba(255,215,0,.03))',border:'1px solid rgba(255,215,0,.2)',borderRadius:20,padding:'20px 18px',textAlign:'center'}}>
-        <div style={{fontSize:11,color:'rgba(255,215,0,.5)',letterSpacing:3,fontWeight:700,marginBottom:6}}>ROUND COMPLETE</div>
-        <div style={{fontFamily:'Bebas Neue',fontSize:36,letterSpacing:2,color:'#ffd700',lineHeight:1,marginBottom:4}}>{fmt?.icon} {fmt?.label}</div>
-        <div style={{fontSize:13,color:'rgba(255,255,255,.3)'}}>{round.date} · {course.name}</div>
+      {/* Trophy header */}
+      <div style={{background:'linear-gradient(160deg,rgba(255,215,0,.08),rgba(255,215,0,.02))',border:'1px solid rgba(255,215,0,.2)',borderRadius:22,padding:'22px 18px',textAlign:'center',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:-20,left:-20,fontSize:120,opacity:.04}}>🏆</div>
+        <div style={{position:'absolute',top:-20,right:-20,fontSize:120,opacity:.04}}>🏆</div>
+        <div style={{fontSize:10,color:'rgba(255,215,0,.4)',letterSpacing:4,fontWeight:800,marginBottom:8}}>ROUND COMPLETE</div>
+        <div style={{fontFamily:'Bebas Neue',fontSize:40,color:'#ffd700',lineHeight:1,marginBottom:4}}>{fmt?.icon} {fmt?.label}</div>
+        <div style={{fontSize:12,color:'rgba(255,255,255,.25)'}}>{round.date} · {course.name} · {round.tees?.toUpperCase()}</div>
+        <div style={{marginTop:14,display:'inline-flex',gap:8,background:'rgba(0,0,0,.4)',borderRadius:20,padding:'10px 20px',alignItems:'center'}}>
+          <div style={{width:36,height:36,borderRadius:'50%',background:winner.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,color:'#000',fontWeight:900}}>{winner.emoji}</div>
+          <div style={{textAlign:'left'}}>
+            <div style={{fontFamily:'Bebas Neue',fontSize:18,color:winner.color,letterSpacing:1}}>{winner.name} WINS</div>
+            <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{winner.disp}</div>
+          </div>
+        </div>
       </div>
  
       {/* Podium */}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {ranked.map((p,i)=>(
-          <div key={p.id} style={{background:i===0?`linear-gradient(135deg,${p.color}22,${p.color}08)`:'rgba(255,255,255,.03)',border:`2px solid ${i===0?p.color+'66':'rgba(255,255,255,.06)'}`,borderRadius:16,padding:'16px 18px',display:'flex',alignItems:'center',gap:14,transform:i===0?'scale(1.02)':'scale(1)',transition:'transform .3s'}}>
-            <span style={{fontSize:28,width:36,flexShrink:0}}>{medals[i]}</span>
-            <div style={{width:44,height:44,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#000',flexShrink:0}}>{p.avatar}</div>
+          <div key={p.id} style={{background:i===0?`linear-gradient(135deg,${p.color}18,${p.color}05)`:'rgba(255,255,255,.02)',border:`${i===0?2:1}px solid ${i===0?p.color+'55':'rgba(255,255,255,.05)'}`,borderRadius:18,padding:'16px 18px',display:'flex',alignItems:'center',gap:14,transform:i===0?'scale(1.02)':'scale(1)',transition:'transform .3s'}}>
+            <span style={{fontSize:26,width:32,flexShrink:0}}>{medals[i]}</span>
+            <div style={{width:44,height:44,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#000',flexShrink:0}}>{p.emoji}</div>
             <div style={{flex:1}}>
-              <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:1,color:i===0?p.color:'#fff'}}>{p.name}</div>
-              {p.tp!==undefined&&<div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{tpStr(p.tp)}</div>}
+              <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:1,color:i===0?p.color:'#fff'}}>{p.name}</div>
+              {p.tp!==undefined&&<div style={{fontSize:11,color:'rgba(255,255,255,.25)'}}>{tpStr(p.tp)}</div>}
             </div>
-            <div style={{fontFamily:'Bebas Neue',fontSize:32,color:i===0?p.color:'rgba(255,255,255,.6)'}}>{p.disp}</div>
+            <div style={{fontFamily:'Bebas Neue',fontSize:34,color:i===0?p.color:'rgba(255,255,255,.5)',lineHeight:1}}>{p.disp}</div>
           </div>
         ))}
       </div>
  
-      {/* Money owed */}
-      {settlements.length>0&&(
-        <div style={{background:'rgba(0,230,118,.06)',border:'1px solid rgba(0,230,118,.15)',borderRadius:16,padding:'16px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:12}}>💰 SETTLE UP</div>
-          {settlements.map((s,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:'rgba(0,0,0,.3)',borderRadius:10,padding:'10px 14px'}}>
-              <div style={{width:28,height:28,borderRadius:'50%',background:s.from.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:12,color:'#000'}}>{s.from.avatar}</div>
+      {/* Score bars */}
+      <div style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.05)',borderRadius:18,padding:'16px'}}>
+        <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:3,fontWeight:800,marginBottom:12}}>TOTAL STROKES</div>
+        {[...PLAYERS].map(p=>{const total=getTotal(p.id);const max=Math.max(...PLAYERS.map(pp=>getTotal(pp.id)));return(
+          <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+            <div style={{width:30,height:30,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#000',flexShrink:0}}>{p.emoji}</div>
+            <span style={{color:p.color,fontWeight:800,width:52,fontSize:13}}>{p.name}</span>
+            <div style={{flex:1,height:10,background:'rgba(255,255,255,.05)',borderRadius:5,overflow:'hidden'}}>
+              <div style={{height:'100%',background:`linear-gradient(90deg,${p.color}88,${p.color})`,borderRadius:5,width:`${(total/max)*100}%`,transition:'width 1s ease'}}/>
+            </div>
+            <span style={{fontWeight:900,fontSize:17,color:p.color,minWidth:32,textAlign:'right'}}>{total||'—'}</span>
+          </div>
+        );})}
+      </div>
+ 
+      {/* Settle up */}
+      {betAmt>0&&(
+        <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.12)',borderRadius:18,padding:'16px'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:12}}>💰 SETTLE UP · ${betAmt}/HOLE</div>
+          {ranked.slice(1).map(p=>(
+            <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'12px 14px'}}>
+              <div style={{width:30,height:30,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,color:'#000',fontWeight:900}}>{p.emoji}</div>
               <div style={{flex:1,fontSize:13}}>
-                <span style={{color:s.from.color,fontWeight:700}}>{s.from.name}</span>
-                <span style={{color:'rgba(255,255,255,.3)'}}> owes </span>
-                <span style={{color:s.to.color,fontWeight:700}}>{s.to.name}</span>
+                <span style={{color:p.color,fontWeight:800}}>{p.name}</span>
+                <span style={{color:'rgba(255,255,255,.3)'}}> pays </span>
+                <span style={{color:winner.color,fontWeight:800}}>{winner.name}</span>
               </div>
-              <div style={{fontFamily:'Bebas Neue',fontSize:22,color:'#00e676'}}>${s.amount}</div>
+              <div style={{fontFamily:'Bebas Neue',fontSize:24,color:'#00e676'}}>${betAmt}</div>
             </div>
           ))}
         </div>
       )}
  
-      {/* Full scorecard */}
-      <FullScorecard scores={scores} holes={COURSES[round.course_id]?.holes||COURSES.snee.holes}/>
+      {/* MVP Awards */}
+      {awards.length>0&&(
+        <div style={{background:'rgba(255,215,0,.03)',border:'1px solid rgba(255,215,0,.1)',borderRadius:18,padding:'16px'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#ffd700',marginBottom:12}}>🏅 ROUND AWARDS</div>
+          {awards.map((a,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:12,marginBottom:10,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'10px 14px'}}>
+              <span style={{fontSize:26}}>{a.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:10,color:'rgba(255,215,0,.5)',letterSpacing:2,fontWeight:700}}>{a.label.toUpperCase()}</div>
+                <div style={{fontSize:15,fontWeight:800,color:a.player.color}}>{a.player.name}</div>
+              </div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,.3)',fontWeight:700}}>{a.detail}</div>
+            </div>
+          ))}
+        </div>
+      )}
  
-      <button onClick={()=>setView('setup')} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:14,padding:'16px',fontSize:18,fontWeight:900,cursor:'pointer',letterSpacing:2,fontFamily:'Bebas Neue'}}>
+      {/* Share card */}
+      <button onClick={()=>{navigator.share?navigator.share({title:'Thursday Crew Golf',text:shareText}):setShowShare(true);}} style={{background:'rgba(64,196,255,.08)',border:'1px solid rgba(64,196,255,.2)',color:'#40c4ff',borderRadius:14,padding:'14px',fontSize:14,fontWeight:800,cursor:'pointer',letterSpacing:1}}>
+        📤 SHARE RESULTS
+      </button>
+      {showShare&&(
+        <div style={{background:'rgba(0,0,0,.8)',border:'1px solid rgba(64,196,255,.3)',borderRadius:14,padding:16}}>
+          <div style={{fontSize:10,color:'rgba(64,196,255,.5)',letterSpacing:2,marginBottom:8,fontWeight:700}}>COPY & SHARE</div>
+          <textarea readOnly value={shareText} style={{width:'100%',background:'transparent',border:'none',color:'#f0f0f0',fontSize:13,lineHeight:1.8,resize:'none',outline:'none',fontFamily:'monospace'}} rows={8}/>
+          <button onClick={()=>{navigator.clipboard.writeText(shareText);setShowShare(false);}} style={{background:'#40c4ff',color:'#000',border:'none',borderRadius:10,padding:'10px 20px',fontSize:13,fontWeight:800,cursor:'pointer',marginTop:8,width:'100%'}}>📋 COPY TO CLIPBOARD</button>
+        </div>
+      )}
+ 
+      {/* Full scorecard */}
+      <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#00e676'}}>FULL SCORECARD</div>
+      <FullScorecard scores={scores} holes={holes}/>
+ 
+      <button onClick={()=>setView('setup')} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:16,padding:'18px 24px',fontSize:22,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue',boxShadow:'0 8px 40px rgba(0,230,118,.25)'}}>
         ⛳ PLAY AGAIN
       </button>
     </div>
