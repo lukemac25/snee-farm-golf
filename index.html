@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="theme-color" content="#0d1117"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <title>Snee Farm · Thursday Crew</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0d1117;color:#e8e8e8;font-family:'DM Mono','Courier New',monospace;-webkit-tap-highlight-color:transparent}
+    input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+    input,select,button{font-family:inherit}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-track{background:#0d1117}
+    ::-webkit-scrollbar-thumb{background:#2a3a2a;border-radius:2px}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ── CONFIG — your Supabase credentials ───────────────────────────────────────
+const SUPABASE_URL = 'https://wukjeyluqkzbseuynovp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3MDvGnJy46bP553PjZhZUQ_Bp8Bys-3';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const HOLES = [
+  {hole:1,par:4,hcp:9,yards:389},{hole:2,par:4,hcp:3,yards:408},
+  {hole:3,par:3,hcp:17,yards:164},{hole:4,par:5,hcp:11,yards:523},
+  {hole:5,par:4,hcp:1,yards:435},{hole:6,par:3,hcp:15,yards:178},
+  {hole:7,par:4,hcp:5,yards:401},{hole:8,par:5,hcp:7,yards:546},
+  {hole:9,par:4,hcp:13,yards:362},{hole:10,par:4,hcp:10,yards:395},
+  {hole:11,par:4,hcp:4,yards:415},{hole:12,par:3,hcp:16,yards:157},
+  {hole:13,par:5,hcp:8,yards:511},{hole:14,par:4,hcp:2,yards:442},
+  {hole:15,par:4,hcp:14,yards:358},{hole:16,par:3,hcp:18,yards:143},
+  {hole:17,par:4,hcp:6,yards:420},{hole:18,par:5,hcp:12,yards:516},
+];
+
+const PLAYERS = [
+  {id:'ben',name:'Ben',color:'#2ecc71',hcpRange:'65-80',defaultHcp:72,avatar:'B'},
+  {id:'thomas',name:'Thomas',color:'#e67e22',hcpRange:'35-45',defaultHcp:40,avatar:'T'},
+  {id:'max',name:'Max',color:'#3498db',hcpRange:'25-30',defaultHcp:27,avatar:'M'},
+  {id:'luke',name:'Luke',color:'#e74c3c',hcpRange:'20-25',defaultHcp:22,avatar:'L'},
+];
+
+const FORMATS = [
+  {id:'stroke',label:'Stroke Play',icon:'⛳',desc:'Individual — lowest total score wins'},
+  {id:'scramble',label:'Scramble',icon:'🤝',desc:'Team picks best shot every time'},
+  {id:'bestball',label:'Best Ball',icon:'🏆',desc:'Best individual score counts per hole'},
+  {id:'stableford',label:'Stableford',icon:'⭐',desc:'Points based on score vs par'},
+  {id:'nassau',label:'Nassau',icon:'💰',desc:'Three bets: front 9, back 9, 18'},
+  {id:'skins',label:'Skins',icon:'💀',desc:'Win a hole outright to earn the skin'},
+  {id:'match',label:'Match Play',icon:'⚔️',desc:'Hole-by-hole — most holes won wins'},
+  {id:'wolf',label:'Wolf',icon:'🐺',desc:'Rotating wolf picks partner or goes alone'},
+  {id:'bingo',label:'Bingo Bango Bongo',icon:'🎯',desc:'First on green, closest, first in = points'},
+  {id:'chairman',label:'Chairman',icon:'👑',desc:'Defend or take the chair each hole'},
+  {id:'bloodsome',label:'Bloodsome',icon:'🩸',desc:'Worst drive must be played, alternate shots'},
+  {id:'vegas',label:'Vegas',icon:'🎰',desc:'Combine scores into two-digit numbers vs opponents'},
+];
+
+const TEAM_CONFIGS = [
+  {id:'solo',label:'All Solo',teams:[['ben'],['thomas'],['max'],['luke']]},
+  {id:'2v2_ab',label:'Ben & Thomas  vs  Max & Luke',teams:[['ben','thomas'],['max','luke']]},
+  {id:'2v2_ac',label:'Ben & Max  vs  Thomas & Luke',teams:[['ben','max'],['thomas','luke']]},
+  {id:'2v2_ad',label:'Ben & Luke  vs  Thomas & Max',teams:[['ben','luke'],['thomas','max']]},
+  {id:'3v1_ben',label:'Ben Solo  vs  Thomas, Max & Luke',teams:[['ben'],['thomas','max','luke']]},
+  {id:'3v1_lk',label:'Luke Solo  vs  Ben, Thomas & Max',teams:[['luke'],['ben','thomas','max']]},
+  {id:'3v1_mx',label:'Max Solo  vs  Ben, Thomas & Luke',teams:[['max'],['ben','thomas','luke']]},
+  {id:'3v1_th',label:'Thomas Solo  vs  Ben, Max & Luke',teams:[['thomas'],['ben','max','luke']]},
+];
+
+const TEES = [
+  {id:'black',label:'Black — Championship'},
+  {id:'blue',label:'Blue'},
+  {id:'white',label:'White'},
+  {id:'gold',label:'Gold — Senior'},
+  {id:'red',label:'Red — Forward'},
+];
+
+function scoreName(score,par){
+  if(!score)return null;
+  const d=score-par;
+  if(score===1)return{label:'Hole-in-One! 🎉',cls:'ace'};
+  if(d<=-3)return{label:'Albatross 🦅🦅🦅',cls:'albatross'};
+  if(d===-2)return{label:'Eagle 🦅🦅',cls:'eagle'};
+  if(d===-1)return{label:'Birdie 🐦',cls:'birdie'};
+  if(d===0)return{label:'Par',cls:'par'};
+  if(d===1)return{label:'Bogey',cls:'bogey'};
+  if(d===2)return{label:'Double 😬',cls:'double'};
+  if(d===3)return{label:'Triple 😱',cls:'triple'};
+  return{label:`+${d} 💀`,cls:'quad'};
+}
+
+function stablefordPts(score,par){
+  if(!score)return 0;
+  const d=score-par;
+  if(d>=2)return 0;if(d===1)return 1;if(d===0)return 2;
+  if(d===-1)return 3;if(d===-2)return 4;return 5;
+}
+
+function toParStr(tp){return tp===0?'E':tp>0?`+${tp}`:`${tp}`}
+
+function scoreColor(d){
+  if(d<=-2)return{bg:'#0d4a1a',color:'#2ecc71'};
+  if(d===-1)return{bg:'#0d3a14',color:'#27ae60'};
+  if(d===0)return{bg:'transparent',color:'#888'};
+  if(d===1)return{bg:'#2a1a08',color:'#e67e22'};
+  if(d===2)return{bg:'#2a0f0f',color:'#e74c3c'};
+  return{bg:'#1a0808',color:'#c0392b'};
+}
+
+// ── STYLES ────────────────────────────────────────────────────────────────────
+const C = {
+  app:{minHeight:'100vh',background:'#0d1117',color:'#e8e8e8',fontFamily:"'DM Mono','Courier New',monospace",position:'relative'},
+  bg:{position:'fixed',inset:0,background:'radial-gradient(ellipse at 15% 50%,rgba(46,204,113,.05) 0%,transparent 55%),radial-gradient(ellipse at 85% 10%,rgba(52,152,219,.04) 0%,transparent 55%)',pointerEvents:'none',zIndex:0},
+  header:{position:'sticky',top:0,zIndex:100,background:'rgba(13,17,23,.97)',backdropFilter:'blur(16px)',borderBottom:'1px solid #1a2a1a',padding:'10px 18px',display:'flex',alignItems:'center',justifyContent:'space-between'},
+  logoWrap:{display:'flex',alignItems:'center',gap:10,cursor:'pointer',userSelect:'none'},
+  logoEmoji:{fontSize:26},
+  logoTitle:{fontFamily:"'Playfair Display',Georgia,serif",fontWeight:900,fontSize:17,letterSpacing:2,color:'#2ecc71',lineHeight:1},
+  logoSub:{fontSize:9,color:'#555',letterSpacing:2,marginTop:1},
+  nav:{display:'flex',gap:4,alignItems:'center'},
+  navBtn:{background:'transparent',border:'1px solid #1e2e1e',color:'#666',padding:'7px 11px',borderRadius:8,cursor:'pointer',fontSize:15,transition:'all .15s'},
+  navActive:{background:'#0d2018',color:'#2ecc71',borderColor:'#2ecc71'},
+  navLive:{background:'#1a0a0a',color:'#e74c3c',borderColor:'#e74c3c',animation:'pulse 2s infinite'},
+  main:{position:'relative',zIndex:1,maxWidth:680,margin:'0 auto',padding:'20px 16px 100px'},
+  spinner:{display:'flex',justifyContent:'center',alignItems:'center',height:'60vh',fontSize:32},
+  spinEl:{animation:'spin 1s linear infinite',display:'inline-block'},
+  wrap:{display:'flex',flexDirection:'column',gap:18,animation:'fadeUp .4s ease'},
+  sectionTitle:{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:900,color:'#2ecc71',letterSpacing:1,borderBottom:'1px solid #1a2a1a',paddingBottom:8},
+  banner:{background:'linear-gradient(135deg,#081808 0%,#0f2a14 50%,#081808 100%)',border:'1px solid rgba(46,204,113,.35)',borderRadius:14,padding:'18px 20px',display:'flex',alignItems:'center',gap:14},
+  bannerIcon:{fontSize:40,lineHeight:1},
+  bannerTitle:{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:900,letterSpacing:3,color:'#2ecc71'},
+  bannerSub:{fontSize:11,color:'#4a7a4a',marginTop:3,letterSpacing:1},
+  statsRow:{display:'flex',gap:10},
+  statCard:{flex:1,background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:10,padding:12,textAlign:'center'},
+  statNum:{fontSize:28,fontWeight:900,color:'#2ecc71',fontFamily:"'Playfair Display',serif"},
+  statLabel:{fontSize:10,color:'#666',letterSpacing:1,marginTop:2},
+  liveAlert:{background:'#160808',border:'1px solid #e74c3c',borderRadius:10,padding:'13px 16px',cursor:'pointer',fontSize:14,display:'flex',alignItems:'center',gap:8,color:'#e8e8e8'},
+  playerGrid:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10},
+  playerCard:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'14px 12px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,transition:'border-color .2s'},
+  avatar:{width:46,height:46,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:900,color:'#fff'},
+  playerName:{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700},
+  playerHdcp:{fontSize:12,color:'#888'},
+  playerBest:{fontSize:11,color:'#2ecc71',marginTop:2},
+  editHdcpBtn:{background:'transparent',border:'1px dashed #2a3a2a',color:'#668866',padding:'7px 14px',borderRadius:8,cursor:'pointer',fontSize:12,alignSelf:'flex-start',letterSpacing:1},
+  hdcpEditor:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'14px 16px',display:'flex',flexDirection:'column',gap:12},
+  hdcpRow:{display:'flex',alignItems:'center',justifyContent:'space-between'},
+  hdcpInput:{background:'#111820',border:'1px solid #2ecc71',color:'#2ecc71',padding:'6px 10px',borderRadius:8,width:72,textAlign:'center',fontSize:20,fontWeight:900},
+  bigBtn:{background:'linear-gradient(135deg,#145c32,#27ae60)',color:'#fff',border:'none',borderRadius:12,padding:'16px 24px',fontSize:17,fontWeight:700,cursor:'pointer',letterSpacing:1,boxShadow:'0 4px 24px rgba(46,204,113,.25)',fontFamily:"'Playfair Display',serif"},
+  recentCard:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:11,padding:'13px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'},
+  recentLeft:{display:'flex',alignItems:'center',gap:12},
+  recentIcon:{fontSize:22},
+  recentFmt:{fontSize:15,fontWeight:700},
+  recentMeta:{fontSize:11,color:'#666',marginTop:2,letterSpacing:1},
+  setupSummary:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:10,padding:'12px 16px',fontSize:14,display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'},
+  diceBtn:{background:'#0d0d1a',border:'1px solid #9b59b6',color:'#9b59b6',padding:'10px 18px',borderRadius:10,cursor:'pointer',fontSize:14,fontWeight:700,letterSpacing:1,alignSelf:'flex-start'},
+  tabs:{display:'flex',borderRadius:10,overflow:'hidden',border:'1px solid #1a2a1a'},
+  tab:{flex:1,background:'transparent',border:'none',color:'#555',padding:'10px 0',cursor:'pointer',fontSize:12,letterSpacing:2,transition:'all .2s'},
+  tabActive:{background:'#0d2018',color:'#2ecc71',fontWeight:700},
+  formatGrid:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9},
+  fCard:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'13px 11px',cursor:'pointer',transition:'all .15s'},
+  fCardActive:{borderColor:'#2ecc71',background:'#081808'},
+  fIcon:{fontSize:26,marginBottom:5},
+  fLabel:{fontWeight:700,fontSize:13,marginBottom:3},
+  fDesc:{fontSize:10,color:'#666',lineHeight:1.4},
+  teamList:{display:'flex',flexDirection:'column',gap:9},
+  tCard:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'14px 16px',cursor:'pointer',transition:'all .15s'},
+  tCardActive:{borderColor:'#2ecc71',background:'#081808'},
+  tLabel:{fontWeight:700,fontSize:14,marginBottom:8},
+  tBadges:{display:'flex',gap:7,flexWrap:'wrap'},
+  tBadge:{background:'#112a11',border:'1px solid #2ecc7166',borderRadius:20,padding:'3px 10px',fontSize:11,color:'#2ecc71'},
+  optGrid:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:16,display:'flex',flexDirection:'column',gap:14},
+  optRow:{display:'flex',alignItems:'center',justifyContent:'space-between'},
+  optLabel:{color:'#888',fontSize:13,letterSpacing:1},
+  optInput:{background:'#111820',border:'1px solid #2a3a2a',color:'#e8e8e8',padding:'7px 10px',borderRadius:8,fontSize:14,minWidth:150},
+  fmtBanner:{background:'linear-gradient(135deg,#081808,#0f2a14)',border:'1px solid #2ecc7155',borderRadius:12,padding:'13px 18px',display:'flex',alignItems:'center',gap:12},
+  fmtIcon:{fontSize:28},
+  fmtTitle:{fontFamily:"'Playfair Display',serif",fontWeight:900,fontSize:17,letterSpacing:1},
+  fmtMeta:{fontSize:11,color:'#4a7a4a',marginTop:2,letterSpacing:1},
+  fmtProg:{marginLeft:'auto',background:'#2ecc71',color:'#000',borderRadius:20,padding:'4px 12px',fontSize:13,fontWeight:900},
+  syncDot:{width:8,height:8,borderRadius:'50%',background:'#2ecc71',animation:'pulse 2s infinite',marginLeft:8},
+  standings:{display:'flex',gap:7,overflowX:'auto',paddingBottom:2},
+  standingPill:{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:10,padding:'9px 12px',minWidth:62,flex:'0 0 auto'},
+  standingAvatar:{width:30,height:30,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#fff'},
+  standingScore:{fontWeight:900,fontSize:14},
+  holeNav:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'12px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'},
+  holeNavBtn:{background:'#111820',border:'1px solid #2a3a2a',color:'#e8e8e8',width:38,height:38,borderRadius:8,cursor:'pointer',fontSize:20,display:'flex',alignItems:'center',justifyContent:'center'},
+  holeInfo:{display:'flex',gap:10,alignItems:'baseline'},
+  holeNum:{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:900,color:'#f1c40f'},
+  holePar:{fontSize:15,color:'#2ecc71'},
+  holeMeta:{fontSize:12,color:'#555'},
+  scoreInputs:{display:'flex',flexDirection:'column',gap:9},
+  scoreRow:{background:'#0d1a0d',borderRadius:12,padding:'13px 15px',display:'flex',alignItems:'center',justifyContent:'space-between',borderLeft:'3px solid transparent'},
+  scoreLeft:{display:'flex',alignItems:'center',gap:10},
+  scoreAvatar:{width:36,height:36,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:15,color:'#fff',flexShrink:0},
+  scorePName:{fontSize:15,fontWeight:700},
+  scoreNameStyle:{fontSize:11,marginTop:2},
+  scoreControls:{display:'flex',alignItems:'center',gap:7},
+  scoreBtn:{background:'#111820',border:'1px solid #2a3a2a',color:'#e8e8e8',width:36,height:40,borderRadius:8,cursor:'pointer',fontSize:22,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none',WebkitUserSelect:'none'},
+  scoreInput:{background:'#070f07',border:'2px solid #2ecc71',color:'#f1c40f',width:52,height:46,textAlign:'center',fontSize:26,fontWeight:900,borderRadius:8,outline:'none'},
+  parFillBtn:{background:'transparent',border:'1px dashed #2a3a2a',color:'#555',padding:'7px 16px',borderRadius:8,cursor:'pointer',fontSize:12,alignSelf:'center',letterSpacing:1},
+  holeDots:{display:'flex',gap:5,justifyContent:'center',flexWrap:'wrap',padding:'6px 0'},
+  holeDot:{width:13,height:13,borderRadius:'50%',cursor:'pointer',transition:'all .2s'},
+  toggleBtn:{background:'transparent',border:'1px solid #1a2a1a',color:'#555',padding:'7px 16px',borderRadius:8,cursor:'pointer',fontSize:12,alignSelf:'center',letterSpacing:1},
+  finishBtn:{background:'linear-gradient(135deg,#7a1010,#c0392b)',color:'#fff',border:'none',borderRadius:12,padding:'16px 24px',fontSize:17,fontWeight:700,cursor:'pointer',letterSpacing:1,fontFamily:"'Playfair Display',serif",marginTop:6},
+  fullCard:{background:'#070f07',border:'1px solid #1a2a1a',borderRadius:12,padding:12,overflowX:'auto'},
+  halfLabel:{fontSize:11,fontWeight:700,letterSpacing:3,color:'#2ecc71',marginBottom:8},
+  table:{width:'100%',borderCollapse:'collapse',fontSize:12},
+  th:{padding:'5px 6px',textAlign:'center',color:'#555',fontWeight:600,borderBottom:'1px solid #1a2a1a',whiteSpace:'nowrap'},
+  td:{padding:'5px 6px',textAlign:'center',color:'#e8e8e8',borderBottom:'1px solid #111820'},
+  filterBar:{display:'flex',gap:7,overflowX:'auto',paddingBottom:4},
+  filterBtn:{background:'transparent',border:'1px solid #1a2a1a',color:'#555',padding:'6px 12px',borderRadius:20,cursor:'pointer',fontSize:11,letterSpacing:1,whiteSpace:'nowrap',flexShrink:0},
+  filterActive:{background:'#0d2018',color:'#2ecc71',borderColor:'#2ecc71'},
+  histCard:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'15px 17px'},
+  histHeader:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6},
+  histActions:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:12},
+  resumeBtn:{background:'#0d2018',border:'1px solid #2ecc71',color:'#2ecc71',padding:'6px 14px',borderRadius:8,cursor:'pointer',fontSize:12,letterSpacing:1},
+  deleteBtn:{background:'#1a0808',border:'1px solid #e74c3c55',color:'#e74c3c',padding:'6px 10px',borderRadius:8,cursor:'pointer',fontSize:13},
+  lbHeader:{display:'flex',alignItems:'center',gap:14},
+  lbIcon:{fontSize:44,lineHeight:1},
+  lbTitle:{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:900,letterSpacing:1},
+  lbMeta:{fontSize:12,color:'#555',marginTop:3,letterSpacing:1},
+  podium:{display:'flex',flexDirection:'column',gap:10},
+  pCard:{background:'#0d1a0d',border:'2px solid transparent',borderRadius:14,padding:'16px 20px',display:'flex',alignItems:'center',gap:14},
+  pAvatar:{width:44,height:44,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#fff',flexShrink:0},
+  pName:{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,flex:1},
+  statsSection:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:16},
+  statBar:{flex:1,height:6,background:'#1a2a1a',borderRadius:3,overflow:'hidden'},
+  statFill:{height:'100%',borderRadius:3},
+  dot:{width:9,height:9,borderRadius:'50%',flexShrink:0},
+  empty:{textAlign:'center',color:'#444',padding:40,fontSize:15},
+};
+
+// ── APP ───────────────────────────────────────────────────────────────────────
+function App() {
+  const [view, setView] = useState('home');
+  const [activeRoundId, setActiveRoundId] = useState(null);
+  const [rounds, setRounds] = useState([]);
+  const [scores, setScores] = useState({});
+  const [playerSettings, setPlayerSettings] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => { loadAll(); }, []);
+
+  useEffect(() => {
+    const scoresSub = supabase.channel('scores-changes')
+      .on('postgres_changes',{event:'*',schema:'public',table:'scores'},payload => {
+        if(payload.eventType==='INSERT'||payload.eventType==='UPDATE'){
+          const s=payload.new;
+          setScores(prev=>({...prev,[s.round_id]:{...(prev[s.round_id]||{}),[s.player_id]:s.holes}}));
+        }
+      }).subscribe();
+    const roundsSub = supabase.channel('rounds-changes')
+      .on('postgres_changes',{event:'*',schema:'public',table:'rounds'},payload => {
+        if(payload.eventType==='INSERT') setRounds(prev=>[payload.new,...prev]);
+        else if(payload.eventType==='UPDATE') setRounds(prev=>prev.map(r=>r.id===payload.new.id?payload.new:r));
+        else if(payload.eventType==='DELETE') setRounds(prev=>prev.filter(r=>r.id!==payload.old.id));
+      }).subscribe();
+    return()=>{supabase.removeChannel(scoresSub);supabase.removeChannel(roundsSub);};
+  },[]);
+
+  const loadAll = async () => {
+    setLoading(true);
+    try {
+      const [{data:rd},{data:sd},{data:ps}] = await Promise.all([
+        supabase.from('rounds').select('*').order('created_at',{ascending:false}),
+        supabase.from('scores').select('*'),
+        supabase.from('player_settings').select('*'),
+      ]);
+      setRounds(rd||[]);
+      const scMap={};
+      for(const s of(sd||[])){if(!scMap[s.round_id])scMap[s.round_id]={};scMap[s.round_id][s.player_id]=s.holes;}
+      setScores(scMap);
+      const p={};for(const s of(ps||[]))p[s.player_id]=s.handicap;setPlayerSettings(p);
+      const live=(rd||[]).find(r=>!r.completed);if(live)setActiveRoundId(live.id);
+    } catch(e){console.error(e);}
+    finally{setLoading(false);}
+  };
+
+  const startRound = async (setup) => {
+    setSyncing(true);
+    try {
+      const hdcp={};PLAYERS.forEach(p=>{hdcp[p.id]=playerSettings[p.id]??p.defaultHcp;});
+      const {data:round,error} = await supabase.from('rounds').insert({
+        date:setup.date,format:setup.format,team_config:setup.teamConfig,
+        tees:setup.tees,bet_amount:setup.betAmount,handicaps:hdcp,completed:false,
+      }).select().single();
+      if(error)throw error;
+      await supabase.from('scores').insert(PLAYERS.map(p=>({round_id:round.id,player_id:p.id,holes:Array(18).fill(0)})));
+      setActiveRoundId(round.id);setView('scorecard');
+    } catch(e){alert('Error starting round. Check your Supabase connection.');console.error(e);}
+    finally{setSyncing(false);}
+  };
+
+  const updateScore = async (roundId,playerId,holeIdx,value) => {
+    const current=scores[roundId]?.[playerId]||Array(18).fill(0);
+    const updated=[...current];
+    updated[holeIdx]=value===null?0:Math.max(1,parseInt(value)||0);
+    setScores(prev=>({...prev,[roundId]:{...(prev[roundId]||{}),[playerId]:updated}}));
+    await supabase.from('scores').update({holes:updated,updated_at:new Date().toISOString()})
+      .eq('round_id',roundId).eq('player_id',playerId);
+  };
+
+  const finishRound = async (roundId) => {
+    await supabase.from('rounds').update({completed:true}).eq('id',roundId);
+    setActiveRoundId(null);setView('leaderboard');
+  };
+
+  const deleteRound = async (roundId) => {
+    await supabase.from('rounds').delete().eq('id',roundId);
+    if(activeRoundId===roundId)setActiveRoundId(null);
+  };
+
+  const updateHandicap = async (playerId,value) => {
+    const hcp=parseInt(value)||0;
+    setPlayerSettings(prev=>({...prev,[playerId]:hcp}));
+    await supabase.from('player_settings').upsert({player_id:playerId,handicap:hcp,updated_at:new Date().toISOString()});
+  };
+
+  const activeRound=rounds.find(r=>r.id===activeRoundId);
+  const activeScores=activeRoundId?(scores[activeRoundId]||{}):{};
+  const latestCompleted=rounds.find(r=>r.completed);
+
+  if(loading)return <div style={C.app}><div style={C.spinner}><span style={C.spinEl}>⛳</span></div></div>;
+
+  return (
+    <div style={C.app}>
+      <div style={C.bg}/>
+      <header style={C.header}>
+        <div style={C.logoWrap} onClick={()=>setView('home')}>
+          <span style={C.logoEmoji}>⛳</span>
+          <div>
+            <div style={C.logoTitle}>SNEE FARM</div>
+            <div style={C.logoSub}>MOUNT PLEASANT · SC</div>
+          </div>
+        </div>
+        <nav style={C.nav}>
+          {[{id:'home',icon:'🏠'},{id:'setup',icon:'🎯'},{id:'history',icon:'📋'}].map(n=>(
+            <button key={n.id} style={{...C.navBtn,...(view===n.id?C.navActive:{})}} onClick={()=>setView(n.id)}>{n.icon}</button>
+          ))}
+          {activeRound&&<button style={{...C.navBtn,...C.navLive}} onClick={()=>setView('scorecard')}>🔴 LIVE</button>}
+        </nav>
+      </header>
+      <main style={C.main}>
+        {view==='home'&&<HomeView rounds={rounds} scores={scores} playerSettings={playerSettings} activeRound={activeRound} updateHandicap={updateHandicap} setView={setView} setActiveRoundId={setActiveRoundId}/>}
+        {view==='setup'&&<SetupView startRound={startRound} syncing={syncing}/>}
+        {view==='scorecard'&&activeRound&&<ScorecardView round={activeRound} scores={activeScores} updateScore={updateScore} finishRound={finishRound}/>}
+        {view==='history'&&<HistoryView rounds={rounds} scores={scores} deleteRound={deleteRound} setActiveRoundId={setActiveRoundId} setView={setView}/>}
+        {view==='leaderboard'&&latestCompleted&&<LeaderboardView round={latestCompleted} scores={scores[latestCompleted.id]||{}}/>}
+      </main>
+    </div>
+  );
+}
+
+// ── HOME ──────────────────────────────────────────────────────────────────────
+function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setView,setActiveRoundId}){
+  const [editHdcp,setEditHdcp]=useState(false);
+  const totalRounds=rounds.filter(r=>r.completed).length;
+  const thisMonth=rounds.filter(r=>r.completed&&r.date?.startsWith(new Date().toISOString().slice(0,7))).length;
+  const getBest=(pid)=>{let b=null;for(const r of rounds){if(!r.completed)continue;const s=scores[r.id]?.[pid];if(!s)continue;const t=s.reduce((a,b)=>a+(b||0),0);if(t>0&&(b===null||t<b))b=t;}return b;};
+  return(
+    <div style={C.wrap}>
+      <div style={C.banner}>
+        <span style={C.bannerIcon}>⛳</span>
+        <div><div style={C.bannerTitle}>THURSDAY CREW</div><div style={C.bannerSub}>{totalRounds} ROUNDS PLAYED · {thisMonth} THIS MONTH</div></div>
+      </div>
+      <div style={C.statsRow}>
+        <div style={C.statCard}><div style={C.statNum}>{totalRounds}</div><div style={C.statLabel}>ROUNDS</div></div>
+        <div style={C.statCard}><div style={C.statNum}>{thisMonth}</div><div style={C.statLabel}>THIS MONTH</div></div>
+        <div style={C.statCard}><div style={C.statNum}>{rounds.filter(r=>!r.completed).length}</div><div style={C.statLabel}>IN PLAY</div></div>
+      </div>
+      {activeRound&&<div style={C.liveAlert} onClick={()=>{setActiveRoundId(activeRound.id);setView('scorecard');}}>
+        <span>🔴</span><span style={{flex:1}}><strong>{FORMATS.find(f=>f.id===activeRound.format)?.label}</strong> in progress · {activeRound.date}</span><span style={{color:'#e74c3c'}}>Resume →</span>
+      </div>}
+      <div style={C.sectionTitle}>THE SQUAD</div>
+      <div style={C.playerGrid}>
+        {PLAYERS.map(p=>{const best=getBest(p.id);const hdcp=playerSettings[p.id]??p.defaultHcp;return(
+          <div key={p.id} style={{...C.playerCard,borderColor:p.color+'44'}}>
+            <div style={{...C.avatar,background:p.color}}>{p.avatar}</div>
+            <div style={{...C.playerName,color:p.color}}>{p.name}</div>
+            <div style={C.playerHdcp}>Hdcp {hdcp} · {p.hcpRange}</div>
+            {best&&<div style={C.playerBest}>Best: {best}</div>}
+          </div>
+        );})}
+      </div>
+      <button style={C.editHdcpBtn} onClick={()=>setEditHdcp(!editHdcp)}>{editHdcp?'✓ DONE':'✏ EDIT HANDICAPS'}</button>
+      {editHdcp&&<div style={C.hdcpEditor}>{PLAYERS.map(p=>(
+        <div key={p.id} style={C.hdcpRow}>
+          <span style={{...C.playerName,color:p.color,fontSize:15}}>{p.name}</span>
+          <input type="number" min={0} max={100} value={playerSettings[p.id]??p.defaultHcp} onChange={e=>updateHandicap(p.id,e.target.value)} style={C.hdcpInput}/>
+        </div>
+      ))}</div>}
+      <button style={C.bigBtn} onClick={()=>setView('setup')}>🏌️ Set Up New Round</button>
+      {rounds.length>0&&<><div style={C.sectionTitle}>RECENT ROUNDS</div>
+        {rounds.slice(0,4).map(r=>{const fmt=FORMATS.find(f=>f.id===r.format);return(
+          <div key={r.id} style={C.recentCard} onClick={()=>{if(!r.completed){setActiveRoundId(r.id);setView('scorecard');}}}>
+            <div style={C.recentLeft}><span style={C.recentIcon}>{fmt?.icon}</span><div><div style={C.recentFmt}>{fmt?.label}</div><div style={C.recentMeta}>{r.date} · {r.tees?.toUpperCase()}</div></div></div>
+            <div style={{fontSize:12,fontWeight:700,color:r.completed?'#2ecc71':'#e74c3c'}}>{r.completed?'✓ DONE':'▶ LIVE'}</div>
+          </div>
+        );})}
+      </>}
+    </div>
+  );
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────────
+function SetupView({startRound,syncing}){
+  const [tab,setTab]=useState('format');
+  const [setup,setSetup]=useState({format:'stroke',teamConfig:'solo',date:new Date().toISOString().split('T')[0],tees:'white',betAmount:5});
+  const randomize=()=>{setSetup(s=>({...s,format:FORMATS[Math.floor(Math.random()*FORMATS.length)].id,teamConfig:TEAM_CONFIGS[Math.floor(Math.random()*TEAM_CONFIGS.length)].id}));};
+  const fmt=FORMATS.find(f=>f.id===setup.format);const team=TEAM_CONFIGS.find(t=>t.id===setup.teamConfig);
+  return(
+    <div style={C.wrap}>
+      <div style={C.sectionTitle}>SET UP ROUND</div>
+      <div style={C.setupSummary}><span>{fmt?.icon} {fmt?.label}</span><span style={{color:'#333'}}>·</span><span style={{color:'#888'}}>👥 {team?.label}</span></div>
+      <button style={C.diceBtn} onClick={randomize}>🎲 RANDOMIZE</button>
+      <div style={C.tabs}>{['format','teams','options'].map(t=><button key={t} style={{...C.tab,...(tab===t?C.tabActive:{})}} onClick={()=>setTab(t)}>{t.toUpperCase()}</button>)}</div>
+      {tab==='format'&&<div style={C.formatGrid}>{FORMATS.map(f=><div key={f.id} style={{...C.fCard,...(setup.format===f.id?C.fCardActive:{})}} onClick={()=>setSetup(s=>({...s,format:f.id}))}><div style={C.fIcon}>{f.icon}</div><div style={C.fLabel}>{f.label}</div><div style={C.fDesc}>{f.desc}</div></div>)}</div>}
+      {tab==='teams'&&<div style={C.teamList}>{TEAM_CONFIGS.map(t=><div key={t.id} style={{...C.tCard,...(setup.teamConfig===t.id?C.tCardActive:{})}} onClick={()=>setSetup(s=>({...s,teamConfig:t.id}))}><div style={C.tLabel}>{t.label}</div><div style={C.tBadges}>{t.teams.map((team,i)=><span key={i} style={C.tBadge}>{team.map(id=>PLAYERS.find(p=>p.id===id)?.name).join(' & ')}</span>)}</div></div>)}</div>}
+      {tab==='options'&&<div style={C.optGrid}>
+        <div style={C.optRow}><label style={C.optLabel}>DATE</label><input type="date" value={setup.date} onChange={e=>setSetup(s=>({...s,date:e.target.value}))} style={C.optInput}/></div>
+        <div style={C.optRow}><label style={C.optLabel}>TEES</label><select value={setup.tees} onChange={e=>setSetup(s=>({...s,tees:e.target.value}))} style={C.optInput}>{TEES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}</select></div>
+        <div style={C.optRow}><label style={C.optLabel}>BET/HOLE ($)</label><input type="number" value={setup.betAmount} min={0} max={500} onChange={e=>setSetup(s=>({...s,betAmount:parseInt(e.target.value)||0}))} style={{...C.optInput,minWidth:80,textAlign:'center'}}/></div>
+      </div>}
+      <button style={{...C.bigBtn,...(syncing?{opacity:.5,cursor:'not-allowed'}:{})}} onClick={()=>!syncing&&startRound(setup)} disabled={syncing}>{syncing?'⏳ Starting...':'🏌️ Start Round'}</button>
+    </div>
+  );
+}
+
+// ── SCORECARD ─────────────────────────────────────────────────────────────────
+function ScorecardView({round,scores,updateScore,finishRound}){
+  const [holeIdx,setHoleIdx]=useState(0);const [showAll,setShowAll]=useState(false);
+  useEffect(()=>{const first=HOLES.findIndex((_,i)=>PLAYERS.some(p=>!(scores[p.id]||[])[i]));if(first!==-1)setHoleIdx(Math.min(first,17));},[]);
+  const fmt=FORMATS.find(f=>f.id===round.format);const hole=HOLES[holeIdx];
+  const holesPlayed=PLAYERS.reduce((max,p)=>{const played=(scores[p.id]||[]).filter(s=>s>0).length;return Math.max(max,played);},0);
+  const getDS=(pid)=>{
+    const s=scores[pid]||[];let tp=0;
+    s.forEach((sc,i)=>{if(sc>0)tp+=sc-HOLES[i].par;});
+    const pts=s.reduce((a,sc,i)=>a+(sc>0?stablefordPts(sc,HOLES[i].par):0),0);
+    const skins=(()=>{let sk=0;HOLES.forEach((_,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1&&w[0].id===pid)sk++;}});return sk;})();
+    if(round.format==='stableford')return{display:pts+'pts',color:'#f1c40f'};
+    if(round.format==='skins')return{display:skins+'🩳',color:'#9b59b6'};
+    return{display:toParStr(tp),color:tp<0?'#2ecc71':tp>0?'#e74c3c':'#888'};
+  };
+  return(
+    <div style={C.wrap}>
+      <div style={C.fmtBanner}>
+        <span style={C.fmtIcon}>{fmt?.icon}</span>
+        <div><div style={C.fmtTitle}>{fmt?.label}</div><div style={C.fmtMeta}>{round.date} · {round.tees?.toUpperCase()}</div></div>
+        <div style={{display:'flex',alignItems:'center',marginLeft:'auto'}}><div style={C.fmtProg}>{holesPlayed}/18</div><div style={C.syncDot}/></div>
+      </div>
+      <div style={C.standings}>{PLAYERS.map(p=>{const ds=getDS(p.id);return(<div key={p.id} style={C.standingPill}><div style={{...C.standingAvatar,background:p.color}}>{p.avatar}</div><div style={{...C.standingScore,color:ds.color}}>{ds.display}</div></div>);})}</div>
+      <div style={C.holeNav}>
+        <button style={C.holeNavBtn} onClick={()=>setHoleIdx(Math.max(0,holeIdx-1))} disabled={holeIdx===0}>‹</button>
+        <div style={C.holeInfo}><span style={C.holeNum}>#{hole.hole}</span><span style={C.holePar}>Par {hole.par}</span><span style={C.holeMeta}>{hole.yards}y · HCP {hole.hcp}</span></div>
+        <button style={C.holeNavBtn} onClick={()=>setHoleIdx(Math.min(17,holeIdx+1))} disabled={holeIdx===17}>›</button>
+      </div>
+      <div style={C.scoreInputs}>{PLAYERS.map(p=>{
+        const sc=(scores[p.id]||[])[holeIdx]||null;const sn=sc?scoreName(sc,hole.par):null;
+        const nc=sn?.cls==='birdie'||sn?.cls==='eagle'||sn?.cls==='ace'||sn?.cls==='albatross'?'#2ecc71':sn?.cls==='par'?'#555':'#e74c3c';
+        return(<div key={p.id} style={{...C.scoreRow,borderLeftColor:p.color}}>
+          <div style={C.scoreLeft}><div style={{...C.scoreAvatar,background:p.color}}>{p.avatar}</div><div><div style={{...C.scorePName,color:p.color}}>{p.name}</div>{sn&&<div style={{...C.scoreNameStyle,color:nc}}>{sn.label}</div>}</div></div>
+          <div style={C.scoreControls}>
+            <button style={C.scoreBtn} onPointerDown={()=>updateScore(round.id,p.id,holeIdx,(sc||hole.par)-1)}>−</button>
+            <input type="number" min={1} max={15} value={sc||''} placeholder={hole.par} onChange={e=>updateScore(round.id,p.id,holeIdx,e.target.value)} style={C.scoreInput}/>
+            <button style={C.scoreBtn} onPointerDown={()=>updateScore(round.id,p.id,holeIdx,(sc||hole.par)+1)}>+</button>
+          </div>
+        </div>);
+      })}</div>
+      <button style={C.parFillBtn} onClick={()=>PLAYERS.forEach(p=>{if(!((scores[p.id]||[])[holeIdx]>0))updateScore(round.id,p.id,holeIdx,hole.par);})}>⚡ FILL PAR FOR BLANKS</button>
+      <div style={C.holeDots}>{HOLES.map((_,i)=>{const all=PLAYERS.every(p=>((scores[p.id]||[])[i]||0)>0);return(<div key={i} style={{...C.holeDot,background:i===holeIdx?'#f1c40f':all?'#2ecc71':'#1a2a1a',transform:i===holeIdx?'scale(1.5)':'scale(1)',boxShadow:i===holeIdx?'0 0 6px #f1c40f':'none'}} onClick={()=>setHoleIdx(i)}/>);})}</div>
+      <button style={C.toggleBtn} onClick={()=>setShowAll(!showAll)}>{showAll?'▲ HIDE SCORECARD':'▼ FULL SCORECARD'}</button>
+      {showAll&&<FullScorecard scores={scores}/>}
+      <button style={C.finishBtn} onClick={()=>{if(confirm('Finish and save this round?'))finishRound(round.id);}}>🏁 Finish Round</button>
+    </div>
+  );
+}
+
+function FullScorecard({scores}){
+  return(<div style={C.fullCard}>{[0,1].map(half=>{
+    const holes=HOLES.slice(half*9,half*9+9);const parTotal=holes.reduce((a,h)=>a+h.par,0);
+    return(<div key={half} style={{marginBottom:half===0?16:0}}>
+      <div style={C.halfLabel}>{half===0?'FRONT 9':'BACK 9'}</div>
+      <table style={C.table}><thead>
+        <tr><th style={C.th}>PLAYER</th>{holes.map(h=><th key={h.hole} style={C.th}>{h.hole}</th>)}<th style={C.th}>TOT</th></tr>
+        <tr><th style={{...C.th,color:'#2ecc7166'}}>PAR</th>{holes.map(h=><th key={h.hole} style={{...C.th,color:'#2ecc7166'}}>{h.par}</th>)}<th style={{...C.th,color:'#2ecc7166'}}>{parTotal}</th></tr>
+      </thead><tbody>{PLAYERS.map(p=>{
+        const hs=(scores[p.id]||[]).slice(half*9,half*9+9);const ht=hs.reduce((a,b)=>a+(b||0),0);
+        return(<tr key={p.id}><td style={{...C.td,color:p.color,fontWeight:700}}>{p.name}</td>
+          {holes.map((h,i)=>{const sc=hs[i];const d=sc>0?sc-h.par:null;const col=d!==null?scoreColor(d):{bg:'transparent',color:'#333'};return<td key={h.hole} style={{...C.td,background:col.bg,color:col.color,fontWeight:d!==null?700:400}}>{sc||'—'}</td>;})}
+          <td style={{...C.td,fontWeight:900}}>{ht||'—'}</td></tr>);
+      })}</tbody></table>
+    </div>);
+  })}</div>);
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+function HistoryView({rounds,scores,deleteRound,setActiveRoundId,setView}){
+  const [filter,setFilter]=useState('all');
+  const unique=[...new Set(rounds.map(r=>r.format))];
+  const filtered=rounds.filter(r=>filter==='all'||r.format===filter);
+  return(<div style={C.wrap}>
+    <div style={C.sectionTitle}>ROUND HISTORY</div>
+    <div style={C.filterBar}>
+      <button style={{...C.filterBtn,...(filter==='all'?C.filterActive:{})}} onClick={()=>setFilter('all')}>ALL</button>
+      {unique.map(f=>{const fmt=FORMATS.find(x=>x.id===f);return<button key={f} style={{...C.filterBtn,...(filter===f?C.filterActive:{})}} onClick={()=>setFilter(f)}>{fmt?.icon} {fmt?.label}</button>;})}
+    </div>
+    {filtered.length===0?<div style={C.empty}>No rounds yet — get out there! ⛳</div>:filtered.map(r=>{
+      const fmt=FORMATS.find(f=>f.id===r.format);const team=TEAM_CONFIGS.find(t=>t.id===r.team_config);
+      const rsc=scores[r.id]||{};const ranked=[...PLAYERS].map(p=>({...p,total:(rsc[p.id]||[]).reduce((a,b)=>a+(b||0),0)})).sort((a,b)=>a.total-b.total);
+      return(<div key={r.id} style={C.histCard}>
+        <div style={C.histHeader}><div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:20}}>{fmt?.icon}</span><span style={{fontSize:16,fontWeight:700}}>{fmt?.label}</span></div><div style={{fontSize:12,color:'#555'}}>{r.date}</div></div>
+        <div style={{fontSize:11,color:'#4a6a4a',marginBottom:10}}>{team?.label?.toUpperCase()}</div>
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>{ranked.map((p,i)=><div key={p.id} style={{display:'flex',alignItems:'center',gap:8,fontSize:13}}><span style={{color:'#555',fontSize:11}}>#{i+1}</span><div style={{...C.dot,background:p.color}}/><span style={{color:p.color}}>{p.name}</span><span style={{marginLeft:'auto',fontWeight:900,fontSize:16}}>{p.total||'—'}</span></div>)}</div>
+        <div style={C.histActions}>
+          {!r.completed&&<button style={C.resumeBtn} onClick={()=>{setActiveRoundId(r.id);setView('scorecard');}}>▶ RESUME</button>}
+          <button style={C.deleteBtn} onClick={()=>{if(confirm('Delete this round?'))deleteRound(r.id);}}>🗑️</button>
+        </div>
+      </div>);
+    })}
+  </div>);
+}
+
+// ── LEADERBOARD ───────────────────────────────────────────────────────────────
+function LeaderboardView({round,scores}){
+  const fmt=FORMATS.find(f=>f.id===round.format);const team=TEAM_CONFIGS.find(t=>t.id===round.team_config);
+  const getTotal=pid=>(scores[pid]||[]).reduce((a,b)=>a+(b||0),0);
+  const getToPar=pid=>{let tp=0;(scores[pid]||[]).forEach((s,i)=>{if(s>0)tp+=s-HOLES[i].par;});return tp;};
+  const getSF=pid=>(scores[pid]||[]).reduce((a,s,i)=>a+(s>0?stablefordPts(s,HOLES[i].par):0),0);
+  const getSkins=pid=>{let sk=0;HOLES.forEach((_,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1&&w[0].id===pid)sk++;}});return sk;};
+  const ranked=[...PLAYERS].map(p=>{
+    if(round.format==='stableford')return{...p,val:getSF(p.id),display:getSF(p.id)+' pts',higher:true};
+    if(round.format==='skins')return{...p,val:getSkins(p.id),display:getSkins(p.id)+' skins',higher:true};
+    return{...p,val:getTotal(p.id),tp:getToPar(p.id),display:getTotal(p.id).toString(),higher:false};
+  }).sort((a,b)=>a.higher?b.val-a.val:a.val-b.val);
+  const maxVal=Math.max(...ranked.map(p=>p.val));
+  const medals=['🥇','🥈','🥉','4️⃣'];
+  return(<div style={C.wrap}>
+    <div style={C.lbHeader}><span style={C.lbIcon}>{fmt?.icon}</span><div><div style={C.lbTitle}>{fmt?.label}</div><div style={C.lbMeta}>{round.date?.toUpperCase()} · {team?.label?.toUpperCase()}</div></div></div>
+    <div style={C.podium}>{ranked.map((p,i)=>{const tp=p.tp!==undefined?p.tp:null;return(
+      <div key={p.id} style={{...C.pCard,borderColor:p.color+(i===0?'cc':'44'),transform:i===0?'scale(1.02)':'scale(1)'}}>
+        <span style={{fontSize:28,width:36,flexShrink:0}}>{medals[i]}</span>
+        <div style={{...C.pAvatar,background:p.color}}>{p.avatar}</div>
+        <span style={C.pName}>{p.name}</span>
+        <div style={{display:'flex',alignItems:'baseline',gap:5}}>
+          <span style={{fontSize:30,fontWeight:900,fontFamily:"'Playfair Display',serif",color:p.color}}>{p.display}</span>
+          {tp!==null&&<span style={{fontSize:14,color:tp<0?'#2ecc71':tp>0?'#e74c3c':'#555'}}>({toParStr(tp)})</span>}
+        </div>
+      </div>);
+    })}</div>
+    <div style={C.statsSection}>
+      <div style={{fontSize:11,color:'#2ecc71',letterSpacing:2,marginBottom:12}}>TOTAL STROKES</div>
+      {[...PLAYERS].map(p=>{const total=getTotal(p.id);return(<div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,fontSize:13}}>
+        <div style={{...C.dot,background:p.color}}/><span style={{color:p.color,width:55}}>{p.name}</span>
+        <div style={C.statBar}><div style={{...C.statFill,background:p.color,width:`${(total/(maxVal||1))*100}%`}}/></div>
+        <span style={{fontSize:15,fontWeight:900,minWidth:40,textAlign:'right',color:p.color}}>{total||'—'}</span>
+      </div>);})}
+    </div>
+    <FullScorecard scores={scores}/>
+  </div>);
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
