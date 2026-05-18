@@ -1,77 +1,195 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <meta name="theme-color" content="#0d1117"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <title>Snee Farm · Thursday Crew</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#0d1117;color:#e8e8e8;font-family:'DM Mono','Courier New',monospace;-webkit-tap-highlight-color:transparent}
-    input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
-    input,select,button{font-family:inherit}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    ::-webkit-scrollbar{width:4px;height:4px}
-    ::-webkit-scrollbar-track{background:#0d1117}
-    ::-webkit-scrollbar-thumb{background:#2a3a2a;border-radius:2px}
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#050a05"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>⛳ Thursday Crew Golf</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{background:#050a05;color:#f0f0f0;font-family:'Inter',sans-serif;overflow-x:hidden}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+input,select,button,textarea{font-family:'Inter',sans-serif}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#1a3a1a;border-radius:2px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(46,204,113,.3)}50%{box-shadow:0 0 40px rgba(46,204,113,.6)}}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes countUp{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+</style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect, useCallback, useRef } = React;
-
-// ── CONFIG — your Supabase credentials ───────────────────────────────────────
-const SUPABASE_URL = 'https://wukjeyluqkzbseuynovp.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_3MDvGnJy46bP553PjZhZUQ_Bp8Bys-3';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ── DATA ──────────────────────────────────────────────────────────────────────
-const HOLES = [
-  {hole:1,par:4,hcp:9,yards:389},{hole:2,par:4,hcp:3,yards:408},
-  {hole:3,par:3,hcp:17,yards:164},{hole:4,par:5,hcp:11,yards:523},
-  {hole:5,par:4,hcp:1,yards:435},{hole:6,par:3,hcp:15,yards:178},
-  {hole:7,par:4,hcp:5,yards:401},{hole:8,par:5,hcp:7,yards:546},
-  {hole:9,par:4,hcp:13,yards:362},{hole:10,par:4,hcp:10,yards:395},
-  {hole:11,par:4,hcp:4,yards:415},{hole:12,par:3,hcp:16,yards:157},
-  {hole:13,par:5,hcp:8,yards:511},{hole:14,par:4,hcp:2,yards:442},
-  {hole:15,par:4,hcp:14,yards:358},{hole:16,par:3,hcp:18,yards:143},
-  {hole:17,par:4,hcp:6,yards:420},{hole:18,par:5,hcp:12,yards:516},
+const{useState,useEffect,useRef,useCallback}=React;
+ 
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+const SUPABASE_URL='https://wukjeyluqkzbseuynovp.supabase.co';
+const SUPABASE_KEY='sb_publishable_3MDvGnJy46bP553PjZhZUQ_Bp8Bys-3';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+ 
+// ═══════════════════════════════════════════════════════
+// SC COURSES
+// ═══════════════════════════════════════════════════════
+const COURSES={
+  snee:{
+    name:'Snee Farm CC',city:'Mount Pleasant',
+    holes:[
+      {hole:1,par:4,hcp:9,yards:389},{hole:2,par:4,hcp:3,yards:408},
+      {hole:3,par:3,hcp:17,yards:164},{hole:4,par:5,hcp:11,yards:523},
+      {hole:5,par:4,hcp:1,yards:435},{hole:6,par:3,hcp:15,yards:178},
+      {hole:7,par:4,hcp:5,yards:401},{hole:8,par:5,hcp:7,yards:546},
+      {hole:9,par:4,hcp:13,yards:362},{hole:10,par:4,hcp:10,yards:395},
+      {hole:11,par:4,hcp:4,yards:415},{hole:12,par:3,hcp:16,yards:157},
+      {hole:13,par:5,hcp:8,yards:511},{hole:14,par:4,hcp:2,yards:442},
+      {hole:15,par:4,hcp:14,yards:358},{hole:16,par:3,hcp:18,yards:143},
+      {hole:17,par:4,hcp:6,yards:420},{hole:18,par:5,hcp:12,yards:516},
+    ]
+  },
+  kiawah_ocean:{
+    name:'Kiawah Island — Ocean',city:'Kiawah Island',
+    holes:[
+      {hole:1,par:4,hcp:11,yards:395},{hole:2,par:5,hcp:3,yards:543},
+      {hole:3,par:4,hcp:7,yards:390},{hole:4,par:3,hcp:17,yards:195},
+      {hole:5,par:4,hcp:1,yards:468},{hole:6,par:4,hcp:13,yards:455},
+      {hole:7,par:5,hcp:9,yards:527},{hole:8,par:3,hcp:15,yards:197},
+      {hole:9,par:4,hcp:5,yards:430},{hole:10,par:4,hcp:6,yards:439},
+      {hole:11,par:4,hcp:2,yards:562},{hole:12,par:3,hcp:18,yards:186},
+      {hole:13,par:4,hcp:10,yards:404},{hole:14,par:4,hcp:14,yards:459},
+      {hole:15,par:4,hcp:4,yards:421},{hole:16,par:5,hcp:8,yards:579},
+      {hole:17,par:3,hcp:16,yards:221},{hole:18,par:4,hcp:12,yards:439},
+    ]
+  },
+  wild_dunes_links:{
+    name:'Wild Dunes — Links',city:'Isle of Palms',
+    holes:[
+      {hole:1,par:4,hcp:9,yards:374},{hole:2,par:5,hcp:5,yards:497},
+      {hole:3,par:3,hcp:15,yards:153},{hole:4,par:4,hcp:1,yards:406},
+      {hole:5,par:4,hcp:11,yards:390},{hole:6,par:5,hcp:7,yards:510},
+      {hole:7,par:3,hcp:17,yards:145},{hole:8,par:4,hcp:3,yards:438},
+      {hole:9,par:4,hcp:13,yards:356},{hole:10,par:4,hcp:8,yards:371},
+      {hole:11,par:4,hcp:2,yards:422},{hole:12,par:3,hcp:14,yards:167},
+      {hole:13,par:5,hcp:6,yards:502},{hole:14,par:4,hcp:10,yards:393},
+      {hole:15,par:4,hcp:16,yards:342},{hole:16,par:3,hcp:18,yards:138},
+      {hole:17,par:4,hcp:4,yards:451},{hole:18,par:5,hcp:12,yards:501},
+    ]
+  },
+  caledonia:{
+    name:'Caledonia Golf & Fish Club',city:'Pawleys Island',
+    holes:[
+      {hole:1,par:4,hcp:7,yards:371},{hole:2,par:4,hcp:11,yards:386},
+      {hole:3,par:3,hcp:17,yards:161},{hole:4,par:5,hcp:3,yards:518},
+      {hole:5,par:4,hcp:1,yards:425},{hole:6,par:4,hcp:13,yards:367},
+      {hole:7,par:3,hcp:15,yards:177},{hole:8,par:5,hcp:9,yards:489},
+      {hole:9,par:4,hcp:5,yards:408},{hole:10,par:4,hcp:6,yards:396},
+      {hole:11,par:5,hcp:2,yards:524},{hole:12,par:3,hcp:16,yards:152},
+      {hole:13,par:4,hcp:10,yards:379},{hole:14,par:4,hcp:4,yards:432},
+      {hole:15,par:3,hcp:18,yards:143},{hole:16,par:5,hcp:8,yards:506},
+      {hole:17,par:4,hcp:14,yards:358},{hole:18,par:4,hcp:12,yards:415},
+    ]
+  },
+  tpc_myrtle:{
+    name:'TPC Myrtle Beach',city:'Murrells Inlet',
+    holes:[
+      {hole:1,par:4,hcp:9,yards:402},{hole:2,par:4,hcp:5,yards:430},
+      {hole:3,par:3,hcp:15,yards:185},{hole:4,par:5,hcp:1,yards:544},
+      {hole:5,par:4,hcp:11,yards:378},{hole:6,par:4,hcp:7,yards:421},
+      {hole:7,par:3,hcp:17,yards:162},{hole:8,par:5,hcp:3,yards:531},
+      {hole:9,par:4,hcp:13,yards:385},{hole:10,par:4,hcp:10,yards:398},
+      {hole:11,par:4,hcp:4,yards:448},{hole:12,par:3,hcp:16,yards:171},
+      {hole:13,par:5,hcp:8,yards:519},{hole:14,par:4,hcp:2,yards:455},
+      {hole:15,par:4,hcp:14,yards:362},{hole:16,par:3,hcp:18,yards:148},
+      {hole:17,par:5,hcp:6,yards:538},{hole:18,par:4,hcp:12,yards:431},
+    ]
+  },
+  barefoot_love:{
+    name:'Barefoot Resort — Love',city:'North Myrtle Beach',
+    holes:[
+      {hole:1,par:4,hcp:7,yards:412},{hole:2,par:5,hcp:3,yards:562},
+      {hole:3,par:3,hcp:15,yards:178},{hole:4,par:4,hcp:1,yards:445},
+      {hole:5,par:4,hcp:11,yards:389},{hole:6,par:5,hcp:9,yards:528},
+      {hole:7,par:3,hcp:17,yards:155},{hole:8,par:4,hcp:5,yards:421},
+      {hole:9,par:4,hcp:13,yards:367},{hole:10,par:4,hcp:8,yards:403},
+      {hole:11,par:4,hcp:2,yards:438},{hole:12,par:3,hcp:16,yards:163},
+      {hole:13,par:5,hcp:6,yards:541},{hole:14,par:4,hcp:4,yards:429},
+      {hole:15,par:4,hcp:14,yards:371},{hole:16,par:3,hcp:18,yards:147},
+      {hole:17,par:4,hcp:10,yards:394},{hole:18,par:5,hcp:12,yards:553},
+    ]
+  },
+  charleston_municipal:{
+    name:'Charleston Municipal',city:'Charleston',
+    holes:[
+      {hole:1,par:4,hcp:11,yards:362},{hole:2,par:4,hcp:5,yards:388},
+      {hole:3,par:3,hcp:17,yards:148},{hole:4,par:5,hcp:3,yards:498},
+      {hole:5,par:4,hcp:1,yards:418},{hole:6,par:4,hcp:13,yards:345},
+      {hole:7,par:3,hcp:15,yards:162},{hole:8,par:5,hcp:7,yards:512},
+      {hole:9,par:4,hcp:9,yards:379},{hole:10,par:4,hcp:10,yards:371},
+      {hole:11,par:4,hcp:4,yards:401},{hole:12,par:3,hcp:18,yards:141},
+      {hole:13,par:5,hcp:6,yards:487},{hole:14,par:4,hcp:2,yards:428},
+      {hole:15,par:4,hcp:14,yards:352},{hole:16,par:3,hcp:16,yards:156},
+      {hole:17,par:4,hcp:8,yards:384},{hole:18,par:5,hcp:12,yards:521},
+    ]
+  },
+  crowfield:{
+    name:'Crowfield Golf Club',city:'Goose Creek',
+    holes:[
+      {hole:1,par:4,hcp:9,yards:378},{hole:2,par:5,hcp:5,yards:508},
+      {hole:3,par:3,hcp:15,yards:169},{hole:4,par:4,hcp:1,yards:432},
+      {hole:5,par:4,hcp:11,yards:366},{hole:6,par:5,hcp:7,yards:495},
+      {hole:7,par:3,hcp:17,yards:152},{hole:8,par:4,hcp:3,yards:441},
+      {hole:9,par:4,hcp:13,yards:358},{hole:10,par:4,hcp:8,yards:385},
+      {hole:11,par:4,hcp:2,yards:419},{hole:12,par:3,hcp:16,yards:158},
+      {hole:13,par:5,hcp:6,yards:502},{hole:14,par:4,hcp:4,yards:436},
+      {hole:15,par:4,hcp:14,yards:364},{hole:16,par:3,hcp:18,yards:144},
+      {hole:17,par:4,hcp:10,yards:391},{hole:18,par:5,hcp:12,yards:518},
+    ]
+  },
+};
+ 
+// ═══════════════════════════════════════════════════════
+// PLAYERS & DATA
+// ═══════════════════════════════════════════════════════
+const PLAYERS=[
+  {id:'ben',name:'Ben',color:'#00e676',defaultHcp:72,avatar:'B'},
+  {id:'thomas',name:'Thomas',color:'#ff9100',defaultHcp:40,avatar:'T'},
+  {id:'max',name:'Max',color:'#40c4ff',defaultHcp:27,avatar:'M'},
+  {id:'luke',name:'Luke',color:'#ff4444',defaultHcp:22,avatar:'L'},
 ];
-
-const PLAYERS = [
-  {id:'ben',name:'Ben',color:'#2ecc71',hcpRange:'65-80',defaultHcp:72,avatar:'B'},
-  {id:'thomas',name:'Thomas',color:'#e67e22',hcpRange:'35-45',defaultHcp:40,avatar:'T'},
-  {id:'max',name:'Max',color:'#3498db',hcpRange:'25-30',defaultHcp:27,avatar:'M'},
-  {id:'luke',name:'Luke',color:'#e74c3c',hcpRange:'20-25',defaultHcp:22,avatar:'L'},
+ 
+const FORMATS=[
+  {id:'stroke',label:'Stroke Play',icon:'⛳',desc:'Individual — lowest total wins',team:false},
+  {id:'scramble',label:'Scramble',icon:'🤝',desc:'Team picks best shot each hole',team:true},
+  {id:'bestball',label:'Best Ball',icon:'🏆',desc:'Best score on team counts per hole',team:true},
+  {id:'stableford',label:'Stableford',icon:'⭐',desc:'Points based on score vs par',team:false},
+  {id:'nassau',label:'Nassau',icon:'💰',desc:'Three bets: front 9, back 9, total',team:true},
+  {id:'skins',label:'Skins',icon:'💀',desc:'Win a hole outright to take the skin',team:false},
+  {id:'match',label:'Match Play',icon:'⚔️',desc:'Hole-by-hole — most holes won wins',team:true},
+  {id:'wolf',label:'Wolf',icon:'🐺',desc:'Rotating wolf picks partner or goes solo',team:false},
+  {id:'bingo',label:'Bingo Bango Bongo',icon:'🎯',desc:'First on, closest pin, first in',team:false},
+  {id:'chairman',label:'Chairman',icon:'👑',desc:'Defend or take the throne each hole',team:false},
+  {id:'bloodsome',label:'Bloodsome',icon:'🩸',desc:'Worst drive played, alternate shots',team:true},
+  {id:'vegas',label:'Vegas',icon:'🎰',desc:'Combine scores into numbers vs opponents',team:true},
+  {id:'quota',label:'Quota',icon:'📊',desc:'Beat your personal quota of points',team:false},
+  {id:'shamble',label:'Shamble',icon:'🚶',desc:'Scramble drive, then individual play',team:true},
 ];
-
-const FORMATS = [
-  {id:'stroke',label:'Stroke Play',icon:'⛳',desc:'Individual — lowest total score wins'},
-  {id:'scramble',label:'Scramble',icon:'🤝',desc:'Team picks best shot every time'},
-  {id:'bestball',label:'Best Ball',icon:'🏆',desc:'Best individual score counts per hole'},
-  {id:'stableford',label:'Stableford',icon:'⭐',desc:'Points based on score vs par'},
-  {id:'nassau',label:'Nassau',icon:'💰',desc:'Three bets: front 9, back 9, 18'},
-  {id:'skins',label:'Skins',icon:'💀',desc:'Win a hole outright to earn the skin'},
-  {id:'match',label:'Match Play',icon:'⚔️',desc:'Hole-by-hole — most holes won wins'},
-  {id:'wolf',label:'Wolf',icon:'🐺',desc:'Rotating wolf picks partner or goes alone'},
-  {id:'bingo',label:'Bingo Bango Bongo',icon:'🎯',desc:'First on green, closest, first in = points'},
-  {id:'chairman',label:'Chairman',icon:'👑',desc:'Defend or take the chair each hole'},
-  {id:'bloodsome',label:'Bloodsome',icon:'🩸',desc:'Worst drive must be played, alternate shots'},
-  {id:'vegas',label:'Vegas',icon:'🎰',desc:'Combine scores into two-digit numbers vs opponents'},
-];
-
-const TEAM_CONFIGS = [
-  {id:'solo',label:'All Solo',teams:[['ben'],['thomas'],['max'],['luke']]},
+ 
+const TEAM_CONFIGS=[
+  {id:'solo',label:'All Solo (Individual)',teams:[['ben'],['thomas'],['max'],['luke']]},
   {id:'2v2_ab',label:'Ben & Thomas  vs  Max & Luke',teams:[['ben','thomas'],['max','luke']]},
   {id:'2v2_ac',label:'Ben & Max  vs  Thomas & Luke',teams:[['ben','max'],['thomas','luke']]},
   {id:'2v2_ad',label:'Ben & Luke  vs  Thomas & Max',teams:[['ben','luke'],['thomas','max']]},
@@ -80,499 +198,876 @@ const TEAM_CONFIGS = [
   {id:'3v1_mx',label:'Max Solo  vs  Ben, Thomas & Luke',teams:[['max'],['ben','thomas','luke']]},
   {id:'3v1_th',label:'Thomas Solo  vs  Ben, Max & Luke',teams:[['thomas'],['ben','max','luke']]},
 ];
-
-const TEES = [
-  {id:'black',label:'Black — Championship'},
-  {id:'blue',label:'Blue'},
-  {id:'white',label:'White'},
-  {id:'gold',label:'Gold — Senior'},
-  {id:'red',label:'Red — Forward'},
-];
-
-function scoreName(score,par){
-  if(!score)return null;
-  const d=score-par;
-  if(score===1)return{label:'Hole-in-One! 🎉',cls:'ace'};
-  if(d<=-3)return{label:'Albatross 🦅🦅🦅',cls:'albatross'};
-  if(d===-2)return{label:'Eagle 🦅🦅',cls:'eagle'};
-  if(d===-1)return{label:'Birdie 🐦',cls:'birdie'};
-  if(d===0)return{label:'Par',cls:'par'};
-  if(d===1)return{label:'Bogey',cls:'bogey'};
-  if(d===2)return{label:'Double 😬',cls:'double'};
-  if(d===3)return{label:'Triple 😱',cls:'triple'};
-  return{label:`+${d} 💀`,cls:'quad'};
+ 
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function scoreName(s,p){
+  if(!s||s<=0)return null;const d=s-p;
+  if(s===1)return{l:'ACE! 🎉',c:'#ffd700'};
+  if(d<=-3)return{l:'ALBATROSS 🦅🦅🦅',c:'#00e676'};
+  if(d===-2)return{l:'EAGLE 🦅🦅',c:'#00e676'};
+  if(d===-1)return{l:'BIRDIE 🐦',c:'#69f0ae'};
+  if(d===0)return{l:'PAR',c:'#888'};
+  if(d===1)return{l:'BOGEY',c:'#ff9100'};
+  if(d===2)return{l:'DOUBLE 😬',c:'#ff5252'};
+  if(d===3)return{l:'TRIPLE 😱',c:'#d32f2f'};
+  return{l:`+${d} 💀`,c:'#b71c1c'};
 }
-
-function stablefordPts(score,par){
-  if(!score)return 0;
-  const d=score-par;
-  if(d>=2)return 0;if(d===1)return 1;if(d===0)return 2;
-  if(d===-1)return 3;if(d===-2)return 4;return 5;
+function sfPts(s,p){if(!s||s<=0)return 0;const d=s-p;if(d>=2)return 0;if(d===1)return 1;if(d===0)return 2;if(d===-1)return 3;if(d===-2)return 4;return 5;}
+function tpStr(tp){return tp===0?'E':tp>0?`+${tp}`:`${tp}`;}
+function scColor(d){
+  if(d<=-2)return{bg:'rgba(0,230,118,.15)',c:'#00e676',border:'rgba(0,230,118,.4)'};
+  if(d===-1)return{bg:'rgba(105,240,174,.1)',c:'#69f0ae',border:'rgba(105,240,174,.3)'};
+  if(d===0)return{bg:'transparent',c:'#555',border:'transparent'};
+  if(d===1)return{bg:'rgba(255,145,0,.1)',c:'#ff9100',border:'rgba(255,145,0,.3)'};
+  if(d===2)return{bg:'rgba(255,82,82,.1)',c:'#ff5252',border:'rgba(255,82,82,.3)'};
+  return{bg:'rgba(183,28,28,.15)',c:'#ef5350',border:'rgba(183,28,28,.4)'};
 }
-
-function toParStr(tp){return tp===0?'E':tp>0?`+${tp}`:`${tp}`}
-
-function scoreColor(d){
-  if(d<=-2)return{bg:'#0d4a1a',color:'#2ecc71'};
-  if(d===-1)return{bg:'#0d3a14',color:'#27ae60'};
-  if(d===0)return{bg:'transparent',color:'#888'};
-  if(d===1)return{bg:'#2a1a08',color:'#e67e22'};
-  if(d===2)return{bg:'#2a0f0f',color:'#e74c3c'};
-  return{bg:'#1a0808',color:'#c0392b'};
-}
-
-// ── STYLES ────────────────────────────────────────────────────────────────────
-const C = {
-  app:{minHeight:'100vh',background:'#0d1117',color:'#e8e8e8',fontFamily:"'DM Mono','Courier New',monospace",position:'relative'},
-  bg:{position:'fixed',inset:0,background:'radial-gradient(ellipse at 15% 50%,rgba(46,204,113,.05) 0%,transparent 55%),radial-gradient(ellipse at 85% 10%,rgba(52,152,219,.04) 0%,transparent 55%)',pointerEvents:'none',zIndex:0},
-  header:{position:'sticky',top:0,zIndex:100,background:'rgba(13,17,23,.97)',backdropFilter:'blur(16px)',borderBottom:'1px solid #1a2a1a',padding:'10px 18px',display:'flex',alignItems:'center',justifyContent:'space-between'},
-  logoWrap:{display:'flex',alignItems:'center',gap:10,cursor:'pointer',userSelect:'none'},
-  logoEmoji:{fontSize:26},
-  logoTitle:{fontFamily:"'Playfair Display',Georgia,serif",fontWeight:900,fontSize:17,letterSpacing:2,color:'#2ecc71',lineHeight:1},
-  logoSub:{fontSize:9,color:'#555',letterSpacing:2,marginTop:1},
-  nav:{display:'flex',gap:4,alignItems:'center'},
-  navBtn:{background:'transparent',border:'1px solid #1e2e1e',color:'#666',padding:'7px 11px',borderRadius:8,cursor:'pointer',fontSize:15,transition:'all .15s'},
-  navActive:{background:'#0d2018',color:'#2ecc71',borderColor:'#2ecc71'},
-  navLive:{background:'#1a0a0a',color:'#e74c3c',borderColor:'#e74c3c',animation:'pulse 2s infinite'},
-  main:{position:'relative',zIndex:1,maxWidth:680,margin:'0 auto',padding:'20px 16px 100px'},
-  spinner:{display:'flex',justifyContent:'center',alignItems:'center',height:'60vh',fontSize:32},
-  spinEl:{animation:'spin 1s linear infinite',display:'inline-block'},
-  wrap:{display:'flex',flexDirection:'column',gap:18,animation:'fadeUp .4s ease'},
-  sectionTitle:{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:900,color:'#2ecc71',letterSpacing:1,borderBottom:'1px solid #1a2a1a',paddingBottom:8},
-  banner:{background:'linear-gradient(135deg,#081808 0%,#0f2a14 50%,#081808 100%)',border:'1px solid rgba(46,204,113,.35)',borderRadius:14,padding:'18px 20px',display:'flex',alignItems:'center',gap:14},
-  bannerIcon:{fontSize:40,lineHeight:1},
-  bannerTitle:{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:900,letterSpacing:3,color:'#2ecc71'},
-  bannerSub:{fontSize:11,color:'#4a7a4a',marginTop:3,letterSpacing:1},
-  statsRow:{display:'flex',gap:10},
-  statCard:{flex:1,background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:10,padding:12,textAlign:'center'},
-  statNum:{fontSize:28,fontWeight:900,color:'#2ecc71',fontFamily:"'Playfair Display',serif"},
-  statLabel:{fontSize:10,color:'#666',letterSpacing:1,marginTop:2},
-  liveAlert:{background:'#160808',border:'1px solid #e74c3c',borderRadius:10,padding:'13px 16px',cursor:'pointer',fontSize:14,display:'flex',alignItems:'center',gap:8,color:'#e8e8e8'},
-  playerGrid:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10},
-  playerCard:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'14px 12px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,transition:'border-color .2s'},
-  avatar:{width:46,height:46,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:900,color:'#fff'},
-  playerName:{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700},
-  playerHdcp:{fontSize:12,color:'#888'},
-  playerBest:{fontSize:11,color:'#2ecc71',marginTop:2},
-  editHdcpBtn:{background:'transparent',border:'1px dashed #2a3a2a',color:'#668866',padding:'7px 14px',borderRadius:8,cursor:'pointer',fontSize:12,alignSelf:'flex-start',letterSpacing:1},
-  hdcpEditor:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'14px 16px',display:'flex',flexDirection:'column',gap:12},
-  hdcpRow:{display:'flex',alignItems:'center',justifyContent:'space-between'},
-  hdcpInput:{background:'#111820',border:'1px solid #2ecc71',color:'#2ecc71',padding:'6px 10px',borderRadius:8,width:72,textAlign:'center',fontSize:20,fontWeight:900},
-  bigBtn:{background:'linear-gradient(135deg,#145c32,#27ae60)',color:'#fff',border:'none',borderRadius:12,padding:'16px 24px',fontSize:17,fontWeight:700,cursor:'pointer',letterSpacing:1,boxShadow:'0 4px 24px rgba(46,204,113,.25)',fontFamily:"'Playfair Display',serif"},
-  recentCard:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:11,padding:'13px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'},
-  recentLeft:{display:'flex',alignItems:'center',gap:12},
-  recentIcon:{fontSize:22},
-  recentFmt:{fontSize:15,fontWeight:700},
-  recentMeta:{fontSize:11,color:'#666',marginTop:2,letterSpacing:1},
-  setupSummary:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:10,padding:'12px 16px',fontSize:14,display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'},
-  diceBtn:{background:'#0d0d1a',border:'1px solid #9b59b6',color:'#9b59b6',padding:'10px 18px',borderRadius:10,cursor:'pointer',fontSize:14,fontWeight:700,letterSpacing:1,alignSelf:'flex-start'},
-  tabs:{display:'flex',borderRadius:10,overflow:'hidden',border:'1px solid #1a2a1a'},
-  tab:{flex:1,background:'transparent',border:'none',color:'#555',padding:'10px 0',cursor:'pointer',fontSize:12,letterSpacing:2,transition:'all .2s'},
-  tabActive:{background:'#0d2018',color:'#2ecc71',fontWeight:700},
-  formatGrid:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9},
-  fCard:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'13px 11px',cursor:'pointer',transition:'all .15s'},
-  fCardActive:{borderColor:'#2ecc71',background:'#081808'},
-  fIcon:{fontSize:26,marginBottom:5},
-  fLabel:{fontWeight:700,fontSize:13,marginBottom:3},
-  fDesc:{fontSize:10,color:'#666',lineHeight:1.4},
-  teamList:{display:'flex',flexDirection:'column',gap:9},
-  tCard:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'14px 16px',cursor:'pointer',transition:'all .15s'},
-  tCardActive:{borderColor:'#2ecc71',background:'#081808'},
-  tLabel:{fontWeight:700,fontSize:14,marginBottom:8},
-  tBadges:{display:'flex',gap:7,flexWrap:'wrap'},
-  tBadge:{background:'#112a11',border:'1px solid #2ecc7166',borderRadius:20,padding:'3px 10px',fontSize:11,color:'#2ecc71'},
-  optGrid:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:16,display:'flex',flexDirection:'column',gap:14},
-  optRow:{display:'flex',alignItems:'center',justifyContent:'space-between'},
-  optLabel:{color:'#888',fontSize:13,letterSpacing:1},
-  optInput:{background:'#111820',border:'1px solid #2a3a2a',color:'#e8e8e8',padding:'7px 10px',borderRadius:8,fontSize:14,minWidth:150},
-  fmtBanner:{background:'linear-gradient(135deg,#081808,#0f2a14)',border:'1px solid #2ecc7155',borderRadius:12,padding:'13px 18px',display:'flex',alignItems:'center',gap:12},
-  fmtIcon:{fontSize:28},
-  fmtTitle:{fontFamily:"'Playfair Display',serif",fontWeight:900,fontSize:17,letterSpacing:1},
-  fmtMeta:{fontSize:11,color:'#4a7a4a',marginTop:2,letterSpacing:1},
-  fmtProg:{marginLeft:'auto',background:'#2ecc71',color:'#000',borderRadius:20,padding:'4px 12px',fontSize:13,fontWeight:900},
-  syncDot:{width:8,height:8,borderRadius:'50%',background:'#2ecc71',animation:'pulse 2s infinite',marginLeft:8},
-  standings:{display:'flex',gap:7,overflowX:'auto',paddingBottom:2},
-  standingPill:{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:10,padding:'9px 12px',minWidth:62,flex:'0 0 auto'},
-  standingAvatar:{width:30,height:30,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#fff'},
-  standingScore:{fontWeight:900,fontSize:14},
-  holeNav:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'12px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'},
-  holeNavBtn:{background:'#111820',border:'1px solid #2a3a2a',color:'#e8e8e8',width:38,height:38,borderRadius:8,cursor:'pointer',fontSize:20,display:'flex',alignItems:'center',justifyContent:'center'},
-  holeInfo:{display:'flex',gap:10,alignItems:'baseline'},
-  holeNum:{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:900,color:'#f1c40f'},
-  holePar:{fontSize:15,color:'#2ecc71'},
-  holeMeta:{fontSize:12,color:'#555'},
-  scoreInputs:{display:'flex',flexDirection:'column',gap:9},
-  scoreRow:{background:'#0d1a0d',borderRadius:12,padding:'13px 15px',display:'flex',alignItems:'center',justifyContent:'space-between',borderLeft:'3px solid transparent'},
-  scoreLeft:{display:'flex',alignItems:'center',gap:10},
-  scoreAvatar:{width:36,height:36,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:15,color:'#fff',flexShrink:0},
-  scorePName:{fontSize:15,fontWeight:700},
-  scoreNameStyle:{fontSize:11,marginTop:2},
-  scoreControls:{display:'flex',alignItems:'center',gap:7},
-  scoreBtn:{background:'#111820',border:'1px solid #2a3a2a',color:'#e8e8e8',width:36,height:40,borderRadius:8,cursor:'pointer',fontSize:22,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none',WebkitUserSelect:'none'},
-  scoreInput:{background:'#070f07',border:'2px solid #2ecc71',color:'#f1c40f',width:52,height:46,textAlign:'center',fontSize:26,fontWeight:900,borderRadius:8,outline:'none'},
-  parFillBtn:{background:'transparent',border:'1px dashed #2a3a2a',color:'#555',padding:'7px 16px',borderRadius:8,cursor:'pointer',fontSize:12,alignSelf:'center',letterSpacing:1},
-  holeDots:{display:'flex',gap:5,justifyContent:'center',flexWrap:'wrap',padding:'6px 0'},
-  holeDot:{width:13,height:13,borderRadius:'50%',cursor:'pointer',transition:'all .2s'},
-  toggleBtn:{background:'transparent',border:'1px solid #1a2a1a',color:'#555',padding:'7px 16px',borderRadius:8,cursor:'pointer',fontSize:12,alignSelf:'center',letterSpacing:1},
-  finishBtn:{background:'linear-gradient(135deg,#7a1010,#c0392b)',color:'#fff',border:'none',borderRadius:12,padding:'16px 24px',fontSize:17,fontWeight:700,cursor:'pointer',letterSpacing:1,fontFamily:"'Playfair Display',serif",marginTop:6},
-  fullCard:{background:'#070f07',border:'1px solid #1a2a1a',borderRadius:12,padding:12,overflowX:'auto'},
-  halfLabel:{fontSize:11,fontWeight:700,letterSpacing:3,color:'#2ecc71',marginBottom:8},
-  table:{width:'100%',borderCollapse:'collapse',fontSize:12},
-  th:{padding:'5px 6px',textAlign:'center',color:'#555',fontWeight:600,borderBottom:'1px solid #1a2a1a',whiteSpace:'nowrap'},
-  td:{padding:'5px 6px',textAlign:'center',color:'#e8e8e8',borderBottom:'1px solid #111820'},
-  filterBar:{display:'flex',gap:7,overflowX:'auto',paddingBottom:4},
-  filterBtn:{background:'transparent',border:'1px solid #1a2a1a',color:'#555',padding:'6px 12px',borderRadius:20,cursor:'pointer',fontSize:11,letterSpacing:1,whiteSpace:'nowrap',flexShrink:0},
-  filterActive:{background:'#0d2018',color:'#2ecc71',borderColor:'#2ecc71'},
-  histCard:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:'15px 17px'},
-  histHeader:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6},
-  histActions:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:12},
-  resumeBtn:{background:'#0d2018',border:'1px solid #2ecc71',color:'#2ecc71',padding:'6px 14px',borderRadius:8,cursor:'pointer',fontSize:12,letterSpacing:1},
-  deleteBtn:{background:'#1a0808',border:'1px solid #e74c3c55',color:'#e74c3c',padding:'6px 10px',borderRadius:8,cursor:'pointer',fontSize:13},
-  lbHeader:{display:'flex',alignItems:'center',gap:14},
-  lbIcon:{fontSize:44,lineHeight:1},
-  lbTitle:{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:900,letterSpacing:1},
-  lbMeta:{fontSize:12,color:'#555',marginTop:3,letterSpacing:1},
-  podium:{display:'flex',flexDirection:'column',gap:10},
-  pCard:{background:'#0d1a0d',border:'2px solid transparent',borderRadius:14,padding:'16px 20px',display:'flex',alignItems:'center',gap:14},
-  pAvatar:{width:44,height:44,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#fff',flexShrink:0},
-  pName:{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,flex:1},
-  statsSection:{background:'#0d1a0d',border:'1px solid #1a2a1a',borderRadius:12,padding:16},
-  statBar:{flex:1,height:6,background:'#1a2a1a',borderRadius:3,overflow:'hidden'},
-  statFill:{height:'100%',borderRadius:3},
-  dot:{width:9,height:9,borderRadius:'50%',flexShrink:0},
-  empty:{textAlign:'center',color:'#444',padding:40,fontSize:15},
-};
-
-// ── APP ───────────────────────────────────────────────────────────────────────
-function App() {
-  const [view, setView] = useState('home');
-  const [activeRoundId, setActiveRoundId] = useState(null);
-  const [rounds, setRounds] = useState([]);
-  const [scores, setScores] = useState({});
-  const [playerSettings, setPlayerSettings] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-
-  useEffect(() => { loadAll(); }, []);
-
-  useEffect(() => {
-    const scoresSub = supabase.channel('scores-changes')
-      .on('postgres_changes',{event:'*',schema:'public',table:'scores'},payload => {
-        if(payload.eventType==='INSERT'||payload.eventType==='UPDATE'){
-          const s=payload.new;
-          setScores(prev=>({...prev,[s.round_id]:{...(prev[s.round_id]||{}),[s.player_id]:s.holes}}));
-        }
-      }).subscribe();
-    const roundsSub = supabase.channel('rounds-changes')
-      .on('postgres_changes',{event:'*',schema:'public',table:'rounds'},payload => {
-        if(payload.eventType==='INSERT') setRounds(prev=>[payload.new,...prev]);
-        else if(payload.eventType==='UPDATE') setRounds(prev=>prev.map(r=>r.id===payload.new.id?payload.new:r));
-        else if(payload.eventType==='DELETE') setRounds(prev=>prev.filter(r=>r.id!==payload.old.id));
-      }).subscribe();
-    return()=>{supabase.removeChannel(scoresSub);supabase.removeChannel(roundsSub);};
+ 
+// ═══════════════════════════════════════════════════════
+// MAIN APP
+// ═══════════════════════════════════════════════════════
+function App(){
+  const[view,setView]=useState('home');
+  const[activeRoundId,setActiveRoundId]=useState(null);
+  const[rounds,setRounds]=useState([]);
+  const[scores,setScores]=useState({});
+  const[playerSettings,setPlayerSettings]=useState({});
+  const[loading,setLoading]=useState(true);
+  const[toast,setToast]=useState(null);
+ 
+  const showToast=(msg,type='success')=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
+ 
+  useEffect(()=>{loadAll();},[]);
+ 
+  useEffect(()=>{
+    const s1=sb.channel('sc').on('postgres_changes',{event:'*',schema:'public',table:'scores'},p=>{
+      if(p.eventType==='INSERT'||p.eventType==='UPDATE'){const s=p.new;setScores(prev=>({...prev,[s.round_id]:{...(prev[s.round_id]||{}),[s.player_id]:s.holes}}));}
+    }).subscribe();
+    const s2=sb.channel('rc').on('postgres_changes',{event:'*',schema:'public',table:'rounds'},p=>{
+      if(p.eventType==='INSERT')setRounds(prev=>[p.new,...prev]);
+      else if(p.eventType==='UPDATE')setRounds(prev=>prev.map(r=>r.id===p.new.id?p.new:r));
+      else if(p.eventType==='DELETE')setRounds(prev=>prev.filter(r=>r.id!==p.old.id));
+    }).subscribe();
+    return()=>{sb.removeChannel(s1);sb.removeChannel(s2);};
   },[]);
-
-  const loadAll = async () => {
+ 
+  const loadAll=async()=>{
     setLoading(true);
-    try {
-      const [{data:rd},{data:sd},{data:ps}] = await Promise.all([
-        supabase.from('rounds').select('*').order('created_at',{ascending:false}),
-        supabase.from('scores').select('*'),
-        supabase.from('player_settings').select('*'),
+    try{
+      const[{data:rd},{data:sd},{data:ps}]=await Promise.all([
+        sb.from('rounds').select('*').order('created_at',{ascending:false}),
+        sb.from('scores').select('*'),
+        sb.from('player_settings').select('*'),
       ]);
       setRounds(rd||[]);
-      const scMap={};
-      for(const s of(sd||[])){if(!scMap[s.round_id])scMap[s.round_id]={};scMap[s.round_id][s.player_id]=s.holes;}
-      setScores(scMap);
+      const m={};for(const s of(sd||[])){if(!m[s.round_id])m[s.round_id]={};m[s.round_id][s.player_id]=s.holes;}
+      setScores(m);
       const p={};for(const s of(ps||[]))p[s.player_id]=s.handicap;setPlayerSettings(p);
       const live=(rd||[]).find(r=>!r.completed);if(live)setActiveRoundId(live.id);
-    } catch(e){console.error(e);}
-    finally{setLoading(false);}
+    }catch(e){console.error(e);}
+    setLoading(false);
   };
-
-  const startRound = async (setup) => {
-    setSyncing(true);
-    try {
+ 
+  const startRound=async(setup)=>{
+    try{
       const hdcp={};PLAYERS.forEach(p=>{hdcp[p.id]=playerSettings[p.id]??p.defaultHcp;});
-      const {data:round,error} = await supabase.from('rounds').insert({
+      const{data:round,error}=await sb.from('rounds').insert({
         date:setup.date,format:setup.format,team_config:setup.teamConfig,
-        tees:setup.tees,bet_amount:setup.betAmount,handicaps:hdcp,completed:false,
+        tees:setup.tees,bet_amount:setup.betAmount,handicaps:hdcp,
+        completed:false,course_id:setup.courseId,
+        team_names:setup.teamNames||null,
       }).select().single();
       if(error)throw error;
-      await supabase.from('scores').insert(PLAYERS.map(p=>({round_id:round.id,player_id:p.id,holes:Array(18).fill(0)})));
+      await sb.from('scores').insert(PLAYERS.map(p=>({round_id:round.id,player_id:p.id,holes:Array(18).fill(0)})));
       setActiveRoundId(round.id);setView('scorecard');
-    } catch(e){alert('Error starting round. Check your Supabase connection.');console.error(e);}
-    finally{setSyncing(false);}
+      showToast('Round started! Good luck 🏌️');
+    }catch(e){showToast('Error starting round','error');console.error(e);}
   };
-
-  const updateScore = async (roundId,playerId,holeIdx,value) => {
-    const current=scores[roundId]?.[playerId]||Array(18).fill(0);
-    const updated=[...current];
-    updated[holeIdx]=value===null?0:Math.max(1,parseInt(value)||0);
-    setScores(prev=>({...prev,[roundId]:{...(prev[roundId]||{}),[playerId]:updated}}));
-    await supabase.from('scores').update({holes:updated,updated_at:new Date().toISOString()})
-      .eq('round_id',roundId).eq('player_id',playerId);
+ 
+  const updateScore=async(roundId,playerId,holeIdx,value)=>{
+    const cur=scores[roundId]?.[playerId]||Array(18).fill(0);
+    const upd=[...cur];upd[holeIdx]=value===null?0:Math.max(1,parseInt(value)||0);
+    setScores(prev=>({...prev,[roundId]:{...(prev[roundId]||{}),[playerId]:upd}}));
+    await sb.from('scores').update({holes:upd,updated_at:new Date().toISOString()}).eq('round_id',roundId).eq('player_id',playerId);
   };
-
-  const finishRound = async (roundId) => {
-    await supabase.from('rounds').update({completed:true}).eq('id',roundId);
-    setActiveRoundId(null);setView('leaderboard');
+ 
+  const finishRound=async(roundId)=>{
+    await sb.from('rounds').update({completed:true}).eq('id',roundId);
+    setActiveRoundId(null);setView('leaderboard');showToast('Round complete! 🏆');
   };
-
-  const deleteRound = async (roundId) => {
-    await supabase.from('rounds').delete().eq('id',roundId);
+ 
+  const deleteRound=async(roundId)=>{
+    await sb.from('rounds').delete().eq('id',roundId);
     if(activeRoundId===roundId)setActiveRoundId(null);
+    showToast('Round deleted');
   };
-
-  const updateHandicap = async (playerId,value) => {
-    const hcp=parseInt(value)||0;
-    setPlayerSettings(prev=>({...prev,[playerId]:hcp}));
-    await supabase.from('player_settings').upsert({player_id:playerId,handicap:hcp,updated_at:new Date().toISOString()});
+ 
+  const updateHandicap=async(pid,val)=>{
+    const hcp=parseInt(val)||0;
+    setPlayerSettings(prev=>({...prev,[pid]:hcp}));
+    await sb.from('player_settings').upsert({player_id:pid,handicap:hcp,updated_at:new Date().toISOString()});
   };
-
+ 
   const activeRound=rounds.find(r=>r.id===activeRoundId);
   const activeScores=activeRoundId?(scores[activeRoundId]||{}):{};
   const latestCompleted=rounds.find(r=>r.completed);
-
-  if(loading)return <div style={C.app}><div style={C.spinner}><span style={C.spinEl}>⛳</span></div></div>;
-
-  return (
-    <div style={C.app}>
-      <div style={C.bg}/>
-      <header style={C.header}>
-        <div style={C.logoWrap} onClick={()=>setView('home')}>
-          <span style={C.logoEmoji}>⛳</span>
+ 
+  if(loading)return(
+    <div style={{minHeight:'100vh',background:'#050a05',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16}}>
+      <div style={{fontSize:48,animation:'bounce 1s infinite'}}>⛳</div>
+      <div style={{color:'#00e676',fontSize:13,letterSpacing:3,fontWeight:600}}>LOADING...</div>
+    </div>
+  );
+ 
+  return(
+    <div style={{minHeight:'100vh',background:'#050a05',paddingBottom:80}}>
+      {/* Toast */}
+      {toast&&<div style={{position:'fixed',top:20,left:'50%',transform:'translateX(-50%)',zIndex:999,background:toast.type==='error'?'#b71c1c':'#00e676',color:toast.type==='error'?'#fff':'#000',padding:'10px 20px',borderRadius:30,fontSize:13,fontWeight:700,boxShadow:'0 4px 20px rgba(0,0,0,.5)',whiteSpace:'nowrap',animation:'fadeUp .3s ease'}}>{toast.msg}</div>}
+ 
+      {/* Header */}
+      <header style={{position:'sticky',top:0,zIndex:100,background:'rgba(5,10,5,.95)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(0,230,118,.1)',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}} onClick={()=>setView('home')}>
+          <span style={{fontSize:24}}>⛳</span>
           <div>
-            <div style={C.logoTitle}>SNEE FARM</div>
-            <div style={C.logoSub}>MOUNT PLEASANT · SC</div>
+            <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:3,color:'#00e676',lineHeight:1}}>THURSDAY CREW</div>
+            <div style={{fontSize:9,color:'#2a5a2a',letterSpacing:2,fontWeight:600}}>SOUTH CAROLINA GOLF</div>
           </div>
         </div>
-        <nav style={C.nav}>
-          {[{id:'home',icon:'🏠'},{id:'setup',icon:'🎯'},{id:'history',icon:'📋'}].map(n=>(
-            <button key={n.id} style={{...C.navBtn,...(view===n.id?C.navActive:{})}} onClick={()=>setView(n.id)}>{n.icon}</button>
+        <div style={{display:'flex',gap:4}}>
+          {[{id:'home',icon:'🏠'},{id:'setup',icon:'🎯'},{id:'stats',icon:'📊'},{id:'history',icon:'📋'}].map(n=>(
+            <button key={n.id} onClick={()=>setView(n.id)} style={{background:view===n.id?'rgba(0,230,118,.15)':'transparent',border:`1px solid ${view===n.id?'rgba(0,230,118,.5)':'rgba(255,255,255,.05)'}`,color:view===n.id?'#00e676':'#555',padding:'7px 10px',borderRadius:8,cursor:'pointer',fontSize:14,transition:'all .2s'}}>{n.icon}</button>
           ))}
-          {activeRound&&<button style={{...C.navBtn,...C.navLive}} onClick={()=>setView('scorecard')}>🔴 LIVE</button>}
-        </nav>
+          {activeRound&&<button onClick={()=>setView('scorecard')} style={{background:'rgba(255,68,68,.15)',border:'1px solid rgba(255,68,68,.4)',color:'#ff4444',padding:'7px 10px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:700,animation:'pulse 2s infinite'}}>🔴 LIVE</button>}
+        </div>
       </header>
-      <main style={C.main}>
+ 
+      <div style={{maxWidth:700,margin:'0 auto',padding:'16px 14px'}}>
         {view==='home'&&<HomeView rounds={rounds} scores={scores} playerSettings={playerSettings} activeRound={activeRound} updateHandicap={updateHandicap} setView={setView} setActiveRoundId={setActiveRoundId}/>}
-        {view==='setup'&&<SetupView startRound={startRound} syncing={syncing}/>}
+        {view==='setup'&&<SetupView startRound={startRound} playerSettings={playerSettings}/>}
         {view==='scorecard'&&activeRound&&<ScorecardView round={activeRound} scores={activeScores} updateScore={updateScore} finishRound={finishRound}/>}
         {view==='history'&&<HistoryView rounds={rounds} scores={scores} deleteRound={deleteRound} setActiveRoundId={setActiveRoundId} setView={setView}/>}
-        {view==='leaderboard'&&latestCompleted&&<LeaderboardView round={latestCompleted} scores={scores[latestCompleted.id]||{}}/>}
-      </main>
+        {view==='stats'&&<StatsView rounds={rounds} scores={scores} playerSettings={playerSettings}/>}
+        {view==='leaderboard'&&latestCompleted&&<LeaderboardView round={latestCompleted} scores={scores[latestCompleted.id]||{}} setView={setView}/>}
+      </div>
     </div>
   );
 }
-
-// ── HOME ──────────────────────────────────────────────────────────────────────
+ 
+// ═══════════════════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════════════════
 function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setView,setActiveRoundId}){
-  const [editHdcp,setEditHdcp]=useState(false);
-  const totalRounds=rounds.filter(r=>r.completed).length;
-  const thisMonth=rounds.filter(r=>r.completed&&r.date?.startsWith(new Date().toISOString().slice(0,7))).length;
-  const getBest=(pid)=>{let b=null;for(const r of rounds){if(!r.completed)continue;const s=scores[r.id]?.[pid];if(!s)continue;const t=s.reduce((a,b)=>a+(b||0),0);if(t>0&&(b===null||t<b))b=t;}return b;};
+  const[editHdcp,setEditHdcp]=useState(false);
+  const completed=rounds.filter(r=>r.completed);
+  const thisMonth=completed.filter(r=>r.date?.startsWith(new Date().toISOString().slice(0,7))).length;
+ 
+  const getBest=pid=>{let b=null;for(const r of completed){const s=scores[r.id]?.[pid];if(!s)continue;const t=s.reduce((a,b)=>a+(b||0),0);if(t>0&&(b===null||t<b))b=t;}return b;};
+  const getAvg=pid=>{const ts=completed.map(r=>{const s=scores[r.id]?.[pid];return s?s.reduce((a,b)=>a+(b||0),0):0;}).filter(Boolean);return ts.length?Math.round(ts.reduce((a,b)=>a+b,0)/ts.length):null;};
+ 
   return(
-    <div style={C.wrap}>
-      <div style={C.banner}>
-        <span style={C.bannerIcon}>⛳</span>
-        <div><div style={C.bannerTitle}>THURSDAY CREW</div><div style={C.bannerSub}>{totalRounds} ROUNDS PLAYED · {thisMonth} THIS MONTH</div></div>
-      </div>
-      <div style={C.statsRow}>
-        <div style={C.statCard}><div style={C.statNum}>{totalRounds}</div><div style={C.statLabel}>ROUNDS</div></div>
-        <div style={C.statCard}><div style={C.statNum}>{thisMonth}</div><div style={C.statLabel}>THIS MONTH</div></div>
-        <div style={C.statCard}><div style={C.statNum}>{rounds.filter(r=>!r.completed).length}</div><div style={C.statLabel}>IN PLAY</div></div>
-      </div>
-      {activeRound&&<div style={C.liveAlert} onClick={()=>{setActiveRoundId(activeRound.id);setView('scorecard');}}>
-        <span>🔴</span><span style={{flex:1}}><strong>{FORMATS.find(f=>f.id===activeRound.format)?.label}</strong> in progress · {activeRound.date}</span><span style={{color:'#e74c3c'}}>Resume →</span>
-      </div>}
-      <div style={C.sectionTitle}>THE SQUAD</div>
-      <div style={C.playerGrid}>
-        {PLAYERS.map(p=>{const best=getBest(p.id);const hdcp=playerSettings[p.id]??p.defaultHcp;return(
-          <div key={p.id} style={{...C.playerCard,borderColor:p.color+'44'}}>
-            <div style={{...C.avatar,background:p.color}}>{p.avatar}</div>
-            <div style={{...C.playerName,color:p.color}}>{p.name}</div>
-            <div style={C.playerHdcp}>Hdcp {hdcp} · {p.hcpRange}</div>
-            {best&&<div style={C.playerBest}>Best: {best}</div>}
-          </div>
-        );})}
-      </div>
-      <button style={C.editHdcpBtn} onClick={()=>setEditHdcp(!editHdcp)}>{editHdcp?'✓ DONE':'✏ EDIT HANDICAPS'}</button>
-      {editHdcp&&<div style={C.hdcpEditor}>{PLAYERS.map(p=>(
-        <div key={p.id} style={C.hdcpRow}>
-          <span style={{...C.playerName,color:p.color,fontSize:15}}>{p.name}</span>
-          <input type="number" min={0} max={100} value={playerSettings[p.id]??p.defaultHcp} onChange={e=>updateHandicap(p.id,e.target.value)} style={C.hdcpInput}/>
+    <div style={{display:'flex',flexDirection:'column',gap:16,animation:'fadeUp .4s ease'}}>
+      {/* Hero */}
+      <div style={{background:'linear-gradient(135deg,#0a1f0a,#0f2d0f)',border:'1px solid rgba(0,230,118,.2)',borderRadius:20,padding:'24px 20px',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:-20,right:-20,fontSize:120,opacity:.05}}>⛳</div>
+        <div style={{fontSize:11,color:'#00e676',letterSpacing:3,fontWeight:700,marginBottom:8}}>MOUNT PLEASANT · SC</div>
+        <div style={{fontFamily:'Bebas Neue',fontSize:38,letterSpacing:2,color:'#fff',lineHeight:1,marginBottom:4}}>THURSDAY CREW</div>
+        <div style={{fontSize:13,color:'rgba(255,255,255,.4)',marginBottom:20}}>Weekly Golf Tracker</div>
+        <div style={{display:'flex',gap:12}}>
+          {[{n:completed.length,l:'ROUNDS'},{n:thisMonth,l:'THIS MONTH'},{n:rounds.filter(r=>!r.completed).length,l:'IN PLAY'}].map((s,i)=>(
+            <div key={i} style={{flex:1,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'10px 8px',textAlign:'center'}}>
+              <div style={{fontFamily:'Bebas Neue',fontSize:28,color:'#00e676'}}>{s.n}</div>
+              <div style={{fontSize:9,color:'#2a5a2a',letterSpacing:2,fontWeight:700}}>{s.l}</div>
+            </div>
+          ))}
         </div>
-      ))}</div>}
-      <button style={C.bigBtn} onClick={()=>setView('setup')}>🏌️ Set Up New Round</button>
-      {rounds.length>0&&<><div style={C.sectionTitle}>RECENT ROUNDS</div>
-        {rounds.slice(0,4).map(r=>{const fmt=FORMATS.find(f=>f.id===r.format);return(
-          <div key={r.id} style={C.recentCard} onClick={()=>{if(!r.completed){setActiveRoundId(r.id);setView('scorecard');}}}>
-            <div style={C.recentLeft}><span style={C.recentIcon}>{fmt?.icon}</span><div><div style={C.recentFmt}>{fmt?.label}</div><div style={C.recentMeta}>{r.date} · {r.tees?.toUpperCase()}</div></div></div>
-            <div style={{fontSize:12,fontWeight:700,color:r.completed?'#2ecc71':'#e74c3c'}}>{r.completed?'✓ DONE':'▶ LIVE'}</div>
+      </div>
+ 
+      {/* Live alert */}
+      {activeRound&&(
+        <div onClick={()=>{setActiveRoundId(activeRound.id);setView('scorecard');}} style={{background:'rgba(255,68,68,.1)',border:'1px solid rgba(255,68,68,.3)',borderRadius:14,padding:'14px 16px',cursor:'pointer',display:'flex',alignItems:'center',gap:12,animation:'pulse 3s infinite'}}>
+          <div style={{width:10,height:10,borderRadius:'50%',background:'#ff4444',animation:'pulse 1s infinite',flexShrink:0}}/>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,fontSize:14}}>{FORMATS.find(f=>f.id===activeRound.format)?.label} — IN PROGRESS</div>
+            <div style={{fontSize:11,color:'rgba(255,255,255,.4)',marginTop:2}}>{activeRound.date} · Tap to resume scoring</div>
+          </div>
+          <div style={{color:'#ff4444',fontSize:20}}>→</div>
+        </div>
+      )}
+ 
+      {/* Players */}
+      <div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:2,color:'#00e676'}}>THE SQUAD</div>
+          <button onClick={()=>setEditHdcp(!editHdcp)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.1)',color:'#555',padding:'5px 12px',borderRadius:20,cursor:'pointer',fontSize:11,letterSpacing:1}}>{editHdcp?'✓ DONE':'✏ HANDICAPS'}</button>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          {PLAYERS.map(p=>{
+            const best=getBest(p.id);const avg=getAvg(p.id);const hdcp=playerSettings[p.id]??p.defaultHcp;
+            return(
+              <div key={p.id} style={{background:'rgba(255,255,255,.03)',border:`1px solid ${p.color}22`,borderRadius:16,padding:'16px 14px',position:'relative',overflow:'hidden'}}>
+                <div style={{position:'absolute',top:-10,right:-10,fontFamily:'Bebas Neue',fontSize:60,color:p.color,opacity:.07}}>{p.avatar}</div>
+                <div style={{width:40,height:40,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:18,color:'#000',marginBottom:10}}>{p.avatar}</div>
+                <div style={{fontSize:16,fontWeight:800,marginBottom:2}}>{p.name}</div>
+                {editHdcp?(
+                  <input type="number" min={0} max={100} value={hdcp} onChange={e=>updateHandicap(p.id,e.target.value)}
+                    style={{background:'rgba(0,0,0,.5)',border:`1px solid ${p.color}`,color:p.color,padding:'4px 8px',borderRadius:8,width:70,textAlign:'center',fontSize:18,fontWeight:900,marginTop:4}}/>
+                ):(
+                  <>
+                    <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginBottom:6}}>HCP {hdcp}</div>
+                    <div style={{display:'flex',gap:8}}>
+                      {best&&<div style={{fontSize:10,color:p.color,background:`${p.color}15`,padding:'2px 8px',borderRadius:20,fontWeight:700}}>BEST {best}</div>}
+                      {avg&&<div style={{fontSize:10,color:'rgba(255,255,255,.3)',padding:'2px 8px'}}>AVG {avg}</div>}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+ 
+      {/* Start button */}
+      <button onClick={()=>setView('setup')} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:16,padding:'18px 24px',fontSize:18,fontWeight:900,cursor:'pointer',letterSpacing:2,boxShadow:'0 8px 30px rgba(0,230,118,.3)',fontFamily:'Bebas Neue',animation:'glow 3s infinite'}}>
+        🏌️ NEW ROUND
+      </button>
+ 
+      {/* Recent rounds */}
+      {completed.length>0&&(
+        <div>
+          <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:2,color:'#00e676',marginBottom:12}}>RECENT ROUNDS</div>
+          {rounds.slice(0,5).map(r=>{
+            const fmt=FORMATS.find(f=>f.id===r.format);
+            const course=COURSES[r.course_id];
+            const allScores=PLAYERS.map(p=>(scores[r.id]?.[p.id]||[]).reduce((a,b)=>a+(b||0),0));
+            const low=Math.min(...allScores.filter(Boolean));
+            return(
+              <div key={r.id} onClick={()=>{if(!r.completed){setActiveRoundId(r.id);setView('scorecard');}}} style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:14,padding:'14px 16px',marginBottom:8,cursor:r.completed?'default':'pointer',display:'flex',alignItems:'center',gap:14}}>
+                <div style={{fontSize:28,flexShrink:0}}>{fmt?.icon}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:14}}>{fmt?.label}</div>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:2}}>{r.date} · {course?.name||'Snee Farm'}</div>
+                </div>
+                <div style={{textAlign:'right'}}>
+                  {r.completed?<div style={{color:'#00e676',fontSize:12,fontWeight:700}}>✓ {low||'—'}</div>:<div style={{color:'#ff4444',fontSize:11,fontWeight:700,animation:'pulse 2s infinite'}}>LIVE</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+ 
+      {/* Add to home screen tip */}
+      <div style={{background:'rgba(0,230,118,.05)',border:'1px solid rgba(0,230,118,.1)',borderRadius:14,padding:'12px 16px',display:'flex',gap:12,alignItems:'center'}}>
+        <div style={{fontSize:24}}>📱</div>
+        <div>
+          <div style={{fontSize:12,fontWeight:700,color:'#00e676',marginBottom:2}}>ADD TO HOME SCREEN</div>
+          <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>Tap Share → Add to Home Screen for app-like access on iPhone</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ 
+// ═══════════════════════════════════════════════════════
+// SETUP
+// ═══════════════════════════════════════════════════════
+function SetupView({startRound,playerSettings}){
+  const[tab,setTab]=useState('course');
+  const[setup,setSetup]=useState({
+    courseId:'snee',format:'stroke',teamConfig:'solo',
+    date:new Date().toISOString().split('T')[0],
+    tees:'white',betAmount:5,teamNames:['Team 1','Team 2'],
+  });
+  const[spinning,setSpinning]=useState(false);
+ 
+  const randomize=()=>{
+    setSpinning(true);
+    let i=0;const t=setInterval(()=>{
+      setSetup(s=>({...s,format:FORMATS[Math.floor(Math.random()*FORMATS.length)].id,teamConfig:TEAM_CONFIGS[Math.floor(Math.random()*TEAM_CONFIGS.length)].id}));
+      i++;if(i>10){clearInterval(t);setSpinning(false);}
+    },100);
+  };
+ 
+  const fmt=FORMATS.find(f=>f.id===setup.format);
+  const team=TEAM_CONFIGS.find(t=>t.id===setup.teamConfig);
+  const isTeamFmt=fmt?.team;
+  const isTeamConfig=setup.teamConfig!=='solo';
+ 
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}>
+      <div style={{fontFamily:'Bebas Neue',fontSize:28,letterSpacing:3,color:'#00e676'}}>SET UP ROUND</div>
+ 
+      {/* Summary card */}
+      <div style={{background:'linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,200,83,.04))',border:'1px solid rgba(0,230,118,.2)',borderRadius:16,padding:'16px'}}>
+        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+          <span style={{fontSize:22}}>{fmt?.icon}</span>
+          <span style={{fontWeight:800,fontSize:15}}>{fmt?.label}</span>
+          <span style={{color:'rgba(255,255,255,.2)'}}>·</span>
+          <span style={{fontSize:13,color:'rgba(255,255,255,.5)'}}>{team?.label}</span>
+        </div>
+        <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:6}}>{COURSES[setup.courseId]?.name} · {setup.date}</div>
+      </div>
+ 
+      {/* Randomize */}
+      <button onClick={randomize} style={{background:'rgba(155,89,182,.15)',border:'1px solid rgba(155,89,182,.4)',color:'#9b59b6',padding:'12px 20px',borderRadius:12,cursor:'pointer',fontSize:14,fontWeight:700,letterSpacing:2,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+        <span style={spinning?{animation:'spin .3s linear infinite',display:'inline-block'}:{}}>🎲</span> {spinning?'SPINNING...':'RANDOMIZE FORMAT & TEAMS'}
+      </button>
+ 
+      {/* Tabs */}
+      <div style={{display:'flex',gap:0,borderRadius:12,overflow:'hidden',border:'1px solid rgba(255,255,255,.06)'}}>
+        {['course','format','teams','options'].map(t=>(
+          <button key={t} onClick={()=>setTab(t)} style={{flex:1,background:tab===t?'rgba(0,230,118,.15)':'transparent',border:'none',color:tab===t?'#00e676':'#444',padding:'10px 4px',cursor:'pointer',fontSize:10,fontWeight:700,letterSpacing:1,transition:'all .2s'}}>{t.toUpperCase()}</button>
+        ))}
+      </div>
+ 
+      {/* Course tab */}
+      {tab==='course'&&(
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {Object.entries(COURSES).map(([id,c])=>(
+            <div key={id} onClick={()=>setSetup(s=>({...s,courseId:id}))} style={{background:setup.courseId===id?'rgba(0,230,118,.1)':'rgba(255,255,255,.03)',border:`1px solid ${setup.courseId===id?'rgba(0,230,118,.4)':'rgba(255,255,255,.06)'}`,borderRadius:14,padding:'14px 16px',cursor:'pointer',display:'flex',alignItems:'center',gap:14}}>
+              <div style={{fontSize:24,flexShrink:0}}>⛳</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:14,color:setup.courseId===id?'#00e676':'#fff'}}>{c.name}</div>
+                <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:2}}>{c.city}, SC · {c.holes.length} holes · Par {c.holes.reduce((a,h)=>a+h.par,0)}</div>
+              </div>
+              {setup.courseId===id&&<div style={{color:'#00e676',fontSize:18}}>✓</div>}
+            </div>
+          ))}
+        </div>
+      )}
+ 
+      {/* Format tab */}
+      {tab==='format'&&(
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+          {FORMATS.map(f=>(
+            <div key={f.id} onClick={()=>setSetup(s=>({...s,format:f.id}))} style={{background:setup.format===f.id?'rgba(0,230,118,.1)':'rgba(255,255,255,.03)',border:`1px solid ${setup.format===f.id?'rgba(0,230,118,.4)':'rgba(255,255,255,.06)'}`,borderRadius:14,padding:'13px 12px',cursor:'pointer'}}>
+              <div style={{fontSize:24,marginBottom:6}}>{f.icon}</div>
+              <div style={{fontWeight:700,fontSize:12,marginBottom:4,color:setup.format===f.id?'#00e676':'#fff'}}>{f.label}</div>
+              <div style={{fontSize:10,color:'rgba(255,255,255,.3)',lineHeight:1.4}}>{f.desc}</div>
+              {f.team&&<div style={{marginTop:6,fontSize:9,color:'#00e676',background:'rgba(0,230,118,.1)',padding:'2px 8px',borderRadius:20,display:'inline-block',fontWeight:700}}>TEAM FORMAT</div>}
+            </div>
+          ))}
+        </div>
+      )}
+ 
+      {/* Teams tab */}
+      {tab==='teams'&&(
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {TEAM_CONFIGS.map(t=>(
+            <div key={t.id} onClick={()=>setSetup(s=>({...s,teamConfig:t.id}))} style={{background:setup.teamConfig===t.id?'rgba(0,230,118,.1)':'rgba(255,255,255,.03)',border:`1px solid ${setup.teamConfig===t.id?'rgba(0,230,118,.4)':'rgba(255,255,255,.06)'}`,borderRadius:14,padding:'14px 16px',cursor:'pointer'}}>
+              <div style={{fontWeight:700,fontSize:13,color:setup.teamConfig===t.id?'#00e676':'#fff',marginBottom:8}}>{t.label}</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {t.teams.map((team,i)=>(
+                  <div key={i} style={{background:'rgba(0,230,118,.1)',border:'1px solid rgba(0,230,118,.2)',borderRadius:20,padding:'3px 10px',fontSize:11,color:'#00e676',fontWeight:600}}>
+                    {team.map(id=>PLAYERS.find(p=>p.id===id)?.name).join(' & ')}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {/* Team name customization */}
+          {isTeamConfig&&(
+            <div style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.08)',borderRadius:14,padding:'14px 16px',marginTop:4}}>
+              <div style={{fontSize:11,color:'#00e676',letterSpacing:2,fontWeight:700,marginBottom:10}}>CUSTOM TEAM NAMES</div>
+              {setup.teamNames.map((name,i)=>(
+                <div key={i} style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,.3)',width:60}}>TEAM {i+1}</div>
+                  <input value={name} onChange={e=>{const n=[...setup.teamNames];n[i]=e.target.value;setSetup(s=>({...s,teamNames:n}));}}
+                    style={{flex:1,background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'8px 12px',borderRadius:8,fontSize:14}}/>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+ 
+      {/* Options tab */}
+      {tab==='options'&&(
+        <div style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:14,padding:16,display:'flex',flexDirection:'column',gap:14}}>
+          {[
+            {label:'DATE',type:'date',key:'date'},
+            {label:'TEES',type:'select',key:'tees',opts:[{v:'black',l:'Black — Championship'},{v:'blue',l:'Blue'},{v:'white',l:'White'},{v:'gold',l:'Gold — Senior'},{v:'red',l:'Red — Forward'}]},
+          ].map(o=>(
+            <div key={o.key} style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <div style={{fontSize:11,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700}}>{o.label}</div>
+              {o.type==='select'?
+                <select value={setup[o.key]} onChange={e=>setSetup(s=>({...s,[o.key]:e.target.value}))} style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'8px 12px',borderRadius:8,fontSize:13,minWidth:180}}>{o.opts.map(op=><option key={op.v} value={op.v}>{op.l}</option>)}</select>:
+                <input type={o.type} value={setup[o.key]} onChange={e=>setSetup(s=>({...s,[o.key]:e.target.value}))} style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'8px 12px',borderRadius:8,fontSize:13,minWidth:160}}/>
+              }
+            </div>
+          ))}
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{fontSize:11,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700}}>BET / HOLE ($)</div>
+            <input type="number" value={setup.betAmount} min={0} max={500} onChange={e=>setSetup(s=>({...s,betAmount:parseInt(e.target.value)||0}))} style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,255,255,.1)',color:'#00e676',padding:'8px 12px',borderRadius:8,fontSize:18,fontWeight:900,width:80,textAlign:'center'}}/>
+          </div>
+        </div>
+      )}
+ 
+      <button onClick={()=>startRound(setup)} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:16,padding:'18px 24px',fontSize:20,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue',boxShadow:'0 8px 30px rgba(0,230,118,.3)'}}>
+        🏌️ START ROUND
+      </button>
+    </div>
+  );
+}
+ 
+// ═══════════════════════════════════════════════════════
+// SCORECARD
+// ═══════════════════════════════════════════════════════
+function ScorecardView({round,scores,updateScore,finishRound}){
+  const[holeIdx,setHoleIdx]=useState(0);
+  const[showAll,setShowAll]=useState(false);
+  const[showSkins,setShowSkins]=useState(false);
+ 
+  const course=COURSES[round.course_id]||COURSES.snee;
+  const holes=course.holes;
+  const fmt=FORMATS.find(f=>f.id===round.format);
+  const hole=holes[holeIdx];
+  const isTeam=round.teamConfig!=='solo'&&round.team_config!=='solo';
+  const teamCfg=TEAM_CONFIGS.find(t=>t.id===round.team_config);
+  const teamNames=round.team_names||['Team 1','Team 2'];
+ 
+  const holesPlayed=PLAYERS.reduce((max,p)=>{const pl=(scores[p.id]||[]).filter(s=>s>0).length;return Math.max(max,pl);},0);
+ 
+  const getTP=pid=>{let tp=0;(scores[pid]||[]).forEach((s,i)=>{if(s>0&&holes[i])tp+=s-holes[i].par;});return tp;};
+  const getSF=pid=>(scores[pid]||[]).reduce((a,s,i)=>a+(s>0&&holes[i]?sfPts(s,holes[i].par):0),0);
+  const getSkins=()=>{
+    const sk=Array(18).fill(null);
+    holes.forEach((h,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1)sk[i]=w[0].id;}});
+    return sk;
+  };
+  const skinsList=getSkins();
+  const skinsCount=pid=>skinsList.filter(s=>s===pid).length;
+  const skinsValue=round.bet_amount||5;
+  const totalSkinsPot=PLAYERS.length*skinsValue*18;
+ 
+  const getDS=pid=>{
+    if(round.format==='stableford')return{d:getSF(pid)+'pts',c:'#ffd700'};
+    if(round.format==='skins')return{d:skinsCount(pid)+'🩳',c:'#9b59b6'};
+    const tp=getTP(pid);return{d:tpStr(tp),c:tp<0?'#00e676':tp>0?'#ff5252':'#555'};
+  };
+ 
+  // Bet calculator
+  const getBetResults=()=>{
+    if(round.format==='skins'){
+      const earned={};PLAYERS.forEach(p=>{earned[p.id]=skinsCount(p.id)*skinsValue;});
+      const avg=(PLAYERS.length*skinsValue*holesPlayed)/PLAYERS.length;
+      return PLAYERS.map(p=>({...p,net:earned[p.id]-avg}));
+    }
+    const totals=PLAYERS.map(p=>({...p,tp:getTP(p.id)})).sort((a,b)=>a.tp-b.tp);
+    return totals.map((p,i)=>({...p,net:i===0?(PLAYERS.length-1)*round.bet_amount:-round.bet_amount}));
+  };
+ 
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:12,animation:'fadeUp .3s ease'}}>
+      {/* Header */}
+      <div style={{background:'linear-gradient(135deg,rgba(0,230,118,.1),rgba(0,200,83,.05))',border:'1px solid rgba(0,230,118,.2)',borderRadius:16,padding:'14px 16px',display:'flex',alignItems:'center',gap:12}}>
+        <span style={{fontSize:28}}>{fmt?.icon}</span>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2}}>{fmt?.label}</div>
+          <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:1}}>{round.date} · {course.name} · {round.tees?.toUpperCase()} TEES</div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
+          <div style={{background:'#00e676',color:'#000',borderRadius:20,padding:'3px 12px',fontSize:13,fontWeight:900}}>{holesPlayed}/18</div>
+          <div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'#00e676'}}><div style={{width:6,height:6,borderRadius:'50%',background:'#00e676',animation:'pulse 2s infinite'}}/> LIVE</div>
+        </div>
+      </div>
+ 
+      {/* Standings */}
+      <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:2}}>
+        {PLAYERS.map(p=>{const ds=getDS(p.id);return(
+          <div key={p.id} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:12,padding:'10px 12px',minWidth:72,flex:'0 0 auto'}}>
+            <div style={{width:32,height:32,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:14,color:'#000'}}>{p.avatar}</div>
+            <div style={{fontWeight:900,fontSize:15,color:ds.c}}>{ds.d}</div>
           </div>
         );})}
-      </>}
-    </div>
-  );
-}
-
-// ── SETUP ─────────────────────────────────────────────────────────────────────
-function SetupView({startRound,syncing}){
-  const [tab,setTab]=useState('format');
-  const [setup,setSetup]=useState({format:'stroke',teamConfig:'solo',date:new Date().toISOString().split('T')[0],tees:'white',betAmount:5});
-  const randomize=()=>{setSetup(s=>({...s,format:FORMATS[Math.floor(Math.random()*FORMATS.length)].id,teamConfig:TEAM_CONFIGS[Math.floor(Math.random()*TEAM_CONFIGS.length)].id}));};
-  const fmt=FORMATS.find(f=>f.id===setup.format);const team=TEAM_CONFIGS.find(t=>t.id===setup.teamConfig);
-  return(
-    <div style={C.wrap}>
-      <div style={C.sectionTitle}>SET UP ROUND</div>
-      <div style={C.setupSummary}><span>{fmt?.icon} {fmt?.label}</span><span style={{color:'#333'}}>·</span><span style={{color:'#888'}}>👥 {team?.label}</span></div>
-      <button style={C.diceBtn} onClick={randomize}>🎲 RANDOMIZE</button>
-      <div style={C.tabs}>{['format','teams','options'].map(t=><button key={t} style={{...C.tab,...(tab===t?C.tabActive:{})}} onClick={()=>setTab(t)}>{t.toUpperCase()}</button>)}</div>
-      {tab==='format'&&<div style={C.formatGrid}>{FORMATS.map(f=><div key={f.id} style={{...C.fCard,...(setup.format===f.id?C.fCardActive:{})}} onClick={()=>setSetup(s=>({...s,format:f.id}))}><div style={C.fIcon}>{f.icon}</div><div style={C.fLabel}>{f.label}</div><div style={C.fDesc}>{f.desc}</div></div>)}</div>}
-      {tab==='teams'&&<div style={C.teamList}>{TEAM_CONFIGS.map(t=><div key={t.id} style={{...C.tCard,...(setup.teamConfig===t.id?C.tCardActive:{})}} onClick={()=>setSetup(s=>({...s,teamConfig:t.id}))}><div style={C.tLabel}>{t.label}</div><div style={C.tBadges}>{t.teams.map((team,i)=><span key={i} style={C.tBadge}>{team.map(id=>PLAYERS.find(p=>p.id===id)?.name).join(' & ')}</span>)}</div></div>)}</div>}
-      {tab==='options'&&<div style={C.optGrid}>
-        <div style={C.optRow}><label style={C.optLabel}>DATE</label><input type="date" value={setup.date} onChange={e=>setSetup(s=>({...s,date:e.target.value}))} style={C.optInput}/></div>
-        <div style={C.optRow}><label style={C.optLabel}>TEES</label><select value={setup.tees} onChange={e=>setSetup(s=>({...s,tees:e.target.value}))} style={C.optInput}>{TEES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}</select></div>
-        <div style={C.optRow}><label style={C.optLabel}>BET/HOLE ($)</label><input type="number" value={setup.betAmount} min={0} max={500} onChange={e=>setSetup(s=>({...s,betAmount:parseInt(e.target.value)||0}))} style={{...C.optInput,minWidth:80,textAlign:'center'}}/></div>
-      </div>}
-      <button style={{...C.bigBtn,...(syncing?{opacity:.5,cursor:'not-allowed'}:{})}} onClick={()=>!syncing&&startRound(setup)} disabled={syncing}>{syncing?'⏳ Starting...':'🏌️ Start Round'}</button>
-    </div>
-  );
-}
-
-// ── SCORECARD ─────────────────────────────────────────────────────────────────
-function ScorecardView({round,scores,updateScore,finishRound}){
-  const [holeIdx,setHoleIdx]=useState(0);const [showAll,setShowAll]=useState(false);
-  useEffect(()=>{const first=HOLES.findIndex((_,i)=>PLAYERS.some(p=>!(scores[p.id]||[])[i]));if(first!==-1)setHoleIdx(Math.min(first,17));},[]);
-  const fmt=FORMATS.find(f=>f.id===round.format);const hole=HOLES[holeIdx];
-  const holesPlayed=PLAYERS.reduce((max,p)=>{const played=(scores[p.id]||[]).filter(s=>s>0).length;return Math.max(max,played);},0);
-  const getDS=(pid)=>{
-    const s=scores[pid]||[];let tp=0;
-    s.forEach((sc,i)=>{if(sc>0)tp+=sc-HOLES[i].par;});
-    const pts=s.reduce((a,sc,i)=>a+(sc>0?stablefordPts(sc,HOLES[i].par):0),0);
-    const skins=(()=>{let sk=0;HOLES.forEach((_,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1&&w[0].id===pid)sk++;}});return sk;})();
-    if(round.format==='stableford')return{display:pts+'pts',color:'#f1c40f'};
-    if(round.format==='skins')return{display:skins+'🩳',color:'#9b59b6'};
-    return{display:toParStr(tp),color:tp<0?'#2ecc71':tp>0?'#e74c3c':'#888'};
-  };
-  return(
-    <div style={C.wrap}>
-      <div style={C.fmtBanner}>
-        <span style={C.fmtIcon}>{fmt?.icon}</span>
-        <div><div style={C.fmtTitle}>{fmt?.label}</div><div style={C.fmtMeta}>{round.date} · {round.tees?.toUpperCase()}</div></div>
-        <div style={{display:'flex',alignItems:'center',marginLeft:'auto'}}><div style={C.fmtProg}>{holesPlayed}/18</div><div style={C.syncDot}/></div>
       </div>
-      <div style={C.standings}>{PLAYERS.map(p=>{const ds=getDS(p.id);return(<div key={p.id} style={C.standingPill}><div style={{...C.standingAvatar,background:p.color}}>{p.avatar}</div><div style={{...C.standingScore,color:ds.color}}>{ds.display}</div></div>);})}</div>
-      <div style={C.holeNav}>
-        <button style={C.holeNavBtn} onClick={()=>setHoleIdx(Math.max(0,holeIdx-1))} disabled={holeIdx===0}>‹</button>
-        <div style={C.holeInfo}><span style={C.holeNum}>#{hole.hole}</span><span style={C.holePar}>Par {hole.par}</span><span style={C.holeMeta}>{hole.yards}y · HCP {hole.hcp}</span></div>
-        <button style={C.holeNavBtn} onClick={()=>setHoleIdx(Math.min(17,holeIdx+1))} disabled={holeIdx===17}>›</button>
-      </div>
-      <div style={C.scoreInputs}>{PLAYERS.map(p=>{
-        const sc=(scores[p.id]||[])[holeIdx]||null;const sn=sc?scoreName(sc,hole.par):null;
-        const nc=sn?.cls==='birdie'||sn?.cls==='eagle'||sn?.cls==='ace'||sn?.cls==='albatross'?'#2ecc71':sn?.cls==='par'?'#555':'#e74c3c';
-        return(<div key={p.id} style={{...C.scoreRow,borderLeftColor:p.color}}>
-          <div style={C.scoreLeft}><div style={{...C.scoreAvatar,background:p.color}}>{p.avatar}</div><div><div style={{...C.scorePName,color:p.color}}>{p.name}</div>{sn&&<div style={{...C.scoreNameStyle,color:nc}}>{sn.label}</div>}</div></div>
-          <div style={C.scoreControls}>
-            <button style={C.scoreBtn} onPointerDown={()=>updateScore(round.id,p.id,holeIdx,(sc||hole.par)-1)}>−</button>
-            <input type="number" min={1} max={15} value={sc||''} placeholder={hole.par} onChange={e=>updateScore(round.id,p.id,holeIdx,e.target.value)} style={C.scoreInput}/>
-            <button style={C.scoreBtn} onPointerDown={()=>updateScore(round.id,p.id,holeIdx,(sc||hole.par)+1)}>+</button>
+ 
+      {/* Hole navigation */}
+      <div style={{background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <button onClick={()=>setHoleIdx(Math.max(0,holeIdx-1))} disabled={holeIdx===0} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:40,height:40,borderRadius:10,cursor:'pointer',fontSize:22,opacity:holeIdx===0?.3:1}}>‹</button>
+        <div style={{textAlign:'center'}}>
+          <div style={{display:'flex',gap:12,alignItems:'baseline',justifyContent:'center'}}>
+            <span style={{fontFamily:'Bebas Neue',fontSize:32,color:'#ffd700'}}>#{hole.hole}</span>
+            <span style={{fontSize:18,color:'#00e676',fontWeight:700}}>Par {hole.par}</span>
           </div>
-        </div>);
-      })}</div>
-      <button style={C.parFillBtn} onClick={()=>PLAYERS.forEach(p=>{if(!((scores[p.id]||[])[holeIdx]>0))updateScore(round.id,p.id,holeIdx,hole.par);})}>⚡ FILL PAR FOR BLANKS</button>
-      <div style={C.holeDots}>{HOLES.map((_,i)=>{const all=PLAYERS.every(p=>((scores[p.id]||[])[i]||0)>0);return(<div key={i} style={{...C.holeDot,background:i===holeIdx?'#f1c40f':all?'#2ecc71':'#1a2a1a',transform:i===holeIdx?'scale(1.5)':'scale(1)',boxShadow:i===holeIdx?'0 0 6px #f1c40f':'none'}} onClick={()=>setHoleIdx(i)}/>);})}</div>
-      <button style={C.toggleBtn} onClick={()=>setShowAll(!showAll)}>{showAll?'▲ HIDE SCORECARD':'▼ FULL SCORECARD'}</button>
-      {showAll&&<FullScorecard scores={scores}/>}
-      <button style={C.finishBtn} onClick={()=>{if(confirm('Finish and save this round?'))finishRound(round.id);}}>🏁 Finish Round</button>
+          <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{hole.yards} yards · HCP {hole.hcp}</div>
+        </div>
+        <button onClick={()=>setHoleIdx(Math.min(holes.length-1,holeIdx+1))} disabled={holeIdx===holes.length-1} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:40,height:40,borderRadius:10,cursor:'pointer',fontSize:22,opacity:holeIdx===holes.length-1?.3:1}}>›</button>
+      </div>
+ 
+      {/* Score inputs */}
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {PLAYERS.map(p=>{
+          const sc=(scores[p.id]||[])[holeIdx]||null;
+          const sn=sc?scoreName(sc,hole.par):null;
+          const isSkin=skinsList[holeIdx]===p.id;
+          return(
+            <div key={p.id} style={{background:'rgba(255,255,255,.04)',borderRadius:14,padding:'13px 14px',display:'flex',alignItems:'center',justifyContent:'space-between',borderLeft:`3px solid ${p.color}`,position:'relative',overflow:'hidden'}}>
+              {isSkin&&<div style={{position:'absolute',top:4,right:4,fontSize:10,color:'#9b59b6',fontWeight:700}}>💀 SKIN</div>}
+              <div style={{display:'flex',alignItems:'center',gap:10}}>
+                <div style={{width:36,height:36,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:15,color:'#000',flexShrink:0}}>{p.avatar}</div>
+                <div>
+                  <div style={{fontWeight:800,fontSize:14,color:p.color}}>{p.name}</div>
+                  {sn&&<div style={{fontSize:11,color:sn.c,fontWeight:700,marginTop:1}}>{sn.l}</div>}
+                </div>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <button onPointerDown={()=>updateScore(round.id,p.id,holeIdx,(sc||hole.par)-1)} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:36,height:42,borderRadius:10,cursor:'pointer',fontSize:24,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none'}}>−</button>
+                <input type="number" min={1} max={15} value={sc||''} placeholder={hole.par}
+                  onChange={e=>updateScore(round.id,p.id,holeIdx,e.target.value)}
+                  style={{background:'rgba(0,0,0,.6)',border:`2px solid ${sc?p.color:'rgba(255,255,255,.1)'}`,color:'#ffd700',width:52,height:48,textAlign:'center',fontSize:28,fontWeight:900,borderRadius:10,outline:'none'}}/>
+                <button onPointerDown={()=>updateScore(round.id,p.id,holeIdx,(sc||hole.par)+1)} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:36,height:42,borderRadius:10,cursor:'pointer',fontSize:24,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none'}}>+</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+ 
+      {/* Quick actions */}
+      <div style={{display:'flex',gap:8}}>
+        <button onClick={()=>PLAYERS.forEach(p=>{if(!((scores[p.id]||[])[holeIdx]>0))updateScore(round.id,p.id,holeIdx,hole.par);})} style={{flex:1,background:'rgba(255,255,255,.05)',border:'1px solid rgba(255,255,255,.08)',color:'rgba(255,255,255,.5)',padding:'10px',borderRadius:10,cursor:'pointer',fontSize:12,fontWeight:700}}>⚡ FILL PAR</button>
+        <button onClick={()=>setShowSkins(!showSkins)} style={{flex:1,background:'rgba(155,89,182,.1)',border:'1px solid rgba(155,89,182,.3)',color:'#9b59b6',padding:'10px',borderRadius:10,cursor:'pointer',fontSize:12,fontWeight:700}}>💀 SKINS ({skinsList.filter(Boolean).length})</button>
+      </div>
+ 
+      {/* Skins tracker */}
+      {showSkins&&(
+        <div style={{background:'rgba(155,89,182,.08)',border:'1px solid rgba(155,89,182,.2)',borderRadius:14,padding:'14px 16px'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#9b59b6',marginBottom:12}}>SKINS TRACKER · ${skinsValue}/SKIN</div>
+          <div style={{display:'flex',gap:10,marginBottom:12}}>
+            {PLAYERS.map(p=>{const sk=skinsCount(p.id);return(
+              <div key={p.id} style={{flex:1,textAlign:'center',background:'rgba(0,0,0,.3)',borderRadius:10,padding:'10px 4px'}}>
+                <div style={{width:28,height:28,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:12,color:'#000',margin:'0 auto 6px'}}>{p.avatar}</div>
+                <div style={{fontFamily:'Bebas Neue',fontSize:22,color:sk>0?'#9b59b6':'#333'}}>{sk}</div>
+                <div style={{fontSize:9,color:'rgba(255,255,255,.3)',fontWeight:700}}>SKINS</div>
+                <div style={{fontSize:11,color:'#00e676',fontWeight:700}}>${sk*skinsValue}</div>
+              </div>
+            );})}
+          </div>
+          <div style={{fontSize:11,color:'rgba(255,255,255,.3)',textAlign:'center'}}>{skinsList.filter(Boolean).length} skins claimed · {18-holesPlayed} holes remaining</div>
+        </div>
+      )}
+ 
+      {/* Bet calculator */}
+      {round.bet_amount>0&&holesPlayed>0&&(
+        <div style={{background:'rgba(0,230,118,.05)',border:'1px solid rgba(0,230,118,.1)',borderRadius:14,padding:'14px 16px'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#00e676',marginBottom:10}}>💰 RUNNING BETS · ${round.bet_amount}/HOLE</div>
+          {getBetResults().map(p=>(
+            <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+              <div style={{width:28,height:28,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:12,color:'#000',flexShrink:0}}>{p.avatar}</div>
+              <div style={{fontWeight:700,flex:1}}>{p.name}</div>
+              <div style={{fontWeight:900,fontSize:15,color:p.net>0?'#00e676':p.net<0?'#ff5252':'#555'}}>{p.net>0?`+$${p.net.toFixed(0)}`:`-$${Math.abs(p.net).toFixed(0)}`}</div>
+            </div>
+          ))}
+        </div>
+      )}
+ 
+      {/* Hole dots */}
+      <div style={{display:'flex',gap:4,justifyContent:'center',flexWrap:'wrap',padding:'4px 0'}}>
+        {holes.map((_,i)=>{const all=PLAYERS.every(p=>((scores[p.id]||[])[i]||0)>0);return(
+          <div key={i} onClick={()=>setHoleIdx(i)} style={{width:14,height:14,borderRadius:'50%',background:i===holeIdx?'#ffd700':all?'#00e676':'rgba(255,255,255,.1)',cursor:'pointer',transform:i===holeIdx?'scale(1.5)':'scale(1)',boxShadow:i===holeIdx?'0 0 8px #ffd700':'none',transition:'all .2s'}}/>
+        );})}
+      </div>
+ 
+      {/* Full scorecard toggle */}
+      <button onClick={()=>setShowAll(!showAll)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.07)',color:'rgba(255,255,255,.3)',padding:'10px',borderRadius:10,cursor:'pointer',fontSize:12,fontWeight:700,letterSpacing:1}}>
+        {showAll?'▲ HIDE SCORECARD':'▼ FULL SCORECARD'}
+      </button>
+      {showAll&&<FullScorecard scores={scores} holes={holes}/>}
+ 
+      <button onClick={()=>{if(confirm('Finish and save this round?'))finishRound(round.id);}} style={{background:'linear-gradient(135deg,#7a1010,#c0392b)',color:'#fff',border:'none',borderRadius:14,padding:'16px 24px',fontSize:18,fontWeight:900,cursor:'pointer',letterSpacing:2,fontFamily:'Bebas Neue',marginTop:4}}>
+        🏁 FINISH ROUND
+      </button>
     </div>
   );
 }
-
-function FullScorecard({scores}){
-  return(<div style={C.fullCard}>{[0,1].map(half=>{
-    const holes=HOLES.slice(half*9,half*9+9);const parTotal=holes.reduce((a,h)=>a+h.par,0);
-    return(<div key={half} style={{marginBottom:half===0?16:0}}>
-      <div style={C.halfLabel}>{half===0?'FRONT 9':'BACK 9'}</div>
-      <table style={C.table}><thead>
-        <tr><th style={C.th}>PLAYER</th>{holes.map(h=><th key={h.hole} style={C.th}>{h.hole}</th>)}<th style={C.th}>TOT</th></tr>
-        <tr><th style={{...C.th,color:'#2ecc7166'}}>PAR</th>{holes.map(h=><th key={h.hole} style={{...C.th,color:'#2ecc7166'}}>{h.par}</th>)}<th style={{...C.th,color:'#2ecc7166'}}>{parTotal}</th></tr>
-      </thead><tbody>{PLAYERS.map(p=>{
-        const hs=(scores[p.id]||[]).slice(half*9,half*9+9);const ht=hs.reduce((a,b)=>a+(b||0),0);
-        return(<tr key={p.id}><td style={{...C.td,color:p.color,fontWeight:700}}>{p.name}</td>
-          {holes.map((h,i)=>{const sc=hs[i];const d=sc>0?sc-h.par:null;const col=d!==null?scoreColor(d):{bg:'transparent',color:'#333'};return<td key={h.hole} style={{...C.td,background:col.bg,color:col.color,fontWeight:d!==null?700:400}}>{sc||'—'}</td>;})}
-          <td style={{...C.td,fontWeight:900}}>{ht||'—'}</td></tr>);
-      })}</tbody></table>
-    </div>);
-  })}</div>);
+ 
+// ═══════════════════════════════════════════════════════
+// FULL SCORECARD TABLE
+// ═══════════════════════════════════════════════════════
+function FullScorecard({scores,holes}){
+  return(
+    <div style={{background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.06)',borderRadius:14,padding:12,overflowX:'auto'}}>
+      {[0,1].map(half=>{
+        const hs=holes.slice(half*9,half*9+9);const pt=hs.reduce((a,h)=>a+h.par,0);
+        return(
+          <div key={half} style={{marginBottom:half===0?14:0}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:3,color:'#00e676',marginBottom:8}}>{half===0?'FRONT 9':'BACK 9'}</div>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:11}}>
+              <thead>
+                <tr><th style={{padding:'4px 5px',textAlign:'left',color:'rgba(255,255,255,.3)',fontWeight:600,borderBottom:'1px solid rgba(255,255,255,.06)'}}>PLAYER</th>
+                  {hs.map(h=><th key={h.hole} style={{padding:'4px 5px',textAlign:'center',color:'rgba(255,255,255,.3)',borderBottom:'1px solid rgba(255,255,255,.06)'}}>{h.hole}</th>)}
+                  <th style={{padding:'4px 5px',textAlign:'center',color:'rgba(255,255,255,.3)',borderBottom:'1px solid rgba(255,255,255,.06)'}}>TOT</th>
+                </tr>
+                <tr><th style={{padding:'3px 5px',textAlign:'left',color:'#00e67666',fontWeight:600}}>PAR</th>
+                  {hs.map(h=><th key={h.hole} style={{padding:'3px 5px',textAlign:'center',color:'#00e67666'}}>{h.par}</th>)}
+                  <th style={{padding:'3px 5px',textAlign:'center',color:'#00e67666'}}>{pt}</th>
+                </tr>
+              </thead>
+              <tbody>{PLAYERS.map(p=>{
+                const ps=(scores[p.id]||[]).slice(half*9,half*9+9);const tot=ps.reduce((a,b)=>a+(b||0),0);
+                return(<tr key={p.id}>
+                  <td style={{padding:'4px 5px',color:p.color,fontWeight:700}}>{p.name}</td>
+                  {hs.map((h,i)=>{const sc=ps[i];const d=sc>0?sc-h.par:null;const col=d!==null?scColor(d):{bg:'transparent',c:'rgba(255,255,255,.2)',border:'transparent'};
+                    return<td key={h.hole} style={{padding:'4px 5px',textAlign:'center',background:col.bg,color:col.c,fontWeight:d!==null?700:400,borderRadius:4}}>{sc||'—'}</td>;})}
+                  <td style={{padding:'4px 5px',textAlign:'center',fontWeight:900,color:'#fff'}}>{tot||'—'}</td>
+                </tr>);
+              })}</tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
-
-// ── HISTORY ───────────────────────────────────────────────────────────────────
+ 
+// ═══════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════
+function StatsView({rounds,scores,playerSettings}){
+  const completed=rounds.filter(r=>r.completed);
+ 
+  const getStats=pid=>{
+    let birdies=0,pars=0,bogeys=0,doubles=0,best=null,worst=null,rounds_played=0,totalStrokes=0;
+    for(const r of completed){
+      const s=scores[r.id]?.[pid];if(!s)continue;
+      const course=COURSES[r.course_id]||COURSES.snee;
+      s.forEach((sc,i)=>{if(sc>0&&course.holes[i]){const d=sc-course.holes[i].par;if(d<=-1)birdies++;else if(d===0)pars++;else if(d===1)bogeys++;else doubles++;}});
+      const tot=s.reduce((a,b)=>a+(b||0),0);if(tot>0){totalStrokes+=tot;rounds_played++;if(best===null||tot<best)best=tot;if(worst===null||tot>worst)worst=tot;}
+    }
+    return{birdies,pars,bogeys,doubles,best,worst,rounds_played,avg:rounds_played?Math.round(totalStrokes/rounds_played):null};
+  };
+ 
+  // Head to head
+  const h2h=(p1,p2)=>{let w1=0,w2=0,ties=0;
+    for(const r of completed){
+      const s1=scores[r.id]?.[p1];const s2=scores[r.id]?.[p2];if(!s1||!s2)continue;
+      const t1=s1.reduce((a,b)=>a+(b||0),0);const t2=s2.reduce((a,b)=>a+(b||0),0);
+      if(t1<t2)w1++;else if(t2<t1)w2++;else ties++;
+    }return{w1,w2,ties};
+  };
+ 
+  const mostCommonFmt=()=>{const c={};completed.forEach(r=>{c[r.format]=(c[r.format]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1])[0];};
+  const mcf=mostCommonFmt();
+ 
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:16,animation:'fadeUp .4s ease'}}>
+      <div style={{fontFamily:'Bebas Neue',fontSize:28,letterSpacing:3,color:'#00e676'}}>STATS & RECORDS</div>
+ 
+      {completed.length===0&&<div style={{textAlign:'center',color:'rgba(255,255,255,.2)',padding:40,fontSize:15}}>No completed rounds yet 🏌️</div>}
+ 
+      {/* Player cards */}
+      {PLAYERS.map(p=>{
+        const st=getStats(p.id);
+        return(
+          <div key={p.id} style={{background:'rgba(255,255,255,.03)',border:`1px solid ${p.color}22`,borderRadius:18,padding:'18px 16px',overflow:'hidden',position:'relative'}}>
+            <div style={{position:'absolute',top:-15,right:-10,fontFamily:'Bebas Neue',fontSize:80,color:p.color,opacity:.06}}>{p.avatar}</div>
+            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+              <div style={{width:44,height:44,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#000'}}>{p.avatar}</div>
+              <div>
+                <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:1}}>{p.name}</div>
+                <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>HCP {playerSettings[p.id]??p.defaultHcp} · {st.rounds_played} rounds</div>
+              </div>
+              {st.best&&<div style={{marginLeft:'auto',textAlign:'right'}}>
+                <div style={{fontFamily:'Bebas Neue',fontSize:32,color:p.color}}>{st.best}</div>
+                <div style={{fontSize:9,color:'rgba(255,255,255,.3)',letterSpacing:2}}>BEST ROUND</div>
+              </div>}
+            </div>
+            {/* Stats grid */}
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:12}}>
+              {[{n:st.birdies,l:'BIRDIES',c:'#00e676'},{n:st.pars,l:'PARS',c:'#555'},{n:st.bogeys,l:'BOGEYS',c:'#ff9100'},{n:st.doubles,l:'DOUBLES+',c:'#ff5252'}].map((s,i)=>(
+                <div key={i} style={{background:'rgba(0,0,0,.3)',borderRadius:10,padding:'10px 6px',textAlign:'center'}}>
+                  <div style={{fontFamily:'Bebas Neue',fontSize:24,color:s.c}}>{s.n}</div>
+                  <div style={{fontSize:8,color:'rgba(255,255,255,.3)',fontWeight:700,letterSpacing:1}}>{s.l}</div>
+                </div>
+              ))}
+            </div>
+            {/* Scoring bars */}
+            {st.rounds_played>0&&(()=>{const total=st.birdies+st.pars+st.bogeys+st.doubles;return(
+              <div>
+                <div style={{display:'flex',height:6,borderRadius:3,overflow:'hidden',gap:2}}>
+                  {[{v:st.birdies,c:'#00e676'},{v:st.pars,c:'#444'},{v:st.bogeys,c:'#ff9100'},{v:st.doubles,c:'#ff5252'}].map((b,i)=>(
+                    <div key={i} style={{flex:b.v/total,background:b.c,minWidth:b.v>0?2:0}}/>
+                  ))}
+                </div>
+              </div>
+            );})()}
+            {st.avg&&<div style={{marginTop:10,fontSize:11,color:'rgba(255,255,255,.3)'}}>Average: <span style={{color:p.color,fontWeight:700}}>{st.avg}</span> · Best: <span style={{color:'#00e676',fontWeight:700}}>{st.best}</span> · Worst: <span style={{color:'#ff5252',fontWeight:700}}>{st.worst}</span></div>}
+          </div>
+        );
+      })}
+ 
+      {/* Head to head */}
+      {completed.length>0&&(
+        <div style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:18,padding:'18px 16px'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#ffd700',marginBottom:14}}>HEAD TO HEAD</div>
+          {[['ben','luke'],['ben','max'],['ben','thomas'],['thomas','luke'],['thomas','max'],['max','luke']].map(([p1id,p2id])=>{
+            const p1=PLAYERS.find(p=>p.id===p1id);const p2=PLAYERS.find(p=>p.id===p2id);
+            const{w1,w2,ties}=h2h(p1id,p2id);const total=w1+w2+ties;if(total===0)return null;
+            return(
+              <div key={p1id+p2id} style={{marginBottom:12}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                  <span style={{color:p1.color,fontWeight:700,fontSize:13}}>{p1.name} ({w1})</span>
+                  {ties>0&&<span style={{color:'#555',fontSize:11}}>{ties} ties</span>}
+                  <span style={{color:p2.color,fontWeight:700,fontSize:13}}>({w2}) {p2.name}</span>
+                </div>
+                <div style={{display:'flex',height:8,borderRadius:4,overflow:'hidden',background:'rgba(255,255,255,.05)'}}>
+                  <div style={{flex:w1,background:p1.color,minWidth:w1>0?4:0}}/>
+                  <div style={{flex:ties,background:'rgba(255,255,255,.1)'}}/>
+                  <div style={{flex:w2,background:p2.color,minWidth:w2>0?4:0}}/>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+ 
+      {/* Favorite format */}
+      {mcf&&(
+        <div style={{background:'rgba(255,215,0,.05)',border:'1px solid rgba(255,215,0,.15)',borderRadius:14,padding:'14px 16px',display:'flex',gap:12,alignItems:'center'}}>
+          <span style={{fontSize:32}}>{FORMATS.find(f=>f.id===mcf[0])?.icon}</span>
+          <div>
+            <div style={{fontSize:11,color:'rgba(255,215,0,.5)',letterSpacing:2,fontWeight:700}}>FAVORITE FORMAT</div>
+            <div style={{fontSize:16,fontWeight:800,color:'#ffd700'}}>{FORMATS.find(f=>f.id===mcf[0])?.label}</div>
+            <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>Played {mcf[1]} times</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+ 
+// ═══════════════════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════════════════
 function HistoryView({rounds,scores,deleteRound,setActiveRoundId,setView}){
-  const [filter,setFilter]=useState('all');
+  const[filter,setFilter]=useState('all');
   const unique=[...new Set(rounds.map(r=>r.format))];
   const filtered=rounds.filter(r=>filter==='all'||r.format===filter);
-  return(<div style={C.wrap}>
-    <div style={C.sectionTitle}>ROUND HISTORY</div>
-    <div style={C.filterBar}>
-      <button style={{...C.filterBtn,...(filter==='all'?C.filterActive:{})}} onClick={()=>setFilter('all')}>ALL</button>
-      {unique.map(f=>{const fmt=FORMATS.find(x=>x.id===f);return<button key={f} style={{...C.filterBtn,...(filter===f?C.filterActive:{})}} onClick={()=>setFilter(f)}>{fmt?.icon} {fmt?.label}</button>;})}
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}>
+      <div style={{fontFamily:'Bebas Neue',fontSize:28,letterSpacing:3,color:'#00e676'}}>ROUND HISTORY</div>
+      <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:4}}>
+        <button onClick={()=>setFilter('all')} style={{background:filter==='all'?'rgba(0,230,118,.15)':'transparent',border:`1px solid ${filter==='all'?'rgba(0,230,118,.4)':'rgba(255,255,255,.07)'}`,color:filter==='all'?'#00e676':'#444',padding:'6px 14px',borderRadius:20,cursor:'pointer',fontSize:11,fontWeight:700,letterSpacing:1,whiteSpace:'nowrap',flexShrink:0}}>ALL</button>
+        {unique.map(f=>{const fmt=FORMATS.find(x=>x.id===f);return(
+          <button key={f} onClick={()=>setFilter(f)} style={{background:filter===f?'rgba(0,230,118,.15)':'transparent',border:`1px solid ${filter===f?'rgba(0,230,118,.4)':'rgba(255,255,255,.07)'}`,color:filter===f?'#00e676':'#444',padding:'6px 14px',borderRadius:20,cursor:'pointer',fontSize:11,fontWeight:700,whiteSpace:'nowrap',flexShrink:0}}>{fmt?.icon} {fmt?.label}</button>
+        );})}
+      </div>
+      {filtered.length===0&&<div style={{textAlign:'center',color:'rgba(255,255,255,.2)',padding:40,fontSize:15}}>No rounds yet ⛳</div>}
+      {filtered.map(r=>{
+        const fmt=FORMATS.find(f=>f.id===r.format);const course=COURSES[r.course_id]||COURSES.snee;
+        const rsc=scores[r.id]||{};
+        const ranked=[...PLAYERS].map(p=>({...p,total:(rsc[p.id]||[]).reduce((a,b)=>a+(b||0),0)})).sort((a,b)=>a.total-b.total);
+        return(
+          <div key={r.id} style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:16,padding:'16px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
+              <div style={{display:'flex',gap:10,alignItems:'center'}}>
+                <span style={{fontSize:24}}>{fmt?.icon}</span>
+                <div>
+                  <div style={{fontWeight:800,fontSize:15}}>{fmt?.label}</div>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:1}}>{r.date} · {course.name}</div>
+                </div>
+              </div>
+              <div style={{color:r.completed?'#00e676':'#ff4444',fontSize:11,fontWeight:700}}>{r.completed?'✓ COMPLETE':'● LIVE'}</div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:12}}>
+              {ranked.map((p,i)=>(
+                <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,fontSize:13}}>
+                  <span style={{color:'rgba(255,255,255,.2)',fontSize:11,width:16}}>#{i+1}</span>
+                  <div style={{width:8,height:8,borderRadius:'50%',background:p.color,flexShrink:0}}/>
+                  <span style={{color:p.color,fontWeight:700,flex:1}}>{p.name}</span>
+                  <span style={{fontWeight:900,fontSize:16}}>{p.total||'—'}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              {!r.completed&&<button onClick={()=>{setActiveRoundId(r.id);setView('scorecard');}} style={{background:'rgba(0,230,118,.1)',border:'1px solid rgba(0,230,118,.3)',color:'#00e676',padding:'7px 16px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:700}}>▶ RESUME</button>}
+              <button onClick={()=>{if(confirm('Delete this round?'))deleteRound(r.id);}} style={{background:'rgba(255,68,68,.1)',border:'1px solid rgba(255,68,68,.2)',color:'#ff4444',padding:'7px 10px',borderRadius:8,cursor:'pointer',fontSize:13}}>🗑️</button>
+            </div>
+          </div>
+        );
+      })}
     </div>
-    {filtered.length===0?<div style={C.empty}>No rounds yet — get out there! ⛳</div>:filtered.map(r=>{
-      const fmt=FORMATS.find(f=>f.id===r.format);const team=TEAM_CONFIGS.find(t=>t.id===r.team_config);
-      const rsc=scores[r.id]||{};const ranked=[...PLAYERS].map(p=>({...p,total:(rsc[p.id]||[]).reduce((a,b)=>a+(b||0),0)})).sort((a,b)=>a.total-b.total);
-      return(<div key={r.id} style={C.histCard}>
-        <div style={C.histHeader}><div style={{display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:20}}>{fmt?.icon}</span><span style={{fontSize:16,fontWeight:700}}>{fmt?.label}</span></div><div style={{fontSize:12,color:'#555'}}>{r.date}</div></div>
-        <div style={{fontSize:11,color:'#4a6a4a',marginBottom:10}}>{team?.label?.toUpperCase()}</div>
-        <div style={{display:'flex',flexDirection:'column',gap:6}}>{ranked.map((p,i)=><div key={p.id} style={{display:'flex',alignItems:'center',gap:8,fontSize:13}}><span style={{color:'#555',fontSize:11}}>#{i+1}</span><div style={{...C.dot,background:p.color}}/><span style={{color:p.color}}>{p.name}</span><span style={{marginLeft:'auto',fontWeight:900,fontSize:16}}>{p.total||'—'}</span></div>)}</div>
-        <div style={C.histActions}>
-          {!r.completed&&<button style={C.resumeBtn} onClick={()=>{setActiveRoundId(r.id);setView('scorecard');}}>▶ RESUME</button>}
-          <button style={C.deleteBtn} onClick={()=>{if(confirm('Delete this round?'))deleteRound(r.id);}}>🗑️</button>
-        </div>
-      </div>);
-    })}
-  </div>);
+  );
 }
-
-// ── LEADERBOARD ───────────────────────────────────────────────────────────────
-function LeaderboardView({round,scores}){
-  const fmt=FORMATS.find(f=>f.id===round.format);const team=TEAM_CONFIGS.find(t=>t.id===round.team_config);
+ 
+// ═══════════════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════════════
+function LeaderboardView({round,scores,setView}){
+  const fmt=FORMATS.find(f=>f.id===round.format);
+  const course=COURSES[round.course_id]||COURSES.snee;
+  const holes=course.holes;
   const getTotal=pid=>(scores[pid]||[]).reduce((a,b)=>a+(b||0),0);
-  const getToPar=pid=>{let tp=0;(scores[pid]||[]).forEach((s,i)=>{if(s>0)tp+=s-HOLES[i].par;});return tp;};
-  const getSF=pid=>(scores[pid]||[]).reduce((a,s,i)=>a+(s>0?stablefordPts(s,HOLES[i].par):0),0);
-  const getSkins=pid=>{let sk=0;HOLES.forEach((_,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1&&w[0].id===pid)sk++;}});return sk;};
+  const getTP=pid=>{let tp=0;(scores[pid]||[]).forEach((s,i)=>{if(s>0&&holes[i])tp+=s-holes[i].par;});return tp;};
+  const getSF=pid=>(scores[pid]||[]).reduce((a,s,i)=>a+(s>0&&holes[i]?sfPts(s,holes[i].par):0),0);
+  const getSkins=pid=>{let sk=0;holes.forEach((_,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1&&w[0].id===pid)sk++;}});return sk;};
+ 
   const ranked=[...PLAYERS].map(p=>{
-    if(round.format==='stableford')return{...p,val:getSF(p.id),display:getSF(p.id)+' pts',higher:true};
-    if(round.format==='skins')return{...p,val:getSkins(p.id),display:getSkins(p.id)+' skins',higher:true};
-    return{...p,val:getTotal(p.id),tp:getToPar(p.id),display:getTotal(p.id).toString(),higher:false};
+    if(round.format==='stableford')return{...p,val:getSF(p.id),disp:getSF(p.id)+' pts',higher:true};
+    if(round.format==='skins')return{...p,val:getSkins(p.id),disp:getSkins(p.id)+' skins',higher:true};
+    return{...p,val:getTotal(p.id),tp:getTP(p.id),disp:getTotal(p.id)+'',higher:false};
   }).sort((a,b)=>a.higher?b.val-a.val:a.val-b.val);
-  const maxVal=Math.max(...ranked.map(p=>p.val));
-  const medals=['🥇','🥈','🥉','4️⃣'];
-  return(<div style={C.wrap}>
-    <div style={C.lbHeader}><span style={C.lbIcon}>{fmt?.icon}</span><div><div style={C.lbTitle}>{fmt?.label}</div><div style={C.lbMeta}>{round.date?.toUpperCase()} · {team?.label?.toUpperCase()}</div></div></div>
-    <div style={C.podium}>{ranked.map((p,i)=>{const tp=p.tp!==undefined?p.tp:null;return(
-      <div key={p.id} style={{...C.pCard,borderColor:p.color+(i===0?'cc':'44'),transform:i===0?'scale(1.02)':'scale(1)'}}>
-        <span style={{fontSize:28,width:36,flexShrink:0}}>{medals[i]}</span>
-        <div style={{...C.pAvatar,background:p.color}}>{p.avatar}</div>
-        <span style={C.pName}>{p.name}</span>
-        <div style={{display:'flex',alignItems:'baseline',gap:5}}>
-          <span style={{fontSize:30,fontWeight:900,fontFamily:"'Playfair Display',serif",color:p.color}}>{p.display}</span>
-          {tp!==null&&<span style={{fontSize:14,color:tp<0?'#2ecc71':tp>0?'#e74c3c':'#555'}}>({toParStr(tp)})</span>}
+ 
+  // Bet settlements
+  const betAmt=round.bet_amount||0;
+  const winner=ranked[0];
+  const settlements=betAmt>0?ranked.slice(1).map(p=>({from:p,to:winner,amount:betAmt})):[];
+ 
+  const medals=['🥇','🥈','🥉','💀'];
+ 
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}>
+      <div style={{background:'linear-gradient(135deg,rgba(255,215,0,.1),rgba(255,215,0,.03))',border:'1px solid rgba(255,215,0,.2)',borderRadius:20,padding:'20px 18px',textAlign:'center'}}>
+        <div style={{fontSize:11,color:'rgba(255,215,0,.5)',letterSpacing:3,fontWeight:700,marginBottom:6}}>ROUND COMPLETE</div>
+        <div style={{fontFamily:'Bebas Neue',fontSize:36,letterSpacing:2,color:'#ffd700',lineHeight:1,marginBottom:4}}>{fmt?.icon} {fmt?.label}</div>
+        <div style={{fontSize:13,color:'rgba(255,255,255,.3)'}}>{round.date} · {course.name}</div>
+      </div>
+ 
+      {/* Podium */}
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {ranked.map((p,i)=>(
+          <div key={p.id} style={{background:i===0?`linear-gradient(135deg,${p.color}22,${p.color}08)`:'rgba(255,255,255,.03)',border:`2px solid ${i===0?p.color+'66':'rgba(255,255,255,.06)'}`,borderRadius:16,padding:'16px 18px',display:'flex',alignItems:'center',gap:14,transform:i===0?'scale(1.02)':'scale(1)',transition:'transform .3s'}}>
+            <span style={{fontSize:28,width:36,flexShrink:0}}>{medals[i]}</span>
+            <div style={{width:44,height:44,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#000',flexShrink:0}}>{p.avatar}</div>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:1,color:i===0?p.color:'#fff'}}>{p.name}</div>
+              {p.tp!==undefined&&<div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{tpStr(p.tp)}</div>}
+            </div>
+            <div style={{fontFamily:'Bebas Neue',fontSize:32,color:i===0?p.color:'rgba(255,255,255,.6)'}}>{p.disp}</div>
+          </div>
+        ))}
+      </div>
+ 
+      {/* Money owed */}
+      {settlements.length>0&&(
+        <div style={{background:'rgba(0,230,118,.06)',border:'1px solid rgba(0,230,118,.15)',borderRadius:16,padding:'16px'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:12}}>💰 SETTLE UP</div>
+          {settlements.map((s,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:'rgba(0,0,0,.3)',borderRadius:10,padding:'10px 14px'}}>
+              <div style={{width:28,height:28,borderRadius:'50%',background:s.from.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:12,color:'#000'}}>{s.from.avatar}</div>
+              <div style={{flex:1,fontSize:13}}>
+                <span style={{color:s.from.color,fontWeight:700}}>{s.from.name}</span>
+                <span style={{color:'rgba(255,255,255,.3)'}}> owes </span>
+                <span style={{color:s.to.color,fontWeight:700}}>{s.to.name}</span>
+              </div>
+              <div style={{fontFamily:'Bebas Neue',fontSize:22,color:'#00e676'}}>${s.amount}</div>
+            </div>
+          ))}
         </div>
-      </div>);
-    })}</div>
-    <div style={C.statsSection}>
-      <div style={{fontSize:11,color:'#2ecc71',letterSpacing:2,marginBottom:12}}>TOTAL STROKES</div>
-      {[...PLAYERS].map(p=>{const total=getTotal(p.id);return(<div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,fontSize:13}}>
-        <div style={{...C.dot,background:p.color}}/><span style={{color:p.color,width:55}}>{p.name}</span>
-        <div style={C.statBar}><div style={{...C.statFill,background:p.color,width:`${(total/(maxVal||1))*100}%`}}/></div>
-        <span style={{fontSize:15,fontWeight:900,minWidth:40,textAlign:'right',color:p.color}}>{total||'—'}</span>
-      </div>);})}
+      )}
+ 
+      {/* Full scorecard */}
+      <FullScorecard scores={scores} holes={COURSES[round.course_id]?.holes||COURSES.snee.holes}/>
+ 
+      <button onClick={()=>setView('setup')} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:14,padding:'16px',fontSize:18,fontWeight:900,cursor:'pointer',letterSpacing:2,fontFamily:'Bebas Neue'}}>
+        ⛳ PLAY AGAIN
+      </button>
     </div>
-    <FullScorecard scores={scores}/>
-  </div>);
+  );
 }
-
+ 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
