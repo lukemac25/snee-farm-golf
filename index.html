@@ -566,7 +566,7 @@ function HamburgerMenu({onClose,rounds,scores,nextRound,setNextRound,settings,up
               {PLAYERS.map(p=>(
                 <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
                   <div style={{fontSize:11,color:'rgba(255,255,255,.4)',width:56}}>{settings?.playerNames?.[p.id]||p.name}</div>
-                  <div style={{display:'flex',gap:5'}}>
+                  <div style={{display:'flex',gap:5}}>
                     {['#00e676','#ff9100','#40c4ff','#e74c3c','#9b59b6','#ffd700','#ff6b9d','#00bcd4'].map(c=>(
                       <button key={c} onClick={()=>{const nc={...localColors,[p.id]:c};setLocalColors(nc);updateSettings({playerColors:nc});}} style={{width:22,height:22,borderRadius:'50%',background:c,border:(localColors[p.id]||p.color)===c?'2px solid #fff':'2px solid transparent',cursor:'pointer'}}/>
                     ))}
