@@ -27,9 +27,6 @@ input,select,button,textarea{font-family:'Inter',sans-serif}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,230,118,.3)}50%{box-shadow:0 0 50px rgba(0,230,118,.6)}}
 @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-@keyframes slideLeft{from{transform:translateX(-100%);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
 @keyframes celebrate{0%{transform:scale(1)}25%{transform:scale(1.3) rotate(-5deg)}50%{transform:scale(1.1) rotate(3deg)}75%{transform:scale(1.2) rotate(-2deg)}100%{transform:scale(1)}}
 @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes popIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
@@ -41,26 +38,14 @@ input,select,button,textarea{font-family:'Inter',sans-serif}
 <div id="root"></div>
 <script type="text/babel">
 const{useState,useEffect,useRef,useCallback,useMemo}=React;
- 
+
 // ══════════════════════════════════════════════
 // SUPABASE
 // ══════════════════════════════════════════════
 const SUPABASE_URL='https://wukjeyluqkzbseuynovp.supabase.co';
 const SUPABASE_KEY='sb_publishable_3MDvGnJy46bP553PjZhZUQ_Bp8Bys-3';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
- 
-// ── NEW FEATURES CONSTANTS ─────────────────────
-const PINS_KEY='tcg_pins_v3';
-const getPins=()=>{try{return JSON.parse(localStorage.getItem(PINS_KEY)||'{}')}catch{return{}}};
-const savePins=p=>localStorage.setItem(PINS_KEY,JSON.stringify(p));
-const TEAM_FMT_IDS=['scramble','bestball','nassau','match','bloodsome','vegas','shamble'];
-const isTeamFmt=id=>TEAM_FMT_IDS.includes(id);
-const isThursday=()=>new Date().getDay()===4;
-const daysUntilThurs=()=>{const d=new Date().getDay();return d===4?0:(4-d+7)%7;};
-const CONDITIONS=['☀️ Perfect','🌬️ Windy','🌧️ Wet','🥵 Hot','🌫️ Foggy','🛤️ Cart Path Only','⛅ Overcast','⛈️ Stormy'];
-const TRASH_LINES=[(p,s)=>`${p} shot ${s}? My grandma plays better.`,(p,s)=>`${p} with a ${s}. Bold strategy. Terrible, but bold.`,(p,s)=>`${s} for ${p}. The course wants its dignity back.`,(p,s)=>`${p} carded a ${s}. Tiger is at home shaking his head.`,(p,s)=>`${p} put up a ${s}. That's not a score, that's a zip code.`];
- 
- 
+
 // ══════════════════════════════════════════════
 // SOUND ENGINE
 // ══════════════════════════════════════════════
@@ -84,7 +69,7 @@ const Sound={
     }catch(e){}
   }
 };
- 
+
 // ══════════════════════════════════════════════
 // HAPTICS
 // ══════════════════════════════════════════════
@@ -94,7 +79,7 @@ const Haptic={
   heavy(){if(navigator.vibrate)navigator.vibrate([50,30,50]);},
   celebrate(){if(navigator.vibrate)navigator.vibrate([100,50,100,50,200]);}
 };
- 
+
 // ══════════════════════════════════════════════
 // SC COURSES
 // ══════════════════════════════════════════════
@@ -107,46 +92,6 @@ const COURSES={
     {hole:13,par:5,hcp:8,yards:511},{hole:14,par:4,hcp:2,yards:442},{hole:15,par:4,hcp:14,yards:358},
     {hole:16,par:3,hcp:18,yards:143},{hole:17,par:4,hcp:6,yards:420},{hole:18,par:5,hcp:12,yards:516},
   ]},
-  kiawah_ocean:{name:'Kiawah Island — Ocean',city:'Kiawah Island',lat:32.608,lon:-80.083,holes:[
-    {hole:1,par:4,hcp:11,yards:395},{hole:2,par:5,hcp:3,yards:543},{hole:3,par:4,hcp:7,yards:390},
-    {hole:4,par:3,hcp:17,yards:195},{hole:5,par:4,hcp:1,yards:468},{hole:6,par:4,hcp:13,yards:455},
-    {hole:7,par:5,hcp:9,yards:527},{hole:8,par:3,hcp:15,yards:197},{hole:9,par:4,hcp:5,yards:430},
-    {hole:10,par:4,hcp:6,yards:439},{hole:11,par:4,hcp:2,yards:562},{hole:12,par:3,hcp:18,yards:186},
-    {hole:13,par:4,hcp:10,yards:404},{hole:14,par:4,hcp:14,yards:459},{hole:15,par:4,hcp:4,yards:421},
-    {hole:16,par:5,hcp:8,yards:579},{hole:17,par:3,hcp:16,yards:221},{hole:18,par:4,hcp:12,yards:439},
-  ]},
-  wild_dunes_links:{name:'Wild Dunes — Links',city:'Isle of Palms',lat:32.797,lon:-79.738,holes:[
-    {hole:1,par:4,hcp:9,yards:374},{hole:2,par:5,hcp:5,yards:497},{hole:3,par:3,hcp:15,yards:153},
-    {hole:4,par:4,hcp:1,yards:406},{hole:5,par:4,hcp:11,yards:390},{hole:6,par:5,hcp:7,yards:510},
-    {hole:7,par:3,hcp:17,yards:145},{hole:8,par:4,hcp:3,yards:438},{hole:9,par:4,hcp:13,yards:356},
-    {hole:10,par:4,hcp:8,yards:371},{hole:11,par:4,hcp:2,yards:422},{hole:12,par:3,hcp:14,yards:167},
-    {hole:13,par:5,hcp:6,yards:502},{hole:14,par:4,hcp:10,yards:393},{hole:15,par:4,hcp:16,yards:342},
-    {hole:16,par:3,hcp:18,yards:138},{hole:17,par:4,hcp:4,yards:451},{hole:18,par:5,hcp:12,yards:501},
-  ]},
-  caledonia:{name:'Caledonia Golf & Fish',city:'Pawleys Island',lat:33.447,lon:-79.094,holes:[
-    {hole:1,par:4,hcp:7,yards:371},{hole:2,par:4,hcp:11,yards:386},{hole:3,par:3,hcp:17,yards:161},
-    {hole:4,par:5,hcp:3,yards:518},{hole:5,par:4,hcp:1,yards:425},{hole:6,par:4,hcp:13,yards:367},
-    {hole:7,par:3,hcp:15,yards:177},{hole:8,par:5,hcp:9,yards:489},{hole:9,par:4,hcp:5,yards:408},
-    {hole:10,par:4,hcp:6,yards:396},{hole:11,par:5,hcp:2,yards:524},{hole:12,par:3,hcp:16,yards:152},
-    {hole:13,par:4,hcp:10,yards:379},{hole:14,par:4,hcp:4,yards:432},{hole:15,par:3,hcp:18,yards:143},
-    {hole:16,par:5,hcp:8,yards:506},{hole:17,par:4,hcp:14,yards:358},{hole:18,par:4,hcp:12,yards:415},
-  ]},
-  tpc_myrtle:{name:'TPC Myrtle Beach',city:'Murrells Inlet',lat:33.576,lon:-79.017,holes:[
-    {hole:1,par:4,hcp:9,yards:402},{hole:2,par:4,hcp:5,yards:430},{hole:3,par:3,hcp:15,yards:185},
-    {hole:4,par:5,hcp:1,yards:544},{hole:5,par:4,hcp:11,yards:378},{hole:6,par:4,hcp:7,yards:421},
-    {hole:7,par:3,hcp:17,yards:162},{hole:8,par:5,hcp:3,yards:531},{hole:9,par:4,hcp:13,yards:385},
-    {hole:10,par:4,hcp:10,yards:398},{hole:11,par:4,hcp:4,yards:448},{hole:12,par:3,hcp:16,yards:171},
-    {hole:13,par:5,hcp:8,yards:519},{hole:14,par:4,hcp:2,yards:455},{hole:15,par:4,hcp:14,yards:362},
-    {hole:16,par:3,hcp:18,yards:148},{hole:17,par:5,hcp:6,yards:538},{hole:18,par:4,hcp:12,yards:431},
-  ]},
-  barefoot_love:{name:'Barefoot — Love Course',city:'North Myrtle Beach',lat:33.793,lon:-78.734,holes:[
-    {hole:1,par:4,hcp:7,yards:412},{hole:2,par:5,hcp:3,yards:562},{hole:3,par:3,hcp:15,yards:178},
-    {hole:4,par:4,hcp:1,yards:445},{hole:5,par:4,hcp:11,yards:389},{hole:6,par:5,hcp:9,yards:528},
-    {hole:7,par:3,hcp:17,yards:155},{hole:8,par:4,hcp:5,yards:421},{hole:9,par:4,hcp:13,yards:367},
-    {hole:10,par:4,hcp:8,yards:403},{hole:11,par:4,hcp:2,yards:438},{hole:12,par:3,hcp:16,yards:163},
-    {hole:13,par:5,hcp:6,yards:541},{hole:14,par:4,hcp:4,yards:429},{hole:15,par:4,hcp:14,yards:371},
-    {hole:16,par:3,hcp:18,yards:147},{hole:17,par:4,hcp:10,yards:394},{hole:18,par:5,hcp:12,yards:553},
-  ]},
   charleston_muni:{name:'Charleston Municipal',city:'Charleston',lat:32.776,lon:-79.931,holes:[
     {hole:1,par:4,hcp:11,yards:362},{hole:2,par:4,hcp:5,yards:388},{hole:3,par:3,hcp:17,yards:148},
     {hole:4,par:5,hcp:3,yards:498},{hole:5,par:4,hcp:1,yards:418},{hole:6,par:4,hcp:13,yards:345},
@@ -155,26 +100,15 @@ const COURSES={
     {hole:13,par:5,hcp:6,yards:487},{hole:14,par:4,hcp:2,yards:428},{hole:15,par:4,hcp:14,yards:352},
     {hole:16,par:3,hcp:16,yards:156},{hole:17,par:4,hcp:8,yards:384},{hole:18,par:5,hcp:12,yards:521},
   ]},
-  crowfield:{name:'Crowfield Golf Club',city:'Goose Creek',lat:32.985,lon:-80.033,holes:[
-    {hole:1,par:4,hcp:9,yards:378},{hole:2,par:5,hcp:5,yards:508},{hole:3,par:3,hcp:15,yards:169},
-    {hole:4,par:4,hcp:1,yards:432},{hole:5,par:4,hcp:11,yards:366},{hole:6,par:5,hcp:7,yards:495},
-    {hole:7,par:3,hcp:17,yards:152},{hole:8,par:4,hcp:3,yards:441},{hole:9,par:4,hcp:13,yards:358},
-    {hole:10,par:4,hcp:8,yards:385},{hole:11,par:4,hcp:2,yards:419},{hole:12,par:3,hcp:16,yards:158},
-    {hole:13,par:5,hcp:6,yards:502},{hole:14,par:4,hcp:4,yards:436},{hole:15,par:4,hcp:14,yards:364},
-    {hole:16,par:3,hcp:18,yards:144},{hole:17,par:4,hcp:10,yards:391},{hole:18,par:5,hcp:12,yards:518},
-  ]},
 };
- 
-// ══════════════════════════════════════════════
-// PLAYERS
-// ══════════════════════════════════════════════
+
 const PLAYERS=[
   {id:'ben',name:'Ben',color:'#00e676',defaultHcp:72,avatar:'🏌️',emoji:'B'},
   {id:'thomas',name:'Thomas',color:'#ff9100',defaultHcp:40,avatar:'🦊',emoji:'T'},
   {id:'max',name:'Max',color:'#40c4ff',defaultHcp:27,avatar:'🦅',emoji:'M'},
   {id:'luke',name:'Luke',color:'#ff4444',defaultHcp:22,avatar:'🔥',emoji:'L'},
 ];
- 
+
 const FORMATS=[
   {id:'stroke',label:'Stroke Play',icon:'⛳',desc:'Individual — lowest total wins',team:false},
   {id:'scramble',label:'Scramble',icon:'🤝',desc:'Team picks best shot each hole',team:true},
@@ -191,7 +125,7 @@ const FORMATS=[
   {id:'quota',label:'Quota',icon:'📊',desc:'Beat your personal quota of points',team:false},
   {id:'shamble',label:'Shamble',icon:'🚶',desc:'Scramble drive then individual play',team:true},
 ];
- 
+
 const TEAM_CONFIGS=[
   {id:'solo',label:'All Solo',teams:[['ben'],['thomas'],['max'],['luke']]},
   {id:'2v2_ab',label:'Ben & Thomas  vs  Max & Luke',teams:[['ben','thomas'],['max','luke']]},
@@ -202,7 +136,7 @@ const TEAM_CONFIGS=[
   {id:'3v1_mx',label:'Max Solo  vs  Ben, Thomas & Luke',teams:[['max'],['ben','thomas','luke']]},
   {id:'3v1_th',label:'Thomas Solo  vs  Ben, Max & Luke',teams:[['thomas'],['ben','max','luke']]},
 ];
- 
+
 const TRASH_TALK=[
   (p,s)=>`${p} shot ${s}? My grandma plays better and she's got a bad hip.`,
   (p,s)=>`${p} with a ${s}. Bold strategy. Absolutely terrible, but bold.`,
@@ -213,7 +147,7 @@ const TRASH_TALK=[
   (p,s)=>`${p} with a ${s}. The birds were singing, and then they saw his scorecard and flew away.`,
   (p,s)=>`${p} shot ${s}. Tiger's watching from home and shaking his head.`,
 ];
- 
+
 // ══════════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════════
@@ -245,7 +179,7 @@ function getNetScore(gross,par,hcp,playerHdcp,courseRating=72){
   const strokes=Math.floor(playerHdcp/18)+(hcp<=playerHdcp%18?1:0);
   return gross-strokes;
 }
- 
+
 // ══════════════════════════════════════════════
 // WEATHER WIDGET
 // ══════════════════════════════════════════════
@@ -279,176 +213,10 @@ function WeatherWidget({lat,lon,courseName}){
     </div>
   );
 }
- 
+
 // ══════════════════════════════════════════════
 // MAIN APP
 // ══════════════════════════════════════════════
- 
-// ── PIN MODAL ──────────────────────────────────
-function PinModal({player,onSuccess,onClose,isSetup}){
-  const[pin,setPin]=useState('');
-  const[err,setErr]=useState(false);
-  const[shk,setShk]=useState(false);
-  const handleDigit=d=>{
-    if(pin.length>=4)return;
-    const np=pin+d;setPin(np);
-    if(np.length===4){
-      setTimeout(()=>{
-        const pins=getPins();
-        if(isSetup){savePins({...pins,[player.id]:np});onSuccess();}
-        else if(pins[player.id]===np){onSuccess();}
-        else{setShk(true);setErr(true);setPin('');setTimeout(()=>{setShk(false);setErr(false);},600);}
-      },150);
-    }
-  };
-  return(
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.9)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={onClose}>
-      <div style={{background:'#0d1a0d',border:`2px solid ${player.color}44`,borderRadius:24,padding:'28px 22px',width:290,animation:'popIn .3s'}} onClick={e=>e.stopPropagation()}>
-        <div style={{textAlign:'center',marginBottom:20}}>
-          <div style={{width:54,height:54,borderRadius:'50%',background:player.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,color:'#000',fontWeight:900,margin:'0 auto 10px'}}>{player.emoji}</div>
-          <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:2,color:player.color}}>{player.name}</div>
-          <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:3}}>{isSetup?'Set your 4-digit PIN':!getPins()[player.id]?'No PIN yet':'Enter your PIN'}</div>
-        </div>
-        <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:20,animation:shk?'shake .4s':'none'}}>
-          {[0,1,2,3].map(i=><div key={i} style={{width:14,height:14,borderRadius:'50%',background:pin.length>i?player.color:'rgba(255,255,255,.1)',border:`2px solid ${pin.length>i?player.color:'rgba(255,255,255,.12)'}`,transition:'all .2s'}}/>)}
-        </div>
-        {err&&<div style={{textAlign:'center',color:'#ff5252',fontSize:12,marginBottom:10,fontWeight:700}}>Wrong PIN — try again</div>}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:7}}>
-          {[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map((d,i)=>(
-            <button key={i} onClick={()=>d===''?null:d==='⌫'?setPin(p=>p.slice(0,-1)):handleDigit(String(d))}
-              style={{background:d===''?'transparent':'rgba(255,255,255,.06)',border:`1px solid ${d===''?'transparent':'rgba(255,255,255,.08)'}`,color:'#fff',borderRadius:12,padding:'15px',fontSize:19,fontWeight:700,cursor:d===''?'default':'pointer'}}>{d}</button>
-          ))}
-        </div>
-        {!isSetup&&!getPins()[player.id]&&<button onClick={onSuccess} style={{width:'100%',background:'transparent',border:'1px solid rgba(255,255,255,.08)',color:'rgba(255,255,255,.25)',borderRadius:10,padding:'10px',marginTop:10,cursor:'pointer',fontSize:11}}>Skip (honor system)</button>}
-        <button onClick={onClose} style={{width:'100%',background:'transparent',border:'none',color:'rgba(255,255,255,.15)',padding:'8px',marginTop:6,cursor:'pointer',fontSize:11}}>Cancel</button>
-      </div>
-    </div>
-  );
-}
- 
-// ── PLAYER PROFILE ─────────────────────────────
-function PlayerProfile({player,rounds,scores,playerSettings,onClose}){
-  const completed=rounds.filter(r=>r.completed);
-  const hdcp=playerSettings[player.id]??player.defaultHcp;
-  const st=useMemo(()=>{
-    let b=0,e=0,p=0,bo=0,d=0,ac=0,best=null,worst=null,rp=0,tot=0,wins=0,streak=0,cur=0;
-    [...completed].sort((a,bb)=>a.date>bb.date?1:-1).forEach(r=>{
-      const s=scores[r.id]?.[player.id];if(!s)return;
-      const course=COURSES[r.course_id]||COURSES.snee;
-      let rt=0,pl=false;
-      s.forEach((sc,i)=>{if(sc>0&&course.holes[i]){const dd=sc-course.holes[i].par;if(sc===1)ac++;else if(dd<=-2)e++;else if(dd===-1)b++;else if(dd===0)p++;else if(dd===1)bo++;else d++;rt+=sc;pl=true;}});
-      if(pl&&rt>0){tot+=rt;rp++;if(best===null||rt<best)best=rt;if(worst===null||rt>worst)worst=rt;}
-      const all=PLAYERS.map(pp=>({id:pp.id,t:(scores[r.id]?.[pp.id]||[]).reduce((a,bb)=>a+(bb||0),0)})).filter(x=>x.t>0).sort((a,bb)=>a.t-bb.t);
-      if(all[0]?.id===player.id){wins++;cur++;}else{streak=Math.max(streak,cur);cur=0;}
-    });
-    streak=Math.max(streak,cur);
-    const trend=completed.slice(0,6).reverse().map(r=>{const s=scores[r.id]?.[player.id];return s?s.reduce((a,bb)=>a+(bb||0),0):null;}).filter(Boolean);
-    return{b,e,p,bo,d,ac,best,worst,rp,avg:rp?Math.round(tot/rp):null,wins,streak,trend};
-  },[completed.length]);
-  return(
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.9)',zIndex:400,display:'flex',alignItems:'flex-end',justifyContent:'center'}} onClick={onClose}>
-      <div style={{background:'#0a150a',border:`1px solid ${player.color}33`,borderRadius:'22px 22px 0 0',padding:'22px 18px',width:'100%',maxWidth:700,maxHeight:'85vh',overflowY:'auto',animation:'fadeUp .3s'}} onClick={e=>e.stopPropagation()}>
-        <div style={{width:36,height:4,background:'rgba(255,255,255,.12)',borderRadius:2,margin:'0 auto 18px'}}/>
-        <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:20}}>
-          <div style={{width:60,height:60,borderRadius:'50%',background:player.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,color:'#000',fontWeight:900}}>{player.emoji}</div>
-          <div style={{flex:1}}><div style={{fontFamily:'Bebas Neue',fontSize:28,letterSpacing:2,color:player.color}}>{player.name}</div><div style={{fontSize:11,color:'rgba(255,255,255,.25)'}}>HCP {hdcp} · {st.rp} rounds played</div></div>
-          {st.best&&<div style={{textAlign:'right'}}><div style={{fontFamily:'Bebas Neue',fontSize:38,color:player.color,lineHeight:1}}>{st.best}</div><div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:2}}>BEST ROUND</div></div>}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:7,marginBottom:14}}>
-          {[{n:st.wins,l:'WINS',c:'#ffd700'},{n:st.streak,l:'WIN STREAK',c:'#ff9100'},{n:st.avg||'—',l:'AVG SCORE',c:player.color}].map((s,i)=>(
-            <div key={i} style={{background:'rgba(0,0,0,.4)',borderRadius:12,padding:'12px 6px',textAlign:'center'}}>
-              <div style={{fontFamily:'Bebas Neue',fontSize:28,color:s.c,lineHeight:1}}>{s.n}</div>
-              <div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:2,fontWeight:700,marginTop:3}}>{s.l}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:5,marginBottom:12}}>
-          {[{n:st.ac,l:'ACE',c:'#ffd700'},{n:st.e,l:'EAGLE',c:'#00e676'},{n:st.b,l:'BIRDIE',c:'#69f0ae'},{n:st.p,l:'PAR',c:'#555'},{n:st.bo+st.d,l:'BOG+',c:'#ff5252'}].map((s,i)=>(
-            <div key={i} style={{background:'rgba(0,0,0,.3)',borderRadius:10,padding:'8px 3px',textAlign:'center'}}>
-              <div style={{fontFamily:'Bebas Neue',fontSize:22,color:s.n>0?s.c:'#222'}}>{s.n}</div>
-              <div style={{fontSize:7,color:'rgba(255,255,255,.18)',fontWeight:700,letterSpacing:1}}>{s.l}</div>
-            </div>
-          ))}
-        </div>
-        {st.rp>0&&(()=>{const tot=Math.max(1,st.e+st.b+st.p+st.bo+st.d);return(<div style={{height:7,borderRadius:3,overflow:'hidden',display:'flex',gap:1,marginBottom:12}}>{[{v:st.e,c:'#00e676'},{v:st.b,c:'#69f0ae'},{v:st.p,c:'#444'},{v:st.bo,c:'#ff9100'},{v:st.d,c:'#ff5252'}].map((bb,i)=>bb.v>0&&<div key={i} style={{flex:bb.v/tot,background:bb.c,minWidth:2}}/>)}</div>);})()}
-        {st.trend.length>1&&(<div style={{marginBottom:10}}><div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:3,fontWeight:700,marginBottom:6}}>SCORE TREND</div><div style={{display:'flex',gap:3,alignItems:'flex-end',height:46}}>{st.trend.map((t,i)=>{const mn=Math.min(...st.trend),mx=Math.max(...st.trend);const h=mx===mn?22:Math.round(((mx-t)/(mx-mn))*36)+10;return(<div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2}}><div style={{width:'100%',background:i===st.trend.length-1?player.color:'rgba(255,255,255,.12)',borderRadius:'3px 3px 0 0',height:h,transition:'height .5s'}}/><div style={{fontSize:8,color:'rgba(255,255,255,.25)',fontWeight:700}}>{t}</div></div>);})}</div></div>)}
-        {st.worst&&<div style={{fontSize:10,color:'rgba(255,255,255,.18)',textAlign:'center',marginTop:4}}>Worst round: {st.worst}</div>}
-      </div>
-    </div>
-  );
-}
- 
-// ── HAMBURGER MENU ──────────────────────────────
-function HamburgerMenu({onClose,rounds,scores,nextRound,setNextRound}){
-  const[sec,setSec]=useState('main');
-  const[fmtD,setFmtD]=useState(null);
-  const completed=rounds.filter(r=>r.completed);
-  const records=useMemo(()=>{
-    let best={score:999,player:null,date:null},birds={count:0,player:null,date:null},strk={n:0,player:null};
-    PLAYERS.forEach(p=>{
-      let cur=0,mx=0;
-      completed.forEach(r=>{
-        const s=scores[r.id]?.[p.id];if(!s)return;
-        const course=COURSES[r.course_id]||COURSES.snee;
-        const tot=s.reduce((a,b)=>a+(b||0),0);
-        if(tot>0&&tot<best.score)best={score:tot,player:p,date:r.date};
-        const bd=s.filter((sc,i)=>sc>0&&course.holes[i]&&sc-course.holes[i].par===-1).length;
-        if(bd>birds.count)birds={count:bd,player:p,date:r.date};
-        const all=PLAYERS.map(pp=>({id:pp.id,t:(scores[r.id]?.[pp.id]||[]).reduce((a,b)=>a+(b||0),0)})).filter(x=>x.t>0).sort((a,b)=>a.t-b.t);
-        if(all[0]?.id===p.id)cur++;else{mx=Math.max(mx,cur);cur=0;}
-        mx=Math.max(mx,cur);if(mx>strk.n)strk={n:mx,player:p};
-      });
-    });
-    return{best,birds,strk};
-  },[completed.length]);
-  const menu=[{id:'records',icon:'🏆',l:'All-Time Records'},{id:'formats',icon:'📖',l:'Format Rules'},{id:'schedule',icon:'📅',l:'Schedule Next Round'},{id:'settings',icon:'⚙️',l:'Settings'}];
-  return(
-    <div style={{position:'fixed',inset:0,zIndex:300,display:'flex'}} onClick={onClose}>
-      <div style={{background:'#091409',width:280,height:'100%',borderRight:'1px solid rgba(0,230,118,.08)',padding:'55px 0 20px',overflowY:'auto',animation:'slideLeft .3s',flexShrink:0}} onClick={e=>e.stopPropagation()}>
-        <div style={{padding:'0 18px 16px',borderBottom:'1px solid rgba(255,255,255,.04)',marginBottom:6}}><div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:3,color:'#00e676'}}>THURSDAY CREW</div><div style={{fontSize:9,color:'rgba(255,255,255,.18)',letterSpacing:2}}>GOLF TRACKER</div></div>
-        {sec==='main'&&menu.map(m=><button key={m.id} onClick={()=>setSec(m.id)} style={{width:'100%',background:'transparent',border:'none',color:'#e8e8e8',padding:'15px 18px',cursor:'pointer',fontSize:14,fontWeight:600,display:'flex',alignItems:'center',gap:12,textAlign:'left',borderBottom:'1px solid rgba(255,255,255,.03)'}}><span style={{fontSize:18}}>{m.icon}</span>{m.l}<span style={{marginLeft:'auto',color:'rgba(255,255,255,.15)',fontSize:16}}>›</span></button>)}
-        {sec==='records'&&<div style={{padding:'0 18px'}}>
-          <button onClick={()=>setSec('main')} style={{background:'transparent',border:'none',color:'rgba(255,255,255,.25)',fontSize:12,cursor:'pointer',marginBottom:14,display:'flex',alignItems:'center',gap:5}}>‹ Back</button>
-          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#ffd700',marginBottom:14}}>ALL-TIME RECORDS</div>
-          {completed.length===0?<div style={{color:'rgba(255,255,255,.2)',fontSize:12}}>No completed rounds yet!</div>:<>
-            {[{icon:'🏌️',l:'BEST ROUND EVER',v:records.best.score!==999?`${records.best.score} — ${records.best.player?.name}`:null,s:records.best.date},
-              {icon:'🐦',l:'MOST BIRDIES IN A ROUND',v:records.birds.count>0?`${records.birds.count} — ${records.birds.player?.name}`:null,s:records.birds.date},
-              {icon:'🔥',l:'LONGEST WIN STREAK',v:records.strk.n>0?`${records.strk.n} — ${records.strk.player?.name}`:null,s:null}
-            ].map((r,i)=><div key={i} style={{background:'rgba(0,0,0,.3)',borderRadius:14,padding:'13px',marginBottom:9}}><div style={{fontSize:20,marginBottom:5}}>{r.icon}</div><div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:3}}>{r.l}</div><div style={{fontSize:17,fontWeight:900,color:'#ffd700'}}>{r.v||'—'}</div>{r.s&&<div style={{fontSize:9,color:'rgba(255,255,255,.18)',marginTop:2}}>{r.s}</div>}</div>)}
-          </>}
-        </div>}
-        {sec==='formats'&&<div style={{padding:'0 18px'}}>
-          <button onClick={()=>{setSec('main');setFmtD(null);}} style={{background:'transparent',border:'none',color:'rgba(255,255,255,.25)',fontSize:12,cursor:'pointer',marginBottom:14,display:'flex',alignItems:'center',gap:5}}>‹ Back</button>
-          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:14}}>FORMAT RULES</div>
-          {fmtD?<div>
-            <button onClick={()=>setFmtD(null)} style={{background:'transparent',border:'none',color:'rgba(255,255,255,.25)',fontSize:11,cursor:'pointer',marginBottom:10,display:'flex',alignItems:'center',gap:5}}>‹ All formats</button>
-            <div style={{fontSize:26,marginBottom:6}}>{fmtD.icon}</div>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:10}}>{fmtD.label}</div>
-            <div style={{fontSize:13,color:'rgba(255,255,255,.65)',lineHeight:1.8}}>{fmtD.desc}</div>
-          </div>:FORMATS.map(f=><button key={f.id} onClick={()=>setFmtD(f)} style={{width:'100%',background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.04)',borderRadius:11,padding:'11px 12px',cursor:'pointer',marginBottom:5,display:'flex',alignItems:'center',gap:9,textAlign:'left'}}><span style={{fontSize:18,flexShrink:0}}>{f.icon}</span><div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:'#fff'}}>{f.label}</div><div style={{fontSize:9,color:'rgba(255,255,255,.22)',marginTop:1}}>{f.desc}</div></div><span style={{color:'rgba(255,255,255,.15)',fontSize:14}}>›</span></button>)}
-        </div>}
-        {sec==='schedule'&&<div style={{padding:'0 18px'}}>
-          <button onClick={()=>setSec('main')} style={{background:'transparent',border:'none',color:'rgba(255,255,255,.25)',fontSize:12,cursor:'pointer',marginBottom:14,display:'flex',alignItems:'center',gap:5}}>‹ Back</button>
-          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:14}}>NEXT ROUND</div>
-          {[{l:'DATE',type:'date',k:'date'},{l:'TEE TIME',type:'time',k:'teeTime'}].map(o=><div key={o.k} style={{marginBottom:12}}><div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:5}}>{o.l}</div><input type={o.type} value={nextRound[o.k]||''} onChange={e=>setNextRound(n=>({...n,[o.k]:e.target.value}))} style={{width:'100%',background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.09)',color:'#fff',padding:'10px 12px',borderRadius:10,fontSize:14}}/></div>)}
-          <div style={{marginBottom:14}}><div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:5}}>COURSE</div><select value={nextRound.courseId||'snee'} onChange={e=>setNextRound(n=>({...n,courseId:e.target.value}))} style={{width:'100%',background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.09)',color:'#fff',padding:'10px 12px',borderRadius:10,fontSize:13}}>{Object.entries(COURSES).map(([id,c])=><option key={id} value={id}>{c.name}</option>)}</select></div>
-          <button onClick={()=>{setSec('main');onClose();}} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:12,padding:'13px',fontSize:14,fontWeight:900,cursor:'pointer',letterSpacing:2,fontFamily:'Bebas Neue',width:'100%'}}>SAVE</button>
-        </div>}
-        {sec==='settings'&&<div style={{padding:'0 18px'}}>
-          <button onClick={()=>setSec('main')} style={{background:'transparent',border:'none',color:'rgba(255,255,255,.25)',fontSize:12,cursor:'pointer',marginBottom:14,display:'flex',alignItems:'center',gap:5}}>‹ Back</button>
-          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:14}}>SETTINGS</div>
-          <div style={{background:'rgba(255,255,255,.02)',borderRadius:12,padding:'14px',marginBottom:12}}><div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,.4)',marginBottom:10}}>RESET PLAYER PINS</div>{PLAYERS.map(p=><button key={p.id} onClick={()=>{const pins=getPins();delete pins[p.id];savePins(pins);alert(p.name+"'s PIN reset");}} style={{width:'100%',background:'rgba(255,68,68,.07)',border:'1px solid rgba(255,68,68,.13)',color:'#ff5252',borderRadius:9,padding:'9px',marginBottom:5,cursor:'pointer',fontSize:11,fontWeight:700,display:'flex',alignItems:'center',gap:7}}><span style={{width:22,height:22,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:'#000',fontWeight:900}}>{p.emoji}</span>Reset {p.name}'s PIN</button>)}</div>
-          <div style={{background:'rgba(255,255,255,.02)',borderRadius:12,padding:'14px'}}><div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,.4)',marginBottom:6}}>APP INFO</div><div style={{fontSize:11,color:'rgba(255,255,255,.18)',lineHeight:1.9}}>Thursday Crew Golf{"
-"}Ben · Thomas · Max · Luke{"
-"}Mount Pleasant, SC ⛳</div></div>
-        </div>}
-      </div>
-      <div style={{flex:1,background:'rgba(0,0,0,.5)'}}/>
-    </div>
-  );
-}
- 
- 
 function App(){
   const[view,setView]=useState('home');
   const[activeRoundId,setActiveRoundId]=useState(null);
@@ -458,22 +226,14 @@ function App(){
   const[playerSettings,setPlayerSettings]=useState({});
   const[loading,setLoading]=useState(true);
   const[toast,setToast]=useState(null);
-  const[menuOpen,setMenuOpen]=useState(false);
-  const[pinModal,setPinModal]=useState(null);
-  const[profileModal,setProfileModal]=useState(null);
-  const[unlockedPlayer,setUnlockedPlayer]=useState(null);
-  const[trashPop,setTrashPop]=useState(null);
-  const[nextRound,setNextRound]=useState({date:'',teeTime:'08:00',courseId:'snee'});
-  const[teamScores,setTeamScores]=useState(()=>{try{return JSON.parse(localStorage.getItem('tcg_ts3')||'{}')}catch{return{}}});
- 
- 
+
   const showToast=(msg,type='success',duration=3000)=>{
     setToast({msg,type});
     setTimeout(()=>setToast(null),duration);
   };
- 
+
   useEffect(()=>{loadAll();},[]);
- 
+
   useEffect(()=>{
     const s1=sb.channel('sc-v2').on('postgres_changes',{event:'*',schema:'public',table:'scores'},p=>{
       if(p.eventType==='INSERT'||p.eventType==='UPDATE'){
@@ -488,7 +248,7 @@ function App(){
     }).subscribe();
     return()=>{sb.removeChannel(s1);sb.removeChannel(s2);};
   },[]);
- 
+
   const loadAll=async()=>{
     setLoading(true);
     try{
@@ -509,7 +269,7 @@ function App(){
     }catch(e){console.error(e);}
     setLoading(false);
   };
- 
+
   const startRound=async(setup)=>{
     try{
       const hdcp={};PLAYERS.forEach(p=>{hdcp[p.id]=playerSettings[p.id]??p.defaultHcp;});
@@ -524,10 +284,6 @@ function App(){
       await sb.from('scores').insert(PLAYERS.map(p=>({round_id:round.id,player_id:p.id,holes:Array(18).fill(0)})));
       // Init extras
       setExtras(prev=>({...prev,[round.id]:{mulligans:{ben:0,thomas:0,max:0,luke:0},closestPin:{},longDrive:{}}}));
-      if(isTeamFmt(setup.format)&&setup.teamConfig!=='solo'){
-        const tc=TEAM_CONFIGS.find(t=>t.id===setup.teamConfig);
-        if(tc){const nts={...teamScores,[round.id]:tc.teams.map(()=>Array(18).fill(0))};setTeamScores(nts);localStorage.setItem('tcg_ts3',JSON.stringify(nts));}
-      }
       setActiveRoundId(round.id);
       setView('scorecard');
       showToast('Round started! Good luck 🏌️');
@@ -537,7 +293,7 @@ function App(){
       showToast('Error starting round. Try running the SQL update in Supabase.','error');
     }
   };
- 
+
   const updateScore=async(roundId,playerId,holeIdx,value)=>{
     const cur=scores[roundId]?.[playerId]||Array(18).fill(0);
     const upd=[...cur];
@@ -555,23 +311,11 @@ function App(){
       if(newVal===1){Sound.play('ace');Haptic.celebrate();showToast('HOLE IN ONE!!! 🎉🎉🎉','success',5000);}
       else if(d<=-2){Sound.play('eagle');Haptic.celebrate();showToast(`EAGLE! 🦅🦅`,'success');}
       else if(d===-1){Sound.play('birdie');Haptic.medium();}
-      else if(d>=2){Sound.play('bogey');Haptic.light();const pl=PLAYERS.find(p=>p.id===playerId);if(pl){setTrashPop({line:TRASH_LINES[Math.floor(Math.random()*TRASH_LINES.length)](pl.name,newVal),player:pl});setTimeout(()=>setTrashPop(null),4000);}}
+      else if(d>=2){Sound.play('bogey');Haptic.light();}
       else{Sound.play('click');Haptic.light();}
     }
   };
- 
-  const updateTeamScore=(roundId,ti,hi,val)=>{
-    const cur=(teamScores[roundId]||[]).map(t=>[...t]);
-    if(!cur[ti])return;
-    cur[ti][hi]=Math.max(1,parseInt(val)||0);
-    const nts={...teamScores,[roundId]:cur};
-    setTeamScores(nts);localStorage.setItem('tcg_ts3',JSON.stringify(nts));
-  };
-  const requestUnlock=player=>{
-    const pins=getPins();
-    if(!pins[player.id]){setPinModal({player,isSetup:true,onSuccess:()=>{setPinModal(null);setUnlockedPlayer(player.id);}});}
-    else{setPinModal({player,isSetup:false,onSuccess:()=>{setPinModal(null);setUnlockedPlayer(player.id);}});}
-  };
+
   const finishRound=async(roundId)=>{
     await sb.from('rounds').update({completed:true}).eq('id',roundId);
     setActiveRoundId(null);
@@ -579,54 +323,43 @@ function App(){
     showToast('Round complete! 🏆');
     Haptic.celebrate();
   };
- 
+
   const deleteRound=async(roundId)=>{
     await sb.from('rounds').delete().eq('id',roundId);
     if(activeRoundId===roundId)setActiveRoundId(null);
     showToast('Round deleted');
   };
- 
+
   const updateHandicap=async(pid,val)=>{
     const hcp=parseInt(val)||0;
     setPlayerSettings(prev=>({...prev,[pid]:hcp}));
     await sb.from('player_settings').upsert({player_id:pid,handicap:hcp,updated_at:new Date().toISOString()});
   };
- 
+
   const updateExtras=(roundId,type,data)=>{
     setExtras(prev=>({...prev,[roundId]:{...(prev[roundId]||{}),  [type]:{...((prev[roundId]||{})[type]||{}),...data}}}));
   };
- 
+
   const activeRound=rounds.find(r=>r.id===activeRoundId);
   const activeScores=activeRoundId?(scores[activeRoundId]||{}):{};
   const activeExtras=activeRoundId?(extras[activeRoundId]||{}):{};
   const latestCompleted=rounds.find(r=>r.completed);
- 
+
   if(loading)return(
     <div style={{minHeight:'100vh',background:'#030806',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16}}>
       <div style={{fontSize:56,animation:'bounce 1s infinite'}}>⛳</div>
       <div style={{color:'#00e676',fontSize:12,letterSpacing:4,fontWeight:700}}>LOADING...</div>
     </div>
   );
- 
+
   return(
     <div style={{minHeight:'100vh',background:'#030806',paddingBottom:100}}>
-      {/* PIN Modal */}
-      {pinModal&&<PinModal player={pinModal.player} onSuccess={pinModal.onSuccess} onClose={()=>setPinModal(null)} isSetup={pinModal.isSetup}/>}
-      {/* Profile Modal */}
-      {profileModal&&<PlayerProfile player={profileModal} rounds={rounds} scores={scores} playerSettings={playerSettings} onClose={()=>setProfileModal(null)}/>}
-      {/* Hamburger Menu */}
-      {menuOpen&&<HamburgerMenu onClose={()=>setMenuOpen(false)} rounds={rounds} scores={scores} nextRound={nextRound} setNextRound={setNextRound}/>}
-      {/* Trash talk pop */}
-      {trashPop&&<div style={{position:'fixed',bottom:100,left:14,right:14,zIndex:990,background:'rgba(20,10,0,.96)',border:'1px solid rgba(255,145,0,.4)',borderRadius:18,padding:'14px 16px',animation:'fadeUp .4s'}}><div style={{fontSize:9,color:'rgba(255,145,0,.5)',letterSpacing:2,fontWeight:700,marginBottom:4}}>🎤 ROAST</div><div style={{fontSize:13,color:'rgba(255,255,255,.75)',lineHeight:1.6,fontStyle:'italic'}}>"{trashPop.line}"</div></div>}
       {toast&&(
         <div style={{position:'fixed',top:16,left:'50%',transform:'translateX(-50%)',zIndex:9999,background:toast.type==='error'?'#c62828':'#00e676',color:toast.type==='error'?'#fff':'#000',padding:'11px 22px',borderRadius:30,fontSize:13,fontWeight:800,boxShadow:'0 8px 32px rgba(0,0,0,.6)',whiteSpace:'nowrap',animation:'slideDown .3s ease',letterSpacing:.5}}>{toast.msg}</div>
       )}
- 
-      <header style={{position:'sticky',top:0,zIndex:100,background:'rgba(3,8,6,.97)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(0,230,118,.08)',padding:'11px 15px',display:'flex',alignItems:'center',gap:10,justifyContent:'space-between'}}>
-        <button onClick={()=>setMenuOpen(true)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.08)',color:'rgba(255,255,255,.4)',width:36,height:36,borderRadius:10,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,flexShrink:0}}>
-          <div style={{width:15,height:2,background:'currentColor',borderRadius:1}}/><div style={{width:15,height:2,background:'currentColor',borderRadius:1}}/><div style={{width:15,height:2,background:'currentColor',borderRadius:1}}/>
-        </button>
-        <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer',flex:1}} onClick={()=>setView('home')}>
+
+      <header style={{position:'sticky',top:0,zIndex:100,background:'rgba(3,8,6,.97)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(0,230,118,.08)',padding:'11px 15px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}} onClick={()=>setView('home')}>
           <span style={{fontSize:22}}>⛳</span>
           <div>
             <div style={{fontFamily:'Bebas Neue',fontSize:19,letterSpacing:3,color:'#00e676',lineHeight:1}}>THURSDAY CREW</div>
@@ -640,27 +373,27 @@ function App(){
           {activeRound&&<button onClick={()=>setView('scorecard')} style={{background:'rgba(255,68,68,.15)',border:'1px solid rgba(255,68,68,.5)',color:'#ff4444',padding:'7px 10px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:700,animation:'pulse 2s infinite',letterSpacing:.5}}>🔴 LIVE</button>}
         </div>
       </header>
- 
+
       <div style={{maxWidth:700,margin:'0 auto',padding:'16px 13px'}}>
-        {view==='home'&&<HomeView rounds={rounds} scores={scores} playerSettings={playerSettings} activeRound={activeRound} updateHandicap={updateHandicap} setView={setView} setActiveRoundId={setActiveRoundId} nextRound={nextRound} onPlayerClick={p=>setProfileModal(p)}/>}
+        {view==='home'&&<HomeView rounds={rounds} scores={scores} playerSettings={playerSettings} activeRound={activeRound} updateHandicap={updateHandicap} setView={setView} setActiveRoundId={setActiveRoundId}/>}
         {view==='setup'&&<SetupView startRound={startRound} playerSettings={playerSettings}/>}
-        {view==='scorecard'&&activeRound&&<ScorecardView round={activeRound} scores={activeScores} teamScores={teamScores[activeRoundId]||[]} extras={activeExtras} updateScore={updateScore} updateTeamScore={updateTeamScore} finishRound={finishRound} updateExtras={updateExtras} playerSettings={playerSettings} rounds={rounds} unlockedPlayer={unlockedPlayer} requestUnlock={requestUnlock}/>}
+        {view==='scorecard'&&activeRound&&<ScorecardView round={activeRound} scores={activeScores} extras={activeExtras} updateScore={updateScore} finishRound={finishRound} updateExtras={updateExtras} playerSettings={playerSettings} rounds={rounds}/>}
         {view==='history'&&<HistoryView rounds={rounds} scores={scores} deleteRound={deleteRound} setActiveRoundId={setActiveRoundId} setView={setView}/>}
         {view==='stats'&&<StatsView rounds={rounds} scores={scores} playerSettings={playerSettings}/>}
-        {view==='leaderboard'&&latestCompleted&&<LeaderboardView round={latestCompleted} scores={scores[latestCompleted.id]||{}} teamScores={teamScores[latestCompleted?.id]||[]} playerSettings={playerSettings} setView={setView}/>}
+        {view==='leaderboard'&&latestCompleted&&<LeaderboardView round={latestCompleted} scores={scores[latestCompleted.id]||{}} playerSettings={playerSettings} setView={setView}/>}
       </div>
     </div>
   );
 }
- 
+
 // ══════════════════════════════════════════════
 // HOME VIEW
 // ══════════════════════════════════════════════
-function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setView,setActiveRoundId,nextRound,onPlayerClick}){
+function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setView,setActiveRoundId}){
   const[editHdcp,setEditHdcp]=useState(false);
   const completed=rounds.filter(r=>r.completed);
   const thisMonth=completed.filter(r=>r.date?.startsWith(new Date().toISOString().slice(0,7))).length;
- 
+
   // Season standings
   const seasonStandings=PLAYERS.map(p=>{
     let wins=0,totalStrokes=0,rounds_played=0,best=null,streak=0,currentStreak=0;
@@ -676,9 +409,9 @@ function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setVi
     streak=Math.max(streak,currentStreak);
     return{...p,wins,rounds_played,best,streak,avg:rounds_played?Math.round(totalStrokes/rounds_played):null};
   }).sort((a,b)=>b.wins-a.wins);
- 
+
   const getBest=pid=>seasonStandings.find(p=>p.id===pid)?.best;
- 
+
   return(
     <div style={{display:'flex',flexDirection:'column',gap:16,animation:'fadeUp .4s ease'}}>
       {/* Hero */}
@@ -696,7 +429,7 @@ function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setVi
           ))}
         </div>
       </div>
- 
+
       {/* Live alert */}
       {activeRound&&(
         <div onClick={()=>{setActiveRoundId(activeRound.id);setView('scorecard');Haptic.light();}} style={{background:'rgba(255,68,68,.08)',border:'1px solid rgba(255,68,68,.3)',borderRadius:16,padding:'15px 16px',cursor:'pointer',display:'flex',alignItems:'center',gap:12}}>
@@ -708,7 +441,7 @@ function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setVi
           <div style={{color:'#ff4444',fontSize:22,fontWeight:700}}>→</div>
         </div>
       )}
- 
+
       {/* Season Standings */}
       {completed.length>0&&(
         <div style={{background:'rgba(255,215,0,.04)',border:'1px solid rgba(255,215,0,.12)',borderRadius:18,padding:'16px'}}>
@@ -730,7 +463,7 @@ function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setVi
           ))}
         </div>
       )}
- 
+
       {/* Players */}
       <div>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
@@ -763,11 +496,11 @@ function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setVi
           })}
         </div>
       </div>
- 
+
       <button onClick={()=>{setView('setup');Haptic.medium();}} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:18,padding:'20px 24px',fontSize:20,fontWeight:900,cursor:'pointer',letterSpacing:3,boxShadow:'0 8px 40px rgba(0,230,118,.35)',fontFamily:'Bebas Neue',animation:'glow 3s infinite'}}>
         ⛳ START NEW ROUND
       </button>
- 
+
       {/* Recent */}
       {rounds.length>0&&(
         <div>
@@ -789,7 +522,7 @@ function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setVi
           })}
         </div>
       )}
- 
+
       {/* Add to home screen */}
       <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.1)',borderRadius:14,padding:'13px 15px',display:'flex',gap:12,alignItems:'center'}}>
         <span style={{fontSize:22}}>📱</span>
@@ -801,7 +534,7 @@ function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setVi
     </div>
   );
 }
- 
+
 // ══════════════════════════════════════════════
 // SETUP VIEW
 // ══════════════════════════════════════════════
@@ -817,7 +550,7 @@ function SetupView({startRound,playerSettings}){
   const[spinning,setSpinning]=useState(false);
   const fmt=FORMATS.find(f=>f.id===setup.format);
   const team=TEAM_CONFIGS.find(t=>t.id===setup.teamConfig);
- 
+
   const randomize=()=>{
     setSpinning(true);let i=0;
     const t=setInterval(()=>{
@@ -826,7 +559,7 @@ function SetupView({startRound,playerSettings}){
     },100);
     Haptic.light();
   };
- 
+
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}>
       <div style={{fontFamily:'Bebas Neue',fontSize:30,letterSpacing:3,color:'#00e676'}}>SET UP ROUND</div>
@@ -839,18 +572,18 @@ function SetupView({startRound,playerSettings}){
         </div>
         <div style={{fontSize:11,color:'rgba(255,255,255,.25)'}}>{COURSES[setup.courseId]?.name} · {setup.date}</div>
       </div>
- 
+
       <button onClick={randomize} style={{background:'rgba(155,89,182,.12)',border:'1px solid rgba(155,89,182,.35)',color:'#9b59b6',padding:'13px',borderRadius:14,cursor:'pointer',fontSize:14,fontWeight:800,letterSpacing:2,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
         <span style={spinning?{animation:'spin .2s linear infinite',display:'inline-block'}:{}}>{spinning?'◐':'🎲'}</span>
         {spinning?'SPINNING...':'RANDOMIZE FORMAT & TEAMS'}
       </button>
- 
+
       <div style={{display:'flex',borderRadius:12,overflow:'hidden',border:'1px solid rgba(255,255,255,.05)'}}>
         {['course','format','teams','options'].map(t=>(
           <button key={t} onClick={()=>setTab(t)} style={{flex:1,background:tab===t?'rgba(0,230,118,.12)':'transparent',border:'none',color:tab===t?'#00e676':'#333',padding:'11px 2px',cursor:'pointer',fontSize:10,fontWeight:800,letterSpacing:1,transition:'all .2s'}}>{t.toUpperCase()}</button>
         ))}
       </div>
- 
+
       {tab==='course'&&(
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {Object.entries(COURSES).map(([id,c])=>(
@@ -865,7 +598,7 @@ function SetupView({startRound,playerSettings}){
           ))}
         </div>
       )}
- 
+
       {tab==='format'&&(
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
           {FORMATS.map(f=>(
@@ -878,7 +611,7 @@ function SetupView({startRound,playerSettings}){
           ))}
         </div>
       )}
- 
+
       {tab==='teams'&&(
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {TEAM_CONFIGS.map(t=>(
@@ -907,7 +640,7 @@ function SetupView({startRound,playerSettings}){
           )}
         </div>
       )}
- 
+
       {tab==='options'&&(
         <div style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.05)',borderRadius:14,padding:16,display:'flex',flexDirection:'column',gap:14}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -933,25 +666,25 @@ function SetupView({startRound,playerSettings}){
           </div>
         </div>
       )}
- 
+
       <button onClick={()=>startRound(setup)} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:18,padding:'20px 24px',fontSize:22,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue',boxShadow:'0 8px 40px rgba(0,230,118,.3)'}}>
         🏌️ START ROUND
       </button>
     </div>
   );
 }
- 
+
 // ══════════════════════════════════════════════
 // SCORECARD VIEW
 // ══════════════════════════════════════════════
-function ScorecardView({round,scores,teamScores,extras,updateScore,updateTeamScore,finishRound,updateExtras,playerSettings,rounds,unlockedPlayer,requestUnlock}){
+function ScorecardView({round,scores,extras,updateScore,finishRound,updateExtras,playerSettings,rounds}){
   const[holeIdx,setHoleIdx]=useState(0);
   const[showAll,setShowAll]=useState(false);
   const[showSkins,setShowSkins]=useState(false);
   const[showBets,setShowBets]=useState(false);
   const[wolfOrder,setWolfOrder]=useState(['ben','thomas','max','luke']);
   const[lastScored,setLastScored]=useState(null);
- 
+
   const course=COURSES[round.course_id]||COURSES.snee;
   const holes=course.holes;
   const fmt=FORMATS.find(f=>f.id===round.format);
@@ -960,57 +693,57 @@ function ScorecardView({round,scores,teamScores,extras,updateScore,updateTeamSco
   const mulligans=extras.mulligans||{ben:0,thomas:0,max:0,luke:0};
   const closestPin=extras.closestPin||{};
   const longDrive=extras.longDrive||{};
- 
+
   const holesPlayed=PLAYERS.reduce((max,p)=>{const pl=(scores[p.id]||[]).filter(s=>s>0).length;return Math.max(max,pl);},0);
- 
+
   const getTP=pid=>{let tp=0;(scores[pid]||[]).forEach((s,i)=>{if(s>0&&holes[i])tp+=s-holes[i].par;});return tp;};
   const getSF=pid=>(scores[pid]||[]).reduce((a,s,i)=>a+(s>0&&holes[i]?sfPts(s,holes[i].par):0),0);
- 
+
   const skinsList=useMemo(()=>{
     const sk=Array(18).fill(null);
     holes.forEach((_,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1)sk[i]=w[0].id;}});
     return sk;
   },[scores,holes]);
- 
+
   const skinsCount=pid=>skinsList.filter(s=>s===pid).length;
   const skinsVal=round.bet_amount||5;
- 
+
   const getDS=pid=>{
     if(round.format==='stableford')return{d:getSF(pid)+'pts',c:'#ffd700'};
     if(round.format==='skins')return{d:skinsCount(pid)+'🩳',c:'#9b59b6'};
     const tp=getTP(pid);return{d:tpStr(tp),c:tp<0?'#00e676':tp>0?'#ff5252':'#555'};
   };
- 
+
   // Wolf logic
   const wolfPlayer=round.format==='wolf'?PLAYERS.find(p=>p.id===wolfOrder[holeIdx%4]):null;
- 
+
   const handleScore=(pid,delta)=>{
     const cur=(scores[pid]||[])[holeIdx]||hole.par;
     updateScore(round.id,pid,holeIdx,cur+delta);
     setLastScored(pid);
   };
- 
+
   const handleInput=(pid,val)=>{
     updateScore(round.id,pid,holeIdx,val===''?null:val);
     setLastScored(pid);
   };
- 
+
   const useMulligan=(pid)=>{
     if(mulligans[pid]>=mulligansAllowed)return;
     updateExtras(round.id,'mulligans',{[pid]:(mulligans[pid]||0)+1});
     Haptic.medium();
     Sound.play('click');
   };
- 
+
   // Par 3 closest pin
   const isPar3=hole.par===3;
- 
+
   // Running bet
   const getBetResults=()=>{
     const ranked=[...PLAYERS].map(p=>({...p,tp:getTP(p.id),total:(scores[p.id]||[]).reduce((a,b)=>a+(b||0),0)})).sort((a,b)=>a.tp-b.tp);
     return ranked.map((p,i)=>({...p,net:i===0?(PLAYERS.length-1)*round.bet_amount:-round.bet_amount}));
   };
- 
+
   return(
     <div style={{display:'flex',flexDirection:'column',gap:11,animation:'fadeUp .3s ease'}}>
       {/* Header */}
@@ -1025,16 +758,16 @@ function ScorecardView({round,scores,teamScores,extras,updateScore,updateTeamSco
           <div style={{display:'flex',gap:4,alignItems:'center'}}><div style={{width:5,height:5,borderRadius:'50%',background:'#00e676',animation:'pulse 2s infinite'}}/><span style={{fontSize:9,color:'#00e676',letterSpacing:1,fontWeight:700}}>LIVE SYNC</span></div>
         </div>
       </div>
- 
+
       {/* Weather */}
       <WeatherWidget lat={course.lat} lon={course.lon} courseName={course.name}/>
- 
+
       {/* Wolf indicator */}
       {wolfPlayer&&<div style={{background:'rgba(155,89,182,.1)',border:'1px solid rgba(155,89,182,.3)',borderRadius:12,padding:'10px 14px',display:'flex',gap:10,alignItems:'center'}}>
         <span style={{fontSize:20}}>🐺</span>
         <div><span style={{fontWeight:800,color:wolfPlayer.color}}>{wolfPlayer.name}</span><span style={{color:'rgba(255,255,255,.4)',fontSize:13}}> is the Wolf this hole</span></div>
       </div>}
- 
+
       {/* Standings */}
       <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:2}}>
         {PLAYERS.map(p=>{const ds=getDS(p.id);return(
@@ -1045,7 +778,7 @@ function ScorecardView({round,scores,teamScores,extras,updateScore,updateTeamSco
           </div>
         );})}
       </div>
- 
+
       {/* Hole nav */}
       <div style={{background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.06)',borderRadius:15,padding:'13px 15px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <button onClick={()=>{setHoleIdx(Math.max(0,holeIdx-1));Haptic.light();}} disabled={holeIdx===0} style={{background:'rgba(255,255,255,.06)',border:'none',color:'#fff',width:42,height:42,borderRadius:12,cursor:'pointer',fontSize:24,opacity:holeIdx===0?.3:1}}>‹</button>
@@ -1059,7 +792,7 @@ function ScorecardView({round,scores,teamScores,extras,updateScore,updateTeamSco
         </div>
         <button onClick={()=>{setHoleIdx(Math.min(holes.length-1,holeIdx+1));Haptic.light();}} disabled={holeIdx===holes.length-1} style={{background:'rgba(255,255,255,.06)',border:'none',color:'#fff',width:42,height:42,borderRadius:12,cursor:'pointer',fontSize:24,opacity:holeIdx===holes.length-1?.3:1}}>›</button>
       </div>
- 
+
       {/* Score inputs */}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {PLAYERS.map(p=>{
@@ -1104,14 +837,14 @@ function ScorecardView({round,scores,teamScores,extras,updateScore,updateTeamSco
           );
         })}
       </div>
- 
+
       {/* Quick actions */}
       <div style={{display:'flex',gap:7}}>
         <button onClick={()=>PLAYERS.forEach(p=>{if(!((scores[p.id]||[])[holeIdx]>0))updateScore(round.id,p.id,holeIdx,hole.par);}) } style={{flex:1,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',color:'rgba(255,255,255,.4)',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700,letterSpacing:1}}>⚡ FILL PAR</button>
         <button onClick={()=>setShowSkins(!showSkins)} style={{flex:1,background:'rgba(155,89,182,.08)',border:'1px solid rgba(155,89,182,.25)',color:'#9b59b6',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700}}>💀 SKINS ({skinsList.filter(Boolean).length})</button>
         {round.bet_amount>0&&<button onClick={()=>setShowBets(!showBets)} style={{flex:1,background:'rgba(0,230,118,.06)',border:'1px solid rgba(0,230,118,.2)',color:'#00e676',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700}}>💰 BETS</button>}
       </div>
- 
+
       {/* Skins panel */}
       {showSkins&&(
         <div style={{background:'rgba(155,89,182,.06)',border:'1px solid rgba(155,89,182,.2)',borderRadius:16,padding:'14px 16px',animation:'fadeIn .3s ease'}}>
@@ -1129,7 +862,7 @@ function ScorecardView({round,scores,teamScores,extras,updateScore,updateTeamSco
           <div style={{fontSize:11,color:'rgba(255,255,255,.25)',textAlign:'center'}}>{skinsList.filter(Boolean).length} claimed · {holes.length-holesPlayed} holes left · Pot: ${PLAYERS.length*skinsVal*holesPlayed}</div>
         </div>
       )}
- 
+
       {/* Bets panel */}
       {showBets&&round.bet_amount>0&&(
         <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.12)',borderRadius:16,padding:'14px 16px',animation:'fadeIn .3s ease'}}>
@@ -1143,26 +876,26 @@ function ScorecardView({round,scores,teamScores,extras,updateScore,updateTeamSco
           ))}
         </div>
       )}
- 
+
       {/* Hole progress dots */}
       <div style={{display:'flex',gap:4,justifyContent:'center',flexWrap:'wrap',padding:'4px 0'}}>
         {holes.map((_,i)=>{const all=PLAYERS.every(p=>((scores[p.id]||[])[i]||0)>0);const skin=skinsList[i];return(
           <div key={i} onClick={()=>{setHoleIdx(i);Haptic.light();}} style={{width:15,height:15,borderRadius:'50%',background:i===holeIdx?'#ffd700':all?(skin?'#9b59b6':'#00e676'):'rgba(255,255,255,.08)',cursor:'pointer',transform:i===holeIdx?'scale(1.5)':'scale(1)',boxShadow:i===holeIdx?'0 0 8px #ffd700':skin&&all?'0 0 5px #9b59b6':'none',transition:'all .2s'}}/>
         );})}
       </div>
- 
+
       <button onClick={()=>setShowAll(!showAll)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.06)',color:'rgba(255,255,255,.25)',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700,letterSpacing:1}}>
         {showAll?'▲ HIDE SCORECARD':'▼ FULL SCORECARD'}
       </button>
       {showAll&&<FullScorecard scores={scores} holes={holes}/>}
- 
+
       <button onClick={()=>{if(confirm('Finish and save this round?'))finishRound(round.id);}} style={{background:'linear-gradient(135deg,#7a1010,#c0392b)',color:'#fff',border:'none',borderRadius:16,padding:'18px 24px',fontSize:20,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue',marginTop:4}}>
         🏁 FINISH ROUND
       </button>
     </div>
   );
 }
- 
+
 // ══════════════════════════════════════════════
 // FULL SCORECARD
 // ══════════════════════════════════════════════
@@ -1203,14 +936,14 @@ function FullScorecard({scores,holes}){
     </div>
   );
 }
- 
+
 // ══════════════════════════════════════════════
 // STATS VIEW
 // ══════════════════════════════════════════════
 function StatsView({rounds,scores,playerSettings}){
   const completed=rounds.filter(r=>r.completed);
   const[selectedPlayer,setSelectedPlayer]=useState('all');
- 
+
   const getStats=pid=>{
     let birdies=0,eagles=0,pars=0,bogeys=0,doubles=0,aces=0,best=null,worst=null,rp=0,totalStrokes=0,holesPlayed=0;
     for(const r of completed){
@@ -1224,16 +957,16 @@ function StatsView({rounds,scores,playerSettings}){
     completed.forEach(r=>{const s=scores[r.id]?.[pid];if(!s)return;const t=s.reduce((a,b)=>a+(b||0),0);if(t>0){if(!courseRecords[r.course_id]||t<courseRecords[r.course_id])courseRecords[r.course_id]=t;}});
     return{birdies,eagles,pars,bogeys,doubles,aces,best,worst,rp,avg:rp?Math.round(totalStrokes/rp):null,courseRecords};
   };
- 
+
   // Head to head matrix
   const h2h=(p1,p2)=>{let w1=0,w2=0,ties=0;
     completed.forEach(r=>{const s1=scores[r.id]?.[p1];const s2=scores[r.id]?.[p2];if(!s1||!s2)return;const t1=s1.reduce((a,b)=>a+(b||0),0);const t2=s2.reduce((a,b)=>a+(b||0),0);if(!t1||!t2)return;if(t1<t2)w1++;else if(t2<t1)w2++;else ties++;});
     return{w1,w2,ties};
   };
- 
+
   // Score trend (last 6 rounds)
   const getTrend=pid=>completed.slice(0,6).reverse().map(r=>{const s=scores[r.id]?.[pid];return s?s.reduce((a,b)=>a+(b||0),0):null;});
- 
+
   // Most improved
   const getMostImproved=()=>{
     return PLAYERS.map(p=>{
@@ -1243,9 +976,9 @@ function StatsView({rounds,scores,playerSettings}){
       return{...p,improvement};
     }).sort((a,b)=>b.improvement-a.improvement)[0];
   };
- 
+
   const improved=getMostImproved();
- 
+
   // Trash talk for worst round
   const getTrashTalk=()=>{
     let worst=null,worstPlayer=null;
@@ -1257,24 +990,24 @@ function StatsView({rounds,scores,playerSettings}){
     return{player:worstPlayer,line};
   };
   const [trash]=useState(()=>getTrashTalk());
- 
+
   if(completed.length===0)return(
     <div style={{display:'flex',flexDirection:'column',gap:16,animation:'fadeUp .4s ease'}}>
       <div style={{fontFamily:'Bebas Neue',fontSize:30,letterSpacing:3,color:'#00e676'}}>STATS & RECORDS</div>
       <div style={{textAlign:'center',color:'rgba(255,255,255,.2)',padding:60,fontSize:16}}>No completed rounds yet 🏌️<br/><span style={{fontSize:13,color:'rgba(255,255,255,.1)'}}>Finish a round to see your stats</span></div>
     </div>
   );
- 
+
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}>
       <div style={{fontFamily:'Bebas Neue',fontSize:30,letterSpacing:3,color:'#00e676'}}>STATS & RECORDS</div>
- 
+
       {/* Player selector */}
       <div style={{display:'flex',gap:6,overflowX:'auto'}}>
         <button onClick={()=>setSelectedPlayer('all')} style={{background:selectedPlayer==='all'?'rgba(0,230,118,.12)':'transparent',border:`1px solid ${selectedPlayer==='all'?'rgba(0,230,118,.35)':'rgba(255,255,255,.06)'}`,color:selectedPlayer==='all'?'#00e676':'#444',padding:'7px 14px',borderRadius:20,cursor:'pointer',fontSize:11,fontWeight:700,whiteSpace:'nowrap',flexShrink:0}}>ALL PLAYERS</button>
         {PLAYERS.map(p=><button key={p.id} onClick={()=>setSelectedPlayer(p.id)} style={{background:selectedPlayer===p.id?`${p.color}20`:'transparent',border:`1px solid ${selectedPlayer===p.id?p.color+'55':'rgba(255,255,255,.06)'}`,color:selectedPlayer===p.id?p.color:'#444',padding:'7px 14px',borderRadius:20,cursor:'pointer',fontSize:11,fontWeight:700,whiteSpace:'nowrap',flexShrink:0}}>{p.name}</button>)}
       </div>
- 
+
       {/* Player stat cards */}
       {PLAYERS.filter(p=>selectedPlayer==='all'||p.id===selectedPlayer).map(p=>{
         const st=getStats(p.id);const trend=getTrend(p.id);
@@ -1340,7 +1073,7 @@ function StatsView({rounds,scores,playerSettings}){
           </div>
         );
       })}
- 
+
       {/* Head to head */}
       {selectedPlayer==='all'&&(
         <div style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.05)',borderRadius:20,padding:'18px 16px'}}>
@@ -1365,7 +1098,7 @@ function StatsView({rounds,scores,playerSettings}){
           })}
         </div>
       )}
- 
+
       {/* Most improved */}
       {improved&&improved.improvement>0&&(
         <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.12)',borderRadius:16,padding:'14px 16px',display:'flex',gap:12,alignItems:'center'}}>
@@ -1377,7 +1110,7 @@ function StatsView({rounds,scores,playerSettings}){
           </div>
         </div>
       )}
- 
+
       {/* Trash talk */}
       {trash&&(
         <div style={{background:'rgba(255,145,0,.04)',border:'1px solid rgba(255,145,0,.15)',borderRadius:16,padding:'14px 16px'}}>
@@ -1388,7 +1121,7 @@ function StatsView({rounds,scores,playerSettings}){
     </div>
   );
 }
- 
+
 // ══════════════════════════════════════════════
 // HISTORY VIEW
 // ══════════════════════════════════════════════
@@ -1442,7 +1175,7 @@ function HistoryView({rounds,scores,deleteRound,setActiveRoundId,setView}){
     </div>
   );
 }
- 
+
 // ══════════════════════════════════════════════
 // LEADERBOARD VIEW
 // ══════════════════════════════════════════════
@@ -1451,37 +1184,37 @@ function LeaderboardView({round,scores,playerSettings,setView}){
   const course=COURSES[round.course_id]||COURSES.snee;
   const holes=course.holes;
   const[showShare,setShowShare]=useState(false);
- 
+
   const getTotal=pid=>(scores[pid]||[]).reduce((a,b)=>a+(b||0),0);
   const getTP=pid=>{let tp=0;(scores[pid]||[]).forEach((s,i)=>{if(s>0&&holes[i])tp+=s-holes[i].par;});return tp;};
   const getSF=pid=>(scores[pid]||[]).reduce((a,s,i)=>a+(s>0&&holes[i]?sfPts(s,holes[i].par):0),0);
   const getSkins=pid=>{let sk=0;holes.forEach((_,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1&&w[0].id===pid)sk++;}});return sk;};
- 
+
   const ranked=[...PLAYERS].map(p=>{
     if(round.format==='stableford')return{...p,val:getSF(p.id),disp:getSF(p.id)+' pts',higher:true};
     if(round.format==='skins')return{...p,val:getSkins(p.id),disp:getSkins(p.id)+' skins',higher:true};
     return{...p,val:getTotal(p.id),tp:getTP(p.id),disp:getTotal(p.id)+'',higher:false};
   }).sort((a,b)=>a.higher?b.val-a.val:a.val-b.val);
- 
+
   const winner=ranked[0];
   const betAmt=round.bet_amount||0;
- 
+
   // MVP awards
   const awards=[];
   const mostBirdies=PLAYERS.map(p=>({...p,b:(scores[p.id]||[]).reduce((a,s,i)=>a+(s>0&&holes[i]&&s-holes[i].par===-1?1:0),0)})).sort((a,b)=>b.b-a.b)[0];
   if(mostBirdies?.b>0)awards.push({icon:'🐦',label:'Most Birdies',player:mostBirdies,detail:`${mostBirdies.b} birdies`});
- 
+
   const fewestPutts=PLAYERS.map(p=>({...p,tot:getTotal(p.id)})).filter(p=>p.tot>0).sort((a,b)=>a.tot-b.tot)[0];
   if(fewestPutts)awards.push({icon:'🎯',label:'Lowest Score',player:fewestPutts,detail:`${fewestPutts.tot} strokes`});
- 
+
   const mostConsistent=PLAYERS.map(p=>{const s=scores[p.id]||[];const played=s.filter(x=>x>0);if(played.length<9)return{...p,std:99};const avg=played.reduce((a,b)=>a+b,0)/played.length;const std=Math.sqrt(played.reduce((a,b)=>a+(b-avg)**2,0)/played.length);return{...p,std};}).sort((a,b)=>a.std-b.std)[0];
   if(mostConsistent?.std<99)awards.push({icon:'📐',label:'Most Consistent',player:mostConsistent,detail:'Steadiest round'});
- 
+
   // Share text
   const shareText=`⛳ Thursday Crew Golf\n${round.date} · ${course.name}\n\n${ranked.map((p,i)=>['🥇','🥈','🥉','4️⃣'][i]+' '+p.name+': '+p.disp).join('\n')}\n\nwinner: ${winner.name} 🏆`;
- 
+
   const medals=['🥇','🥈','🥉','💀'];
- 
+
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}>
       {/* Trophy header */}
@@ -1499,7 +1232,7 @@ function LeaderboardView({round,scores,playerSettings,setView}){
           </div>
         </div>
       </div>
- 
+
       {/* Podium */}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {ranked.map((p,i)=>(
@@ -1514,7 +1247,7 @@ function LeaderboardView({round,scores,playerSettings,setView}){
           </div>
         ))}
       </div>
- 
+
       {/* Score bars */}
       <div style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.05)',borderRadius:18,padding:'16px'}}>
         <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:3,fontWeight:800,marginBottom:12}}>TOTAL STROKES</div>
@@ -1529,7 +1262,7 @@ function LeaderboardView({round,scores,playerSettings,setView}){
           </div>
         );})}
       </div>
- 
+
       {/* Settle up */}
       {betAmt>0&&(
         <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.12)',borderRadius:18,padding:'16px'}}>
@@ -1547,7 +1280,7 @@ function LeaderboardView({round,scores,playerSettings,setView}){
           ))}
         </div>
       )}
- 
+
       {/* MVP Awards */}
       {awards.length>0&&(
         <div style={{background:'rgba(255,215,0,.03)',border:'1px solid rgba(255,215,0,.1)',borderRadius:18,padding:'16px'}}>
@@ -1564,7 +1297,7 @@ function LeaderboardView({round,scores,playerSettings,setView}){
           ))}
         </div>
       )}
- 
+
       {/* Share card */}
       <button onClick={()=>{navigator.share?navigator.share({title:'Thursday Crew Golf',text:shareText}):setShowShare(true);}} style={{background:'rgba(64,196,255,.08)',border:'1px solid rgba(64,196,255,.2)',color:'#40c4ff',borderRadius:14,padding:'14px',fontSize:14,fontWeight:800,cursor:'pointer',letterSpacing:1}}>
         📤 SHARE RESULTS
@@ -1576,18 +1309,18 @@ function LeaderboardView({round,scores,playerSettings,setView}){
           <button onClick={()=>{navigator.clipboard.writeText(shareText);setShowShare(false);}} style={{background:'#40c4ff',color:'#000',border:'none',borderRadius:10,padding:'10px 20px',fontSize:13,fontWeight:800,cursor:'pointer',marginTop:8,width:'100%'}}>📋 COPY TO CLIPBOARD</button>
         </div>
       )}
- 
+
       {/* Full scorecard */}
       <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#00e676'}}>FULL SCORECARD</div>
       <FullScorecard scores={scores} holes={holes}/>
- 
+
       <button onClick={()=>setView('setup')} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:16,padding:'18px 24px',fontSize:22,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue',boxShadow:'0 8px 40px rgba(0,230,118,.25)'}}>
         ⛳ PLAY AGAIN
       </button>
     </div>
   );
 }
- 
+
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
