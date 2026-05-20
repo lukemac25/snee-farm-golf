@@ -2075,7 +2075,24 @@ function LeaderboardView({round,scores,teamScores,playerSettings,cfg,pName,pColo
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+class ErrorBoundary extends React.Component {
+  constructor(props){super(props);this.state={error:null};}
+  static getDerivedStateFromError(error){return{error:error.toString()};}
+  render(){
+    if(this.state.error){
+      return(
+        <div style={{padding:20,color:'#ff5252',fontFamily:'monospace',fontSize:12,background:'#1a0000',minHeight:'100vh',wordBreak:'break-all'}}>
+          <div style={{fontSize:20,marginBottom:16,color:'#ff7777'}}>APP CRASHED</div>
+          <div>{this.state.error}</div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<ErrorBoundary><App/></ErrorBoundary>);
 </script>
 </body>
 </html>
