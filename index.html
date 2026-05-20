@@ -28,7 +28,6 @@ input,select,button,textarea{font-family:'Inter',sans-serif}
 @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,230,118,.3)}50%{box-shadow:0 0 50px rgba(0,230,118,.6)}}
 @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes slideLeft{from{transform:translateX(-100%);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes celebrate{0%{transform:scale(1)}25%{transform:scale(1.3) rotate(-5deg)}50%{transform:scale(1.1) rotate(3deg)}75%{transform:scale(1.2) rotate(-2deg)}100%{transform:scale(1)}}
 @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes popIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
@@ -260,332 +259,107 @@ function WeatherWidget({lat,lon,courseName}){
 // MAIN APP
 // ══════════════════════════════════════════════
 
-function VoteModal({onClose}){
-  const[votes,setVotes]=useState({ben:null,thomas:null,max:null,luke:null});
-  const[done,setDone]=useState(false);
-  const allVoted=Object.values(votes).every(v=>v!==null);
-  const tally=()=>{const c={};Object.values(votes).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]);};
-  return(
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.92)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={onClose}>
-      <div style={{background:'#0d1a0d',border:'1px solid rgba(155,89,182,.4)',borderRadius:22,padding:'24px 20px',width:'100%',maxWidth:400}} onClick={e=>e.stopPropagation()}>
-        <div style={{fontFamily:'Bebas Neue',fontSize:24,letterSpacing:3,color:'#9b59b6',textAlign:'center',marginBottom:16}}>FORMAT VOTE</div>
-        {!done?(
-          <div>
-            {PLAYERS.map(p=>(
-              <div key={p.id} style={{marginBottom:12}}>
-                <div style={{fontSize:11,color:p.color,fontWeight:800,letterSpacing:1,marginBottom:6}}>{p.name}</div>
-                <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
-                  {FORMATS.map(f=>(
-                    <button key={f.id} onClick={()=>setVotes(v=>({...v,[p.id]:f.id}))} style={{background:votes[p.id]===f.id?p.color+'33':'rgba(255,255,255,.04)',border:'1px solid '+(votes[p.id]===f.id?p.color:'rgba(255,255,255,.08)'),color:votes[p.id]===f.id?p.color:'#555',borderRadius:8,padding:'4px 8px',cursor:'pointer',fontSize:10,fontWeight:700}}>{f.icon} {f.label}</button>
-                  ))}
-                </div>
-              </div>
-            ))}
-            <button onClick={()=>setDone(true)} disabled={!allVoted} style={{width:'100%',background:allVoted?'linear-gradient(135deg,#9b59b6,#8e44ad)':'rgba(255,255,255,.06)',border:'none',color:allVoted?'#fff':'#444',borderRadius:12,padding:'14px',fontSize:16,fontWeight:900,cursor:allVoted?'pointer':'default',fontFamily:'Bebas Neue',letterSpacing:2,marginTop:8}}>{allVoted?'See Results':'Waiting for all votes...'}</button>
-          </div>
-        ):(
-          <div>
-            {tally().map(([fid,count],i)=>{const f=FORMATS.find(x=>x.id===fid);return(
-              <div key={fid} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:i===0?'rgba(155,89,182,.15)':'rgba(255,255,255,.04)',borderRadius:12,padding:'12px 14px',border:i===0?'1px solid rgba(155,89,182,.4)':'1px solid rgba(255,255,255,.06)'}}>
-                <span style={{fontSize:22}}>{f?.icon}</span>
-                <div style={{flex:1}}><div style={{fontWeight:800,color:i===0?'#9b59b6':'#fff'}}>{f?.label}</div><div style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{count} vote{count>1?'s':''}</div></div>
-                {i===0&&<div style={{color:'#9b59b6',fontWeight:800,fontSize:12}}>WINNER</div>}
-              </div>
-            );})}
-            <button onClick={onClose} style={{width:'100%',background:'linear-gradient(135deg,#00c853,#00e676)',border:'none',color:'#000',borderRadius:12,padding:'14px',fontSize:16,fontWeight:900,cursor:'pointer',fontFamily:'Bebas Neue',letterSpacing:2,marginTop:8}}>Start Round</button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ProfileModal({player,rounds,scores,playerSettings,cfg,onClose}){
-  const completed=rounds.filter(r=>r.completed);
-  const hdcp=playerSettings[player.id]??player.defaultHcp;
-  const pN=cfg?.names?.[player.id]||player.name;
-  const pC=cfg?.colors?.[player.id]||player.color;
-  const st=useMemo(()=>{
-    let b=0,e=0,p=0,bo=0,d=0,ac=0,best=null,worst=null,rp=0,tot=0,wins=0,streak=0,cur=0;
-    [...completed].sort((a,x)=>a.date>x.date?1:-1).forEach(r=>{
-      const s=scores[r.id]?.[player.id];if(!s)return;
-      const course=COURSES[r.course_id]||COURSES.snee;
-      let rt=0,pl=false;
-      s.forEach((sc,i)=>{if(sc>0&&course.holes[i]){const dd=sc-course.holes[i].par;if(sc===1)ac++;else if(dd<=-2)e++;else if(dd===-1)b++;else if(dd===0)p++;else if(dd===1)bo++;else d++;rt+=sc;pl=true;}});
-      if(pl&&rt>0){tot+=rt;rp++;if(best===null||rt<best)best=rt;if(worst===null||rt>worst)worst=rt;}
-      const all=PLAYERS.map(pp=>({id:pp.id,t:(scores[r.id]?.[pp.id]||[]).reduce((a,x)=>a+(x||0),0)})).filter(x=>x.t>0).sort((a,x)=>a.t-x.t);
-      if(all[0]&&all[0].id===player.id){wins++;cur++;}else{streak=Math.max(streak,cur);cur=0;}
-    });
-    streak=Math.max(streak,cur);
-    const trend=completed.slice(0,6).reverse().map(r=>{const s=scores[r.id]?.[player.id];return s?s.reduce((a,x)=>a+(x||0),0):null;}).filter(Boolean);
-    return{b,e,p,bo,d,ac,best,worst,rp,avg:rp?Math.round(tot/rp):null,wins,streak,trend};
-  },[completed.length]);
-  return(
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.9)',zIndex:400,display:'flex',alignItems:'flex-end',justifyContent:'center'}} onClick={onClose}>
-      <div style={{background:'#0a150a',border:'1px solid '+pC+'33',borderRadius:'22px 22px 0 0',padding:'22px 18px',width:'100%',maxWidth:700,maxHeight:'85vh',overflowY:'auto',animation:'fadeUp .3s'}} onClick={e=>e.stopPropagation()}>
-        <div style={{width:36,height:4,background:'rgba(255,255,255,.12)',borderRadius:2,margin:'0 auto 18px'}}/>
-        <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:20}}>
-          <div style={{width:60,height:60,borderRadius:'50%',background:pC,display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,color:'#000',fontWeight:900}}>{player.emoji}</div>
-          <div style={{flex:1}}><div style={{fontFamily:'Bebas Neue',fontSize:28,letterSpacing:2,color:pC}}>{pN}</div><div style={{fontSize:11,color:'rgba(255,255,255,.25)'}}>HCP {hdcp} - {st.rp} rounds</div></div>
-          {st.best&&<div style={{textAlign:'right'}}><div style={{fontFamily:'Bebas Neue',fontSize:38,color:pC,lineHeight:1}}>{st.best}</div><div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:2}}>BEST</div></div>}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:7,marginBottom:14}}>
-          {[{n:st.wins,l:'WINS',c:'#ffd700'},{n:st.streak,l:'STREAK',c:'#ff9100'},{n:st.avg||'--',l:'AVG',c:pC}].map((s,i)=>(
-            <div key={i} style={{background:'rgba(0,0,0,.4)',borderRadius:12,padding:'12px 6px',textAlign:'center'}}>
-              <div style={{fontFamily:'Bebas Neue',fontSize:28,color:s.c,lineHeight:1}}>{s.n}</div>
-              <div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:2,fontWeight:700,marginTop:3}}>{s.l}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:5,marginBottom:12}}>
-          {[{n:st.ac,l:'ACE',c:'#ffd700'},{n:st.e,l:'EAGLE',c:'#00e676'},{n:st.b,l:'BIRDIE',c:'#69f0ae'},{n:st.p,l:'PAR',c:'#555'},{n:st.bo+st.d,l:'BOG+',c:'#ff5252'}].map((s,i)=>(
-            <div key={i} style={{background:'rgba(0,0,0,.3)',borderRadius:10,padding:'8px 3px',textAlign:'center'}}>
-              <div style={{fontFamily:'Bebas Neue',fontSize:22,color:s.n>0?s.c:'#222'}}>{s.n}</div>
-              <div style={{fontSize:7,color:'rgba(255,255,255,.18)',fontWeight:700,letterSpacing:1}}>{s.l}</div>
-            </div>
-          ))}
-        </div>
-        {st.trend.length>1&&(
-          <div style={{marginBottom:10}}>
-            <div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:3,fontWeight:700,marginBottom:6}}>SCORE TREND</div>
-            <div style={{display:'flex',gap:3,alignItems:'flex-end',height:46}}>
-              {st.trend.map((t,i)=>{
-                const mn=Math.min(...st.trend),mx=Math.max(...st.trend);
-                const h=mx===mn?22:Math.round(((mx-t)/(mx-mn))*36)+10;
-                return(
-                  <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
-                    <div style={{width:'100%',background:i===st.trend.length-1?pC:'rgba(255,255,255,.12)',borderRadius:'3px 3px 0 0',height:h}}/>
-                    <div style={{fontSize:8,color:'rgba(255,255,255,.25)',fontWeight:700}}>{t}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        {st.worst&&<div style={{fontSize:10,color:'rgba(255,255,255,.18)',textAlign:'center'}}>Worst round: {st.worst}</div>}
-      </div>
-    </div>
-  );
-}
-
-function MenuDrawer({onClose,rounds,scores,nextRound,setNextRound,cfg,updCfg,deleteRound,pName,pColor}){
+function SettingsDrawer({onClose,cfg,updCfg,rounds,scores,pN,pC}){
   const[sec,setSec]=useState('main');
-  const[fmtDetail,setFmtDetail]=useState(null);
   const completed=rounds.filter(r=>r.completed);
-  const[localNames,setLocalNames]=useState({...cfg?.names||{}});
+  const[ln,setLn]=useState({...cfg?.names||{}});
   const money=getMoney();
-
-  const holeDiff=useMemo(()=>Array(18).fill(0).map((_,i)=>{
-    const diffs=completed.flatMap(r=>PLAYERS.map(p=>{const s=(scores[r.id]?.[p.id]||[])[i];if(!s)return null;const course=COURSES[r.course_id]||COURSES.snee;return s-(course.holes[i]?.par||4);}).filter(x=>x!==null));
-    return diffs.length?diffs.reduce((a,b)=>a+b,0)/diffs.length:0;
-  }),[completed.length]);
-
+  const bk={background:'transparent',border:'none',color:'rgba(255,255,255,.3)',fontSize:12,cursor:'pointer',marginBottom:12,display:'flex',alignItems:'center'};
+  const tog=(k)=><div onClick={()=>updCfg({[k]:cfg?.[k]===false})} style={{width:40,height:22,borderRadius:11,background:cfg?.[k]!==false?'#00e676':'rgba(255,255,255,.1)',cursor:'pointer',position:'relative',flexShrink:0}}><div style={{position:'absolute',top:2,left:cfg?.[k]!==false?20:2,width:18,height:18,borderRadius:'50%',background:'#fff',transition:'left .2s'}}/></div>;
   const records=useMemo(()=>{
-    let best={score:999,name:'',date:''},birds={count:0,name:'',date:''},strk={n:0,name:''};
-    PLAYERS.forEach(p=>{
-      let cur=0,mx=0;
-      completed.forEach(r=>{
-        const s=scores[r.id]?.[p.id];if(!s)return;
-        const course=COURSES[r.course_id]||COURSES.snee;
-        const tot=s.reduce((a,x)=>a+(x||0),0);
-        const name=pName(p.id);
-        if(tot>0&&tot<best.score)best={score:tot,name,date:r.date};
-        const bd=s.filter((sc,i)=>sc>0&&course.holes[i]&&sc-course.holes[i].par===-1).length;
-        if(bd>birds.count)birds={count:bd,name,date:r.date};
-        const all=PLAYERS.map(pp=>({id:pp.id,t:(scores[r.id]?.[pp.id]||[]).reduce((a,x)=>a+(x||0),0)})).filter(x=>x.t>0).sort((a,x)=>a.t-x.t);
-        if(all[0]&&all[0].id===p.id)cur++;else{mx=Math.max(mx,cur);cur=0;}
-        mx=Math.max(mx,cur);if(mx>strk.n)strk={n:mx,name};
-      });
-    });
-    return{best,birds,strk};
+    let best={s:999,n:'',d:''},strk={n:0,nm:''};
+    PLAYERS.forEach(p=>{let cur=0,mx=0;completed.forEach(r=>{const s=scores[r.id]?.[p.id];if(!s)return;const tot=s.reduce((a,x)=>a+(x||0),0);const nm=pN(p.id);if(tot>0&&tot<best.s)best={s:tot,n:nm,d:r.date};const all=PLAYERS.map(pp=>({id:pp.id,t:(scores[r.id]?.[pp.id]||[]).reduce((a,x)=>a+(x||0),0)})).filter(x=>x.t>0).sort((a,x)=>a.t-x.t);if(all[0]&&all[0].id===p.id)cur++;else{mx=Math.max(mx,cur);cur=0;}mx=Math.max(mx,cur);if(mx>strk.n)strk={n:mx,nm};});});
+    return{best,strk};
   },[completed.length]);
-
-  const exportCSV=()=>{
-    const rows=[['Date','Format','Course',...PLAYERS.map(p=>pName(p.id))]];
-    completed.forEach(r=>{
-      const c=COURSES[r.course_id]||COURSES.snee;
-      rows.push([r.date,r.format,c.name,...PLAYERS.map(p=>(scores[r.id]?.[p.id]||[]).reduce((a,b)=>a+(b||0),0)||'')]);
-    });
-    const csv=rows.map(r=>r.join(',')).join('\n');
-    const a=document.createElement('a');
-    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='thursday_crew_golf.csv';a.click();
-  };
-
-  const bk={background:'transparent',border:'none',color:'rgba(255,255,255,.25)',fontSize:12,cursor:'pointer',marginBottom:14,display:'flex',alignItems:'center',gap:5};
-  const toggle=(key,val)=>(
-    <div onClick={()=>updCfg({[key]:!val})} style={{width:44,height:24,borderRadius:12,background:val?'#00e676':'rgba(255,255,255,.1)',cursor:'pointer',position:'relative',transition:'background .2s',flexShrink:0}}>
-      <div style={{position:'absolute',top:3,left:val?22:3,width:18,height:18,borderRadius:'50%',background:'#fff',transition:'left .2s'}}/>
-    </div>
-  );
-  const menu=[{id:'records',l:'All-Time Records'},{id:'difficulty',l:'Hole Difficulty'},{id:'money',l:'Season Money'},{id:'formats',l:'Format Rules'},{id:'schedule',l:'Schedule Next Round'},{id:'settings',l:'Settings'}];
-
   return(
     <div style={{position:'fixed',inset:0,zIndex:300,display:'flex'}} onClick={onClose}>
-      <div style={{background:'#091409',width:290,height:'100%',borderRight:'1px solid rgba(0,230,118,.08)',padding:'55px 0 20px',overflowY:'auto',flexShrink:0,animation:'slideLeft .3s'}} onClick={e=>e.stopPropagation()}>
-        <div style={{padding:'0 18px 16px',borderBottom:'1px solid rgba(255,255,255,.04)',marginBottom:6}}>
+      <div style={{background:'#091409',width:280,height:'100%',borderRight:'1px solid rgba(0,230,118,.08)',padding:'50px 0 20px',overflowY:'auto',flexShrink:0,animation:'slideLeft .3s'}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:'0 16px 14px',borderBottom:'1px solid rgba(255,255,255,.04)',marginBottom:4}}>
           <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:3,color:'#00e676'}}>THURSDAY CREW</div>
-          <div style={{fontSize:9,color:'rgba(255,255,255,.18)',letterSpacing:2}}>GOLF TRACKER</div>
+          <div style={{fontSize:9,color:'rgba(255,255,255,.2)',letterSpacing:2}}>GOLF TRACKER</div>
         </div>
-
-        {sec==='main'&&menu.map(m=>(
-          <button key={m.id} onClick={()=>setSec(m.id)} style={{width:'100%',background:'transparent',border:'none',color:'#e8e8e8',padding:'15px 18px',cursor:'pointer',fontSize:14,fontWeight:600,display:'flex',alignItems:'center',gap:12,textAlign:'left',borderBottom:'1px solid rgba(255,255,255,.03)'}}>
-            {m.l}<span style={{marginLeft:'auto',color:'rgba(255,255,255,.15)',fontSize:16}}>></span>
-          </button>
+        {sec==='main'&&[{id:'settings',l:'Settings'},{id:'records',l:'All-Time Records'},{id:'money',l:'Season Money'},{id:'formats',l:'Format Rules'}].map(m=>(
+          <button key={m.id} onClick={()=>setSec(m.id)} style={{width:'100%',background:'transparent',border:'none',color:'#e8e8e8',padding:'14px 16px',cursor:'pointer',fontSize:14,fontWeight:600,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid rgba(255,255,255,.03)'}}>{m.l}<span style={{color:'rgba(255,255,255,.2)'}}>›</span></button>
         ))}
-
         {sec==='records'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={()=>setSec('main')} style={bk}>&lt; Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#ffd700',marginBottom:14}}>ALL-TIME RECORDS</div>
-            {completed.length===0?<div style={{color:'rgba(255,255,255,.2)',fontSize:12}}>No rounds yet</div>:(
-              [{l:'BEST ROUND EVER',v:records.best.score!==999?records.best.score+' - '+records.best.name:null,s:records.best.date},
-               {l:'MOST BIRDIES IN A ROUND',v:records.birds.count>0?records.birds.count+' - '+records.birds.name:null,s:records.birds.date},
-               {l:'LONGEST WIN STREAK',v:records.strk.n>0?records.strk.n+' - '+records.strk.name:null,s:null}
-              ].map((r,i)=>(
-                <div key={i} style={{background:'rgba(0,0,0,.3)',borderRadius:14,padding:'13px',marginBottom:9}}>
-                  <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:3}}>{r.l}</div>
-                  <div style={{fontSize:17,fontWeight:900,color:'#ffd700'}}>{r.v||'---'}</div>
-                  {r.s&&<div style={{fontSize:9,color:'rgba(255,255,255,.18)',marginTop:2}}>{r.s}</div>}
-                </div>
-              ))
-            )}
+          <div style={{padding:'0 16px'}}>
+            <button onClick={()=>setSec('main')} style={bk}>‹ Back</button>
+            <div style={{fontFamily:'Bebas Neue',fontSize:18,color:'#ffd700',marginBottom:12}}>ALL-TIME RECORDS</div>
+            {[{l:'BEST ROUND',v:records.best.s!==999?records.best.s+' - '+records.best.n:null,d:records.best.d},{l:'LONGEST WIN STREAK',v:records.strk.n>0?records.strk.n+' - '+records.strk.nm:null}].map((r,i)=>(
+              <div key={i} style={{background:'rgba(0,0,0,.3)',borderRadius:12,padding:'12px',marginBottom:8}}>
+                <div style={{fontSize:8,color:'rgba(255,255,255,.3)',letterSpacing:2,fontWeight:700,marginBottom:3}}>{r.l}</div>
+                <div style={{fontSize:16,fontWeight:900,color:'#ffd700'}}>{r.v||'---'}</div>
+                {r.d&&<div style={{fontSize:9,color:'rgba(255,255,255,.2)',marginTop:2}}>{r.d}</div>}
+              </div>
+            ))}
           </div>
         )}
-
-        {sec==='difficulty'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={()=>setSec('main')} style={bk}>&lt; Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#ff5252',marginBottom:14}}>HOLE DIFFICULTY</div>
-            {completed.length===0?<div style={{fontSize:12,color:'rgba(255,255,255,.2)'}}>Play some rounds first</div>:(
-              Array.from({length:18},(_,i)=>i).map(i=>{
-                const avg=holeDiff[i];
-                const clr=avg>0.5?'#ff5252':avg>0?'#ff9100':avg>-0.3?'#888':'#00e676';
-                return(
-                  <div key={i} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,background:'rgba(0,0,0,.3)',borderRadius:8,padding:'7px 10px'}}>
-                    <div style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,.4)',width:32}}>#{i+1}</div>
-                    <div style={{flex:1,height:6,background:'rgba(255,255,255,.08)',borderRadius:3,overflow:'hidden'}}>
-                      <div style={{height:'100%',background:clr,width:Math.min(100,Math.abs(avg)*80+5)+'%',borderRadius:3}}/>
-                    </div>
-                    <div style={{fontSize:12,fontWeight:800,color:clr,width:44,textAlign:'right'}}>{avg>=0?'+':''}{avg.toFixed(2)}</div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
-
         {sec==='money'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={()=>setSec('main')} style={bk}>&lt; Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:14}}>SEASON MONEY</div>
+          <div style={{padding:'0 16px'}}>
+            <button onClick={()=>setSec('main')} style={bk}>‹ Back</button>
+            <div style={{fontFamily:'Bebas Neue',fontSize:18,color:'#00e676',marginBottom:12}}>SEASON MONEY</div>
             {PLAYERS.map(p=>{
               const amt=money[p.id]||0;
               return(
-                <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'12px 14px'}}>
-                  <div style={{width:32,height:32,borderRadius:'50%',background:pColor(p.id),display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:14,color:'#000'}}>{p.emoji}</div>
-                  <div style={{flex:1,fontWeight:700,color:pColor(p.id)}}>{pName(p.id)}</div>
-                  <div style={{fontFamily:'Bebas Neue',fontSize:24,color:amt>0?'#00e676':amt<0?'#ff5252':'#888'}}>{amt>0?'+$'+amt:amt<0?'-$'+Math.abs(amt):'EVEN'}</div>
+                <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,background:'rgba(0,0,0,.3)',borderRadius:10,padding:'10px 12px'}}>
+                  <div style={{width:28,height:28,borderRadius:'50%',background:pC(p.id),display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:12,color:'#000'}}>{p.emoji}</div>
+                  <div style={{flex:1,fontWeight:700,color:pC(p.id)}}>{pN(p.id)}</div>
+                  <div style={{fontFamily:'Bebas Neue',fontSize:22,color:amt>0?'#00e676':amt<0?'#ff5252':'#888'}}>{amt>0?'+$'+amt:amt<0?'-$'+Math.abs(amt):'EVEN'}</div>
                 </div>
               );
             })}
-            <button onClick={()=>saveMoney({ben:0,thomas:0,max:0,luke:0})} style={{width:'100%',background:'rgba(255,68,68,.08)',border:'1px solid rgba(255,68,68,.2)',color:'#ff5252',borderRadius:10,padding:'10px',cursor:'pointer',fontSize:11,fontWeight:700,marginTop:8}}>Reset Season Money</button>
+            <button onClick={()=>saveMoney({ben:0,thomas:0,max:0,luke:0})} style={{width:'100%',background:'rgba(255,68,68,.08)',border:'1px solid rgba(255,68,68,.2)',color:'#ff5252',borderRadius:8,padding:'9px',cursor:'pointer',fontSize:11,fontWeight:700,marginTop:6}}>Reset Money</button>
           </div>
         )}
-
         {sec==='formats'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={()=>{setSec('main');setFmtDetail(null);}} style={bk}>&lt; Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:14}}>FORMAT RULES</div>
-            {fmtDetail?(
-              <div>
-                <button onClick={()=>setFmtDetail(null)} style={bk}>&lt; All formats</button>
-                <div style={{fontSize:26,marginBottom:6}}>{fmtDetail.icon}</div>
-                <div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:10}}>{fmtDetail.label}</div>
-                <div style={{fontSize:13,color:'rgba(255,255,255,.65)',lineHeight:1.8}}>{fmtDetail.desc}</div>
+          <div style={{padding:'0 16px'}}>
+            <button onClick={()=>setSec('main')} style={bk}>‹ Back</button>
+            <div style={{fontFamily:'Bebas Neue',fontSize:18,color:'#00e676',marginBottom:12}}>FORMAT RULES</div>
+            {FORMATS.map(f=>(
+              <div key={f.id} style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.05)',borderRadius:10,padding:'10px 12px',marginBottom:5}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                  <span style={{fontSize:16}}>{f.icon}</span>
+                  <div style={{fontSize:12,fontWeight:700,color:'#fff'}}>{f.label}</div>
+                </div>
+                <div style={{fontSize:10,color:'rgba(255,255,255,.4)',lineHeight:1.5}}>{f.desc}</div>
               </div>
-            ):FORMATS.map(f=>(
-              <button key={f.id} onClick={()=>setFmtDetail(f)} style={{width:'100%',background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.04)',borderRadius:11,padding:'11px 12px',cursor:'pointer',marginBottom:5,display:'flex',alignItems:'center',gap:9,textAlign:'left'}}>
-                <span style={{fontSize:18,flexShrink:0}}>{f.icon}</span>
-                <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:'#fff'}}>{f.label}</div><div style={{fontSize:9,color:'rgba(255,255,255,.22)',marginTop:1}}>{f.desc}</div></div>
-                <span style={{color:'rgba(255,255,255,.15)',fontSize:14}}>></span>
-              </button>
             ))}
           </div>
         )}
-
-        {sec==='schedule'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={()=>setSec('main')} style={bk}>&lt; Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:14}}>NEXT ROUND</div>
-            <div style={{marginBottom:12}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:5}}>DATE</div>
-              <input type="date" value={nextRound.date||''} onChange={e=>setNextRound(n=>({...n,date:e.target.value}))} style={{width:'100%',background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.09)',color:'#fff',padding:'10px 12px',borderRadius:10,fontSize:14}}/>
-            </div>
-            <div style={{marginBottom:12}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:5}}>TEE TIME</div>
-              <input type="time" value={nextRound.teeTime||''} onChange={e=>setNextRound(n=>({...n,teeTime:e.target.value}))} style={{width:'100%',background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.09)',color:'#fff',padding:'10px 12px',borderRadius:10,fontSize:14}}/>
-            </div>
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:5}}>COURSE</div>
-              <select value={nextRound.courseId||'snee'} onChange={e=>setNextRound(n=>({...n,courseId:e.target.value}))} style={{width:'100%',background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.09)',color:'#fff',padding:'10px 12px',borderRadius:10,fontSize:13}}>
-                {Object.entries(COURSES).map(([id,c])=><option key={id} value={id}>{c.name}</option>)}
-              </select>
-            </div>
-            <button onClick={()=>{setSec('main');onClose();}} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:12,padding:'13px',fontSize:14,fontWeight:900,cursor:'pointer',letterSpacing:2,fontFamily:'Bebas Neue',width:'100%'}}>Save</button>
-          </div>
-        )}
-
         {sec==='settings'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={()=>setSec('main')} style={bk}>&lt; Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:16}}>SETTINGS</div>
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>THEME</div>
-              <div style={{display:'flex',gap:6}}>
+          <div style={{padding:'0 16px'}}>
+            <button onClick={()=>setSec('main')} style={bk}>‹ Back</button>
+            <div style={{fontFamily:'Bebas Neue',fontSize:18,color:'#00e676',marginBottom:14}}>SETTINGS</div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:9,color:'rgba(255,255,255,.35)',letterSpacing:2,fontWeight:700,marginBottom:7}}>THEME</div>
+              <div style={{display:'flex',gap:5}}>
                 {[{id:'dark',l:'Dark'},{id:'green',l:'Green'},{id:'light',l:'Light'}].map(t=>(
-                  <button key={t.id} onClick={()=>updCfg({theme:t.id})} style={{flex:1,background:cfg?.theme===t.id?'rgba(0,230,118,.2)':'rgba(255,255,255,.04)',border:'1px solid '+(cfg?.theme===t.id?'rgba(0,230,118,.5)':'rgba(255,255,255,.08)'),color:cfg?.theme===t.id?'#00e676':'#888',borderRadius:10,padding:'10px 4px',cursor:'pointer',fontSize:11,fontWeight:700}}>{t.l}</button>
+                  <button key={t.id} onClick={()=>updCfg({theme:t.id})} style={{flex:1,background:cfg?.theme===t.id?'rgba(0,230,118,.2)':'rgba(255,255,255,.04)',border:'1px solid '+(cfg?.theme===t.id?'rgba(0,230,118,.5)':'rgba(255,255,255,.07)'),color:cfg?.theme===t.id?'#00e676':'#666',borderRadius:8,padding:'9px 4px',cursor:'pointer',fontSize:11,fontWeight:700}}>{t.l}</button>
                 ))}
               </div>
             </div>
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>ACCENT COLOR</div>
-              <div style={{display:'flex',gap:6}}>
-                {['#00e676','#40c4ff','#ffd700','#ff9100','#9b59b6','#e74c3c'].map(c=>(
-                  <button key={c} onClick={()=>updCfg({accentColor:c})} style={{width:34,height:34,borderRadius:'50%',background:c,border:cfg?.accentColor===c?'3px solid #fff':'3px solid transparent',cursor:'pointer'}}/>
-                ))}
-              </div>
-            </div>
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>PLAYER NICKNAMES</div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:9,color:'rgba(255,255,255,.35)',letterSpacing:2,fontWeight:700,marginBottom:7}}>PLAYER NAMES</div>
               {PLAYERS.map(p=>(
-                <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
-                  <div style={{width:24,height:24,borderRadius:'50%',background:pColor(p.id),display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,color:'#000',fontWeight:900,flexShrink:0}}>{p.emoji}</div>
-                  <input value={localNames[p.id]||''} onChange={e=>setLocalNames(n=>({...n,[p.id]:e.target.value}))} onBlur={()=>updCfg({names:{...localNames}})} style={{flex:1,background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'7px 10px',borderRadius:8,fontSize:13}}/>
+                <div key={p.id} style={{display:'flex',alignItems:'center',gap:7,marginBottom:6}}>
+                  <div style={{width:22,height:22,borderRadius:'50%',background:pC(p.id),display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:'#000',fontWeight:900,flexShrink:0}}>{p.emoji}</div>
+                  <input value={ln[p.id]||''} onChange={e=>setLn(n=>({...n,[p.id]:e.target.value}))} onBlur={()=>updCfg({names:{...ln}})} style={{flex:1,background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'6px 9px',borderRadius:7,fontSize:13}}/>
                 </div>
               ))}
             </div>
-            <div style={{marginBottom:14}}>
-              {[{k:'sound',l:'Sound Effects'},{k:'haptic',l:'Haptic Vibration'},{k:'awake',l:'Keep Screen Awake'}].map(t=>(
-                <div key={t.k} style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10,background:'rgba(255,255,255,.03)',borderRadius:10,padding:'10px 12px'}}>
-                  <div style={{fontSize:12,fontWeight:700}}>{t.l}</div>
-                  {toggle(t.k,cfg?.[t.k]!==false)}
+            <div style={{marginBottom:12}}>
+              {[{k:'sound',l:'Sound Effects'},{k:'haptic',l:'Haptic'},{k:'awake',l:'Keep Screen Awake'}].map(t=>(
+                <div key={t.k} style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8,background:'rgba(255,255,255,.03)',borderRadius:8,padding:'9px 10px'}}>
+                  <div style={{fontSize:12,fontWeight:600}}>{t.l}</div>
+                  {tog(t.k)}
                 </div>
               ))}
             </div>
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>DEFAULTS</div>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8,background:'rgba(255,255,255,.03)',borderRadius:10,padding:'10px 12px'}}>
-                <div style={{fontSize:12,fontWeight:700}}>Default Bet ($)</div>
-                <input type="number" value={cfg?.bet||5} min={0} max={100} onChange={e=>updCfg({bet:parseInt(e.target.value)||0})} style={{background:'rgba(0,0,0,.4)',border:'1px solid rgba(0,230,118,.3)',color:'#00e676',padding:'5px 8px',borderRadius:8,width:60,textAlign:'center',fontSize:16,fontWeight:900}}/>
-              </div>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(255,255,255,.03)',borderRadius:10,padding:'10px 12px'}}>
-                <div style={{fontSize:12,fontWeight:700}}>Default Mulligans</div>
-                <input type="number" value={cfg?.mulligans||0} min={0} max={6} onChange={e=>updCfg({mulligans:parseInt(e.target.value)||0})} style={{background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,145,0,.3)',color:'#ff9100',padding:'5px 8px',borderRadius:8,width:60,textAlign:'center',fontSize:16,fontWeight:900}}/>
-              </div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(255,255,255,.03)',borderRadius:8,padding:'9px 10px',marginBottom:12}}>
+              <div style={{fontSize:12,fontWeight:600}}>Bet per hole ($)</div>
+              <input type="number" value={cfg?.bet||5} min={0} max={100} onChange={e=>updCfg({bet:parseInt(e.target.value)||0})} style={{background:'rgba(0,0,0,.4)',border:'1px solid rgba(0,230,118,.3)',color:'#00e676',padding:'4px 7px',borderRadius:7,width:56,textAlign:'center',fontSize:15,fontWeight:900}}/>
             </div>
-            <button onClick={exportCSV} style={{width:'100%',background:'rgba(64,196,255,.08)',border:'1px solid rgba(64,196,255,.2)',color:'#40c4ff',borderRadius:10,padding:'10px',cursor:'pointer',fontSize:12,fontWeight:700,marginBottom:7}}>Export CSV</button>
-            <button onClick={()=>{if(window.confirm('Reset ALL data? Cannot be undone.')){localStorage.clear();window.location.reload();}}} style={{width:'100%',background:'rgba(255,68,68,.07)',border:'1px solid rgba(255,68,68,.18)',color:'#ff5252',borderRadius:10,padding:'10px',cursor:'pointer',fontSize:11,fontWeight:700}}>Reset All Data</button>
+            <button onClick={()=>{if(window.confirm('Reset ALL data?')){localStorage.clear();window.location.reload();}}} style={{width:'100%',background:'rgba(255,68,68,.07)',border:'1px solid rgba(255,68,68,.18)',color:'#ff5252',borderRadius:8,padding:'9px',cursor:'pointer',fontSize:11,fontWeight:700}}>Reset All Data</button>
           </div>
         )}
       </div>
@@ -758,7 +532,7 @@ function App(){
   return(
     <div style={{minHeight:'100vh',background:cfg.theme==='light'?'#f0f0eb':cfg.theme==='green'?'#061a06':'#030806',paddingBottom:100}}>
       {profilePlayer&&<ProfileModal player={profilePlayer} rounds={rounds} scores={scores} playerSettings={playerSettings} cfg={cfg} onClose={()=>setProfilePlayer(null)}/>}
-      {menuOpen&&<MenuDrawer onClose={()=>setMenuOpen(false)} rounds={rounds} scores={scores} nextRound={nextRound} setNextRound={setNextRound} cfg={cfg} updCfg={updCfg} deleteRound={deleteRound} pName={pName} pColor={pColor}/>}
+      {menuOpen&&<SettingsDrawer onClose={()=>setMenuOpen(false)} cfg={cfg} updCfg={updCfg} rounds={rounds} scores={scores} pN={pN} pC={pC}/>}
       {voteOpen&&<VoteModal onClose={()=>setVoteOpen(false)}/>}
       {trashMsg&&<div style={{position:'fixed',bottom:100,left:14,right:14,zIndex:990,background:'rgba(15,8,0,.97)',border:'1px solid rgba(255,145,0,.4)',borderRadius:18,padding:'14px 16px',animation:'fadeUp .4s'}}><div style={{fontSize:10,color:trashMsg.color,fontWeight:800,marginBottom:4}}>ROAST</div><div style={{fontSize:13,color:'rgba(255,255,255,.8)',lineHeight:1.6,fontStyle:'italic'}}>{trashMsg.name}: {trashMsg.line}</div></div>}
       {toast&&(
@@ -1105,530 +879,214 @@ function SetupView({startRound,playerSettings}){
 // ══════════════════════════════════════════════
 // SCORECARD VIEW
 // ══════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════════
-// FORMAT-AWARE SCORECARD
-// ══════════════════════════════════════════════════════════════════
-
-const TEAM_FMTS=['scramble','bestball','nassau','match','bloodsome','vegas','shamble'];
-const isTeamFmt=id=>TEAM_FMTS.includes(id);
-const isThursday=()=>new Date().getDay()===4;
-const daysUntilThurs=()=>{const d=new Date().getDay();return d===4?0:(4-d+7)%7;};
-
-const FMT_TIPS={
-  stroke:'Lowest total strokes wins. Every stroke counts.',
-  scramble:'All tee off — pick the BEST shot, everyone plays from there. One team score per hole.',
-  bestball:'Everyone plays their own ball. Your BEST score on the team counts each hole.',
-  stableford:'Points per hole: Eagle=4, Birdie=3, Par=2, Bogey=1, Double+=0. Most points wins.',
-  nassau:'THREE separate bets — Front 9, Back 9, and Total 18. $'+5+' each = $15 total at stake.',
-  skins:'Lowest score on a hole wins that skin. Ties CARRY to next hole. Most skins wins.',
-  match:'Win HOLES not strokes. First to win more holes than remain wins. Tied = halved.',
-  wolf:'Rotating Wolf picks a partner after seeing drives — or goes SOLO for double points.',
-  bingo:'3 pts per hole: 🟢 BINGO=first on green · 📍 BANGO=closest to pin · 🏁 BONGO=first in.',
-  chairman:'Low score on hole 1 is Chairman. Beat them to TAKE the throne. Most holes as champ wins.',
-  bloodsome:'Like scramble but you MUST play the WORST drive. Brutal. Alternate shots from there.',
-  vegas:'Partners combine scores into a 2-digit number (low score first). Lower number wins points.',
-  quota:'Your quota = 36 minus handicap. Earn Stableford points, try to BEAT your number.',
-  shamble:'All tee off, pick BEST drive (like scramble), then each plays own ball in from there.',
-};
-
-function ScorecardView({round,scores,teamScores,extras,updateScore,updateTeamScore,finishRound,updateExtras,playerSettings,rounds,cfg,pName,pColor}){
+function ScorecardView({round,scores,extras,updateScore,finishRound,updateExtras,playerSettings,rounds}){
   const[holeIdx,setHoleIdx]=useState(0);
   const[showAll,setShowAll]=useState(false);
-  const[wolfPick,setWolfPick]=useState({});
-  const[bingo,setBingo]=useState(()=>{try{return JSON.parse(localStorage.getItem('bg_'+round.id)||'{}')}catch{return{}}});
-  const[chairman,setChairman]=useState(null);
-  const[chairWins,setChairWins]=useState({});
-  const[holeNotes,setHoleNotes]=useState(()=>{try{return JSON.parse(localStorage.getItem('hn_'+round.id)||'{}')}catch{return{}}});
-  const[showNote,setShowNote]=useState(false);
-  const[noteText,setNoteText]=useState('');
-  const[startTime]=useState(()=>Date.now());
-  const[elapsed,setElapsed]=useState(0);
-  const[mulligans,setMulligans]=useState({ben:0,thomas:0,max:0,luke:0});
-  const[chatOpen,setChatOpen]=useState(false);
-  const[chatMsgs,setChatMsgs]=useState(()=>{try{return JSON.parse(localStorage.getItem('chat_'+round.id)||'[]')}catch{return[]}});
-  const[chatInput,setChatInput]=useState('');
-  const[chatPlayer,setChatPlayer]=useState('ben');
+  const[showSkins,setShowSkins]=useState(false);
+  const[showBets,setShowBets]=useState(false);
+  const[wolfOrder,setWolfOrder]=useState(['ben','thomas','max','luke']);
+  const[lastScored,setLastScored]=useState(null);
 
   const course=COURSES[round.course_id]||COURSES.snee;
   const holes=course.holes;
-  const fmt=round.format;
+  const fmt=FORMATS.find(f=>f.id===round.format);
   const hole=holes[holeIdx];
-  const teamCfg=TEAM_CONFIGS.find(t=>t.id===round.team_config);
-  const teamMode=isTeamFmt(fmt)&&round.team_config!=='solo';
-  const teamNames=round.team_names||['Team 1','Team 2'];
   const mulligansAllowed=round.mulligans_allowed||0;
-  const betAmt=round.bet_amount||5;
+  const mulligans=extras.mulligans||{ben:0,thomas:0,max:0,luke:0};
+  const closestPin=extras.closestPin||{};
+  const longDrive=extras.longDrive||{};
 
-  useEffect(()=>{
-    const t=setInterval(()=>setElapsed(Math.floor((Date.now()-startTime)/1000)),10000);
-    return()=>clearInterval(t);
-  },[]);
+  const holesPlayed=PLAYERS.reduce((max,p)=>{const pl=(scores[p.id]||[]).filter(s=>s>0).length;return Math.max(max,pl);},0);
 
-  const fmtTime=s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?h+'h '+m+'m':m+'m';};
-  const getScore=(pid,hi)=>(scores[pid]||[])[hi]||0;
-  const getTScore=(ti,hi)=>(teamScores||[])[ti]?.[hi]||0;
-  const holesPlayed=teamMode
-    ?(teamScores||[]).reduce((mx,t)=>Math.max(mx,t.filter(s=>s>0).length),0)
-    :PLAYERS.reduce((mx,p)=>Math.max(mx,(scores[p.id]||[]).filter(s=>s>0).length),0);
+  const getTP=pid=>{let tp=0;(scores[pid]||[]).forEach((s,i)=>{if(s>0&&holes[i])tp+=s-holes[i].par;});return tp;};
+  const getSF=pid=>(scores[pid]||[]).reduce((a,s,i)=>a+(s>0&&holes[i]?sfPts(s,holes[i].par):0),0);
 
-  // Handicap strokes on this hole
-  const getStrokes=(pid)=>{
-    const hdcp=playerSettings[pid]??PLAYERS.find(p=>p.id===pid)?.defaultHcp??20;
-    return Math.floor(hdcp/18)+(hole.hcp<=(hdcp%18)?1:0);
+  const skinsList=useMemo(()=>{
+    const sk=Array(18).fill(null);
+    holes.forEach((_,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1)sk[i]=w[0].id;}});
+    return sk;
+  },[scores,holes]);
+
+  const skinsCount=pid=>skinsList.filter(s=>s===pid).length;
+  const skinsVal=round.bet_amount||5;
+
+  const getDS=pid=>{
+    if(round.format==='stableford')return{d:getSF(pid)+'pts',c:'#ffd700'};
+    if(round.format==='skins')return{d:skinsCount(pid)+'🩳',c:'#9b59b6'};
+    const tp=getTP(pid);return{d:tpStr(tp),c:tp<0?'#00e676':tp>0?'#ff5252':'#555'};
   };
 
-  // Skins list
-  const skinsList=useMemo(()=>holes.map((_,i)=>{
-    const all=PLAYERS.map(p=>({id:p.id,s:getScore(p.id,i)})).filter(x=>x.s>0);
-    if(all.length<4)return null;
-    const min=Math.min(...all.map(x=>x.s));
-    const w=all.filter(x=>x.s===min);
-    return w.length===1?w[0].id:null;
-  }),[scores]);
+  // Wolf logic
+  const wolfPlayer=round.format==='wolf'?PLAYERS.find(p=>p.id===wolfOrder[holeIdx%4]):null;
 
-  // Running standings per format
-  const getStandings=()=>{
-    if(teamMode&&teamCfg&&fmt!=='vegas'&&fmt!=='nassau'){
-      return teamCfg.teams.map((team,ti)=>{
-        const tClr=PLAYERS.find(p=>p.id===team[0])?.color||'#00e676';
-        const tS=(teamScores||[])[ti]||[];
-        if(fmt==='match'){
-          const other=(teamScores||[])[ti===0?1:0]||[];
-          let up=0;
-          tS.forEach((s,i)=>{const o=other[i]||0;if(s>0&&o>0){if(s<o)up++;else if(o<s)up--;}});
-          return{id:'t'+ti,name:teamNames[ti],color:tClr,emoji:(ti+1)+'',main:up>0?up+' UP':up<0?Math.abs(up)+' DN':'AS',sub:fmt==='match'?'holes':'',mainColor:up>0?'#00e676':up<0?'#ff5252':'#888'};
-        }
-        const tp=tS.reduce((a,s,i)=>s>0&&holes[i]?a+(s-holes[i].par):a,0);
-        return{id:'t'+ti,name:teamNames[ti],color:tClr,emoji:(ti+1)+'',main:tpStr(tp),sub:'to par',mainColor:tp<0?'#00e676':tp>0?'#ff5252':'#888'};
-      });
-    }
-    switch(fmt){
-      case 'stableford':return PLAYERS.map(p=>({...p,main:holes.reduce((a,h,i)=>{const s=getScore(p.id,i);return s>0?a+sfPts(s,h.par):a;},0)+'pts',sub:'stableford',mainColor:'#ffd700'})).sort((a,b)=>parseInt(b.main)-parseInt(a.main));
-      case 'skins':return PLAYERS.map(p=>{const sk=skinsList.filter(x=>x===p.id).length;return{...p,main:sk+'🩳',sub:'$'+(sk*betAmt),mainColor:sk>0?'#9b59b6':'#555'};}).sort((a,b)=>parseInt(b.main)-parseInt(a.main));
-      case 'wolf':{
-        const wolfOrder=['ben','thomas','max','luke'];
-        const wolfId=wolfOrder[holeIdx%4];
-        return PLAYERS.map(p=>{const tp=holes.reduce((a,h,i)=>{const s=getScore(p.id,i);return s>0?a+(s-h.par):a;},0);return{...p,main:tpStr(tp),sub:p.id===wolfId?'🐺 WOLF':'',mainColor:p.id===wolfId?'#ffd700':tp<0?'#00e676':tp>0?'#ff5252':'#888'};});
-      }
-      case 'bingo':{
-        const pts={};PLAYERS.forEach(p=>{pts[p.id]=0;});
-        Object.values(bingo).forEach(h=>{if(h.on)pts[h.on]++;if(h.closest)pts[h.closest]++;if(h.in)pts[h.in]++;});
-        return PLAYERS.map(p=>({...p,main:(pts[p.id]||0)+'pts',sub:'bingo pts',mainColor:'#ffd700'})).sort((a,b)=>parseInt(b.main)-parseInt(a.main));
-      }
-      case 'chairman':return PLAYERS.map(p=>({...p,main:(chairWins[p.id]||0)+'',sub:chairman===p.id?'👑 CHAIRMAN':'holes as champ',mainColor:chairman===p.id?'#ffd700':'#888'})).sort((a,b)=>parseInt(b.main)-parseInt(a.main));
-      case 'quota':return PLAYERS.map(p=>{const hdcp=playerSettings[p.id]??p.defaultHcp;const quota=36-Math.min(hdcp,36);const pts=holes.reduce((a,h,i)=>{const s=getScore(p.id,i);return s>0?a+sfPts(s,h.par):a;},0);const diff=pts-quota;return{...p,main:pts+'pts',sub:'quota '+quota+' ('+( diff>=0?'+':'')+diff+')',mainColor:diff>=0?'#00e676':'#ff5252'};});
-      case 'nassau':{
-        if(!teamCfg||teamCfg.teams.length<2)return[];
-        const f0=(teamScores||[])[0]?.slice(0,9).reduce((a,x)=>a+(x||0),0)||0;
-        const f1=(teamScores||[])[1]?.slice(0,9).reduce((a,x)=>a+(x||0),0)||0;
-        const b0=(teamScores||[])[0]?.slice(9).reduce((a,x)=>a+(x||0),0)||0;
-        const b1=(teamScores||[])[1]?.slice(9).reduce((a,x)=>a+(x||0),0)||0;
-        const t0=f0+b0,t1=f1+b1;
-        const c0=PLAYERS.find(p=>p.id===teamCfg.teams[0][0])?.color||'#00e676';
-        const c1=PLAYERS.find(p=>p.id===teamCfg.teams[1][0])?.color||'#ff9100';
-        const fW=f0>0&&f1>0?(f0<f1?0:f0>f1?1:-1):-1;
-        const bW=b0>0&&b1>0?(b0<b1?0:b0>b1?1:-1):-1;
-        const tW=t0>0&&t1>0?(t0<t1?0:t0>t1?1:-1):-1;
-        const won0=[fW===0,bW===0,tW===0].filter(Boolean).length;
-        const won1=[fW===1,bW===1,tW===1].filter(Boolean).length;
-        return[
-          {id:'t0',name:teamNames[0],color:c0,emoji:'1',main:'$'+(won0*betAmt),sub:'F:'+(fW===0?'W':fW===1?'L':'—')+' B:'+(bW===0?'W':bW===1?'L':'—')+' T:'+(tW===0?'W':tW===1?'L':'—'),mainColor:won0>won1?'#00e676':won0<won1?'#ff5252':'#888'},
-          {id:'t1',name:teamNames[1],color:c1,emoji:'2',main:'$'+(won1*betAmt),sub:'F:'+(fW===1?'W':fW===0?'L':'—')+' B:'+(bW===1?'W':bW===0?'L':'—')+' T:'+(tW===1?'W':tW===0?'L':'—'),mainColor:won1>won0?'#00e676':won1<won0?'#ff5252':'#888'},
-        ];
-      }
-      case 'vegas':{
-        if(!teamCfg||teamCfg.teams.length<2)return[];
-        const getV=(team,i)=>{const ss=team.map(id=>getScore(id,i)).filter(x=>x>0).sort((a,b)=>a-b);return ss.length>=2?parseInt(''+ss[0]+ss[1]):0;};
-        let p0=0,p1=0;
-        holes.forEach((_,i)=>{const v0=getV(teamCfg.teams[0],i),v1=getV(teamCfg.teams[1],i);if(v0>0&&v1>0){if(v0<v1)p0+=v1-v0;else if(v1<v0)p1+=v0-v1;}});
-        const c0=PLAYERS.find(p=>p.id===teamCfg.teams[0][0])?.color||'#00e676';
-        const c1=PLAYERS.find(p=>p.id===teamCfg.teams[1][0])?.color||'#ff9100';
-        return[
-          {id:'t0',name:teamNames[0],color:c0,emoji:'1',main:'$'+p0,sub:'vegas pts',mainColor:p0>p1?'#00e676':'#888'},
-          {id:'t1',name:teamNames[1],color:c1,emoji:'2',main:'$'+p1,sub:'vegas pts',mainColor:p1>p0?'#00e676':'#888'},
-        ];
-      }
-      default:{
-        return PLAYERS.map(p=>{const tp=holes.reduce((a,h,i)=>{const s=getScore(p.id,i);return s>0?a+(s-h.par):a;},0);return{...p,main:tpStr(tp),sub:'to par',mainColor:tp<0?'#00e676':tp>0?'#ff5252':'#888'};});
-      }
-    }
+  const handleScore=(pid,delta)=>{
+    const cur=(scores[pid]||[])[holeIdx]||hole.par;
+    updateScore(round.id,pid,holeIdx,cur+delta);
+    setLastScored(pid);
   };
 
-  const standings=getStandings();
-  const wolfOrder=['ben','thomas','max','luke'];
-  const currentWolfId=fmt==='wolf'?wolfOrder[holeIdx%4]:null;
-  const currentWolf=currentWolfId?PLAYERS.find(p=>p.id===currentWolfId):null;
-
-  const saveBingo=(hi,key,pid)=>{
-    const n={...bingo,[hi]:{...(bingo[hi]||{}),[key]:bingo[hi]?.[key]===pid?null:pid}};
-    setBingo(n);localStorage.setItem('bg_'+round.id,JSON.stringify(n));
+  const handleInput=(pid,val)=>{
+    updateScore(round.id,pid,holeIdx,val===''?null:val);
+    setLastScored(pid);
   };
 
-  const handleChairmanWin=(pid)=>{
-    if(!chairman){setChairman(pid);setChairWins(w=>({...w,[pid]:(w[pid]||0)+1}));return;}
-    if(pid!==chairman){setChairWins(w=>({...w,[chairman]:(w[chairman]||0)+1}));setChairman(pid);}
-    else setChairWins(w=>({...w,[chairman]:(w[chairman]||0)+1}));
+  const useMulligan=(pid)=>{
+    if(mulligans[pid]>=mulligansAllowed)return;
+    updateExtras(round.id,'mulligans',{[pid]:(mulligans[pid]||0)+1});
+    Haptic.medium();
+    Sound.play('click');
   };
 
-  const sendChat=(pid,msg)=>{
-    if(!msg.trim())return;
-    const p=PLAYERS.find(x=>x.id===pid);
-    const m={pid,name:p?.name,color:p?.color,msg,time:Date.now(),hole:hole.hole};
-    const n=[...chatMsgs,m];setChatMsgs(n);localStorage.setItem('chat_'+round.id,JSON.stringify(n));setChatInput('');
-    Haptic.light();
-  };
+  // Par 3 closest pin
+  const isPar3=hole.par===3;
 
-  const fmtIcon=FORMATS.find(f=>f.id===fmt)?.icon||'⛳';
-  const fmtLabel=FORMATS.find(f=>f.id===fmt)?.label||fmt;
+  // Running bet
+  const getBetResults=()=>{
+    const ranked=[...PLAYERS].map(p=>({...p,tp:getTP(p.id),total:(scores[p.id]||[]).reduce((a,b)=>a+(b||0),0)})).sort((a,b)=>a.tp-b.tp);
+    return ranked.map((p,i)=>({...p,net:i===0?(PLAYERS.length-1)*round.bet_amount:-round.bet_amount}));
+  };
 
   return(
-    <div style={{display:'flex',flexDirection:'column',gap:10,animation:'fadeUp .3s'}}>
-
-      {/* ── FORMAT HEADER ── */}
-      <div style={{background:'linear-gradient(135deg,rgba(0,230,118,.1),rgba(0,200,83,.04))',border:'1px solid rgba(0,230,118,.18)',borderRadius:18,padding:'14px 16px'}}>
-        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
-          <span style={{fontSize:26}}>{fmtIcon}</span>
-          <div style={{flex:1}}>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2}}>{fmtLabel}</div>
-            <div style={{fontSize:9,color:'rgba(255,255,255,.2)',marginTop:1}}>{round.date} · {course.name} · {round.tees?.toUpperCase()} · {fmtTime(elapsed)}</div>
-          </div>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3}}>
-            <div style={{background:'#00e676',color:'#000',borderRadius:20,padding:'3px 11px',fontSize:12,fontWeight:900}}>{holesPlayed}/18</div>
-            <div style={{fontSize:9,color:'rgba(0,230,118,.5)',fontWeight:700}}>⏱ {fmtTime(elapsed)}</div>
-          </div>
+    <div style={{display:'flex',flexDirection:'column',gap:11,animation:'fadeUp .3s ease'}}>
+      {/* Header */}
+      <div style={{background:'linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,200,83,.03))',border:'1px solid rgba(0,230,118,.15)',borderRadius:18,padding:'13px 15px',display:'flex',alignItems:'center',gap:12}}>
+        <span style={{fontSize:26}}>{fmt?.icon}</span>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2}}>{fmt?.label}</div>
+          <div style={{fontSize:10,color:'rgba(255,255,255,.25)',marginTop:1,letterSpacing:1}}>{round.date} · {course.name} · {round.tees?.toUpperCase()}</div>
         </div>
-        <div style={{background:'rgba(0,230,118,.07)',borderRadius:10,padding:'8px 10px',fontSize:10,color:'rgba(0,230,118,.7)',lineHeight:1.5}}>
-          {FMT_TIPS[fmt]||''}
+        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3}}>
+          <div style={{background:'#00e676',color:'#000',borderRadius:20,padding:'3px 12px',fontSize:13,fontWeight:900}}>{holesPlayed}/18</div>
+          <div style={{display:'flex',gap:4,alignItems:'center'}}><div style={{width:5,height:5,borderRadius:'50%',background:'#00e676',animation:'pulse 2s infinite'}}/><span style={{fontSize:9,color:'#00e676',letterSpacing:1,fontWeight:700}}>LIVE SYNC</span></div>
         </div>
       </div>
 
-      {/* ── WEATHER ── */}
+      {/* Weather */}
       <WeatherWidget lat={course.lat} lon={course.lon} courseName={course.name}/>
 
-      {/* ── LIVE STANDINGS STRIP ── */}
+      {/* Wolf indicator */}
+      {wolfPlayer&&<div style={{background:'rgba(155,89,182,.1)',border:'1px solid rgba(155,89,182,.3)',borderRadius:12,padding:'10px 14px',display:'flex',gap:10,alignItems:'center'}}>
+        <span style={{fontSize:20}}>🐺</span>
+        <div><span style={{fontWeight:800,color:wolfPlayer.color}}>{wolfPlayer.name}</span><span style={{color:'rgba(255,255,255,.4)',fontSize:13}}> is the Wolf this hole</span></div>
+      </div>}
+
+      {/* Standings */}
       <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:2}}>
-        {standings.map((p,i)=>(
-          <div key={p.id||i} style={{flex:'0 0 auto',display:'flex',flexDirection:'column',alignItems:'center',gap:3,background:i===0?'rgba(255,215,0,.08)':'rgba(255,255,255,.04)',border:`1px solid ${i===0?'rgba(255,215,0,.3)':'rgba(255,255,255,.07)'}`,borderRadius:12,padding:'9px 12px',minWidth:74,position:'relative'}}>
-            {i===0&&<div style={{position:'absolute',top:-6,fontSize:12}}>🏆</div>}
-            <div style={{width:30,height:30,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#000'}}>{p.emoji||p.name?.[0]}</div>
-            <div style={{fontSize:11,fontWeight:800,color:'rgba(255,255,255,.6)'}}>{p.name?.split(' ')[0]||p.name}</div>
-            <div style={{fontWeight:900,fontSize:15,color:p.mainColor||p.color}}>{p.main}</div>
-            {p.sub&&<div style={{fontSize:8,color:'rgba(255,255,255,.25)',textAlign:'center'}}>{p.sub}</div>}
+        {PLAYERS.map(p=>{const ds=getDS(p.id);return(
+          <div key={p.id} style={{flex:'0 0 auto',display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.06)',borderRadius:12,padding:'9px 12px',minWidth:72}}>
+            <div style={{width:30,height:30,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#000'}}>{p.emoji}</div>
+            <div style={{fontWeight:900,fontSize:15,color:ds.c}}>{ds.d}</div>
+            {mulligansAllowed>0&&<div style={{fontSize:9,color:'rgba(255,255,255,.25)'}}>🍀{mulligansAllowed-(mulligans[p.id]||0)}</div>}
           </div>
-        ))}
+        );})}
       </div>
 
-      {/* ── HOLE NAVIGATION ── */}
-      <div style={{background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:16,padding:'12px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <button onClick={()=>{setHoleIdx(Math.max(0,holeIdx-1));Haptic.light();}} disabled={holeIdx===0} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:42,height:42,borderRadius:11,cursor:'pointer',fontSize:22,opacity:holeIdx===0?.3:1}}>‹</button>
+      {/* Hole nav */}
+      <div style={{background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.06)',borderRadius:15,padding:'13px 15px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <button onClick={()=>{setHoleIdx(Math.max(0,holeIdx-1));Haptic.light();}} disabled={holeIdx===0} style={{background:'rgba(255,255,255,.06)',border:'none',color:'#fff',width:42,height:42,borderRadius:12,cursor:'pointer',fontSize:24,opacity:holeIdx===0?.3:1}}>‹</button>
         <div style={{textAlign:'center'}}>
-          <div style={{display:'flex',gap:8,alignItems:'baseline',justifyContent:'center'}}>
+          <div style={{display:'flex',gap:10,alignItems:'baseline',justifyContent:'center'}}>
             <span style={{fontFamily:'Bebas Neue',fontSize:36,color:'#ffd700',lineHeight:1}}>#{hole.hole}</span>
-            <span style={{fontSize:20,color:'#00e676',fontWeight:800}}>Par {hole.par}</span>
+            <span style={{fontSize:19,color:'#00e676',fontWeight:800}}>Par {hole.par}</span>
           </div>
-          <div style={{fontSize:10,color:'rgba(255,255,255,.25)',marginTop:1}}>{hole.yards} yds · HCP Stroke {hole.hcp}</div>
-          <div style={{display:'flex',gap:8,justifyContent:'center',marginTop:4}}>
-            <span style={{fontSize:9,color:'rgba(255,255,255,.2)',background:'rgba(255,255,255,.06)',padding:'2px 7px',borderRadius:20}}>Front {Math.round(hole.yards*.9)}y</span>
-            <span style={{fontSize:9,color:'rgba(255,255,255,.3)',background:'rgba(255,255,255,.08)',padding:'2px 7px',borderRadius:20,fontWeight:700}}>{hole.yards}y Mid</span>
-            <span style={{fontSize:9,color:'rgba(255,255,255,.2)',background:'rgba(255,255,255,.06)',padding:'2px 7px',borderRadius:20}}>Back {Math.round(hole.yards*1.05)}y</span>
-          </div>
-          {holeNotes[holeIdx]&&<div style={{fontSize:9,color:'#ffd700',marginTop:3,fontStyle:'italic'}}>📝 {holeNotes[holeIdx]}</div>}
+          <div style={{fontSize:11,color:'rgba(255,255,255,.25)',marginTop:2}}>{hole.yards} yds · HCP Stroke {hole.hcp}</div>
+          {isPar3&&<div style={{fontSize:10,color:'#ffd700',fontWeight:700,marginTop:2}}>📍 PAR 3 — TRACK CLOSEST PIN</div>}
         </div>
-        <button onClick={()=>{setHoleIdx(Math.min(holes.length-1,holeIdx+1));Haptic.light();}} disabled={holeIdx===holes.length-1} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:42,height:42,borderRadius:11,cursor:'pointer',fontSize:22,opacity:holeIdx===holes.length-1?.3:1}}>›</button>
+        <button onClick={()=>{setHoleIdx(Math.min(holes.length-1,holeIdx+1));Haptic.light();}} disabled={holeIdx===holes.length-1} style={{background:'rgba(255,255,255,.06)',border:'none',color:'#fff',width:42,height:42,borderRadius:12,cursor:'pointer',fontSize:24,opacity:holeIdx===holes.length-1?.3:1}}>›</button>
       </div>
 
-      {/* ══ WOLF ══ */}
-      {fmt==='wolf'&&currentWolf&&(
-        <div style={{background:'rgba(255,215,0,.08)',border:'1px solid rgba(255,215,0,.25)',borderRadius:16,padding:'14px 15px'}}>
-          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
-            <span style={{fontSize:24}}>🐺</span>
-            <div>
-              <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#ffd700'}}>{currentWolf.name} IS THE WOLF</div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>Pick a partner after seeing all drives, or go solo for 2x points</div>
-            </div>
-          </div>
-          {!wolfPick[holeIdx]?(
-            <div>
-              <div style={{fontSize:9,color:'rgba(255,215,0,.5)',letterSpacing:2,fontWeight:700,marginBottom:8}}>WOLF — CHOOSE:</div>
-              <div style={{display:'flex',gap:6}}>
-                {PLAYERS.filter(p=>p.id!==currentWolfId).map(p=>(
-                  <button key={p.id} onClick={()=>setWolfPick(w=>({...w,[holeIdx]:p.id}))} style={{flex:1,background:p.color+'22',border:'1px solid '+p.color+'55',color:p.color,padding:'10px 4px',borderRadius:12,cursor:'pointer',fontSize:12,fontWeight:700}}>{p.name}</button>
-                ))}
-                <button onClick={()=>setWolfPick(w=>({...w,[holeIdx]:'solo'}))} style={{flex:1,background:'rgba(255,215,0,.12)',border:'1px solid rgba(255,215,0,.3)',color:'#ffd700',padding:'10px 4px',borderRadius:12,cursor:'pointer',fontSize:11,fontWeight:700}}>🐺 SOLO<br/>2x pts</button>
+      {/* Score inputs */}
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {PLAYERS.map(p=>{
+          const sc=(scores[p.id]||[])[holeIdx]||null;
+          const sn=sc?scoreName(sc,hole.par):null;
+          const isSkin=skinsList[holeIdx]===p.id;
+          const isCP=closestPin[holeIdx]===p.id;
+          const isLD=longDrive[holeIdx]===p.id;
+          const hdcp=playerSettings[p.id]??p.defaultHcp;
+          const strokesOnHole=Math.floor(hdcp/18)+(hole.hcp<=hdcp%18?1:0);
+          const netSc=sc?sc-strokesOnHole:null;
+          const animated=lastScored===p.id&&sn&&(sn.type==='birdie'||sn.type==='eagle');
+          return(
+            <div key={p.id} style={{background:'rgba(255,255,255,.04)',borderRadius:15,padding:'12px 14px',borderLeft:`3px solid ${p.color}`,position:'relative',overflow:'hidden',transition:'all .2s',boxShadow:animated?`0 0 20px ${p.color}44`:'none'}}>
+              {isSkin&&<div style={{position:'absolute',top:5,right:5,fontSize:9,color:'#9b59b6',fontWeight:800,background:'rgba(155,89,182,.15)',padding:'2px 7px',borderRadius:20}}>💀 SKIN</div>}
+              {isCP&&<div style={{position:'absolute',top:5,right:isSkin?60:5,fontSize:9,color:'#ffd700',fontWeight:800,background:'rgba(255,215,0,.1)',padding:'2px 7px',borderRadius:20}}>📍 CLOSEST</div>}
+              {isLD&&<div style={{position:'absolute',top:5,right:5,fontSize:9,color:'#40c4ff',fontWeight:800,background:'rgba(64,196,255,.1)',padding:'2px 7px',borderRadius:20}}>💪 LONG DRIVE</div>}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10}}>
+                  <div style={{width:38,height:38,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:17,color:'#000',flexShrink:0,animation:animated?'celebrate .6s ease':''}}>{p.emoji}</div>
+                  <div>
+                    <div style={{fontWeight:900,fontSize:14,color:p.color}}>{p.name}</div>
+                    {sn&&<div style={{fontSize:11,color:sn.c,fontWeight:700,marginTop:1}}>{sn.l}</div>}
+                    {sc&&strokesOnHole>0&&<div style={{fontSize:10,color:'rgba(255,255,255,.25)'}}>Net: {netSc} ({strokesOnHole} stroke{strokesOnHole>1?'s':''})</div>}
+                  </div>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <button onPointerDown={()=>handleScore(p.id,-1)} style={{background:'rgba(255,255,255,.06)',border:'none',color:'#fff',width:38,height:44,borderRadius:11,cursor:'pointer',fontSize:26,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none',WebkitUserSelect:'none'}}>−</button>
+                  <input type="number" min={1} max={15} value={sc||''} placeholder={hole.par}
+                    onChange={e=>handleInput(p.id,e.target.value)}
+                    style={{background:'rgba(0,0,0,.7)',border:`2px solid ${sc?p.color:'rgba(255,255,255,.1)'}`,color:'#ffd700',width:54,height:50,textAlign:'center',fontSize:30,fontWeight:900,borderRadius:11,outline:'none',transition:'border-color .2s'}}/>
+                  <button onPointerDown={()=>handleScore(p.id,1)} style={{background:'rgba(255,255,255,.06)',border:'none',color:'#fff',width:38,height:44,borderRadius:11,cursor:'pointer',fontSize:26,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none',WebkitUserSelect:'none'}}>+</button>
+                </div>
+              </div>
+              {/* Mulligan & bonus buttons */}
+              <div style={{display:'flex',gap:6,marginTop:8}}>
+                {mulligansAllowed>0&&<button onClick={()=>useMulligan(p.id)} disabled={(mulligans[p.id]||0)>=mulligansAllowed} style={{background:'rgba(255,145,0,.1)',border:'1px solid rgba(255,145,0,.3)',color:'#ff9100',padding:'4px 10px',borderRadius:20,cursor:'pointer',fontSize:10,fontWeight:700,opacity:(mulligans[p.id]||0)>=mulligansAllowed?.4:1}}>🍀 MULLIGAN ({mulligansAllowed-(mulligans[p.id]||0)} left)</button>}
+                {isPar3&&<button onClick={()=>updateExtras(round.id,'closestPin',{[holeIdx]:closestPin[holeIdx]===p.id?null:p.id})} style={{background:isCP?'rgba(255,215,0,.15)':'rgba(255,255,255,.04)',border:`1px solid ${isCP?'rgba(255,215,0,.4)':'rgba(255,255,255,.08)'}`,color:isCP?'#ffd700':'#555',padding:'4px 10px',borderRadius:20,cursor:'pointer',fontSize:10,fontWeight:700}}>📍 CLOSEST PIN</button>}
+                {!isPar3&&<button onClick={()=>updateExtras(round.id,'longDrive',{[holeIdx]:longDrive[holeIdx]===p.id?null:p.id})} style={{background:isLD?'rgba(64,196,255,.12)':'rgba(255,255,255,.04)',border:`1px solid ${isLD?'rgba(64,196,255,.35)':'rgba(255,255,255,.08)'}`,color:isLD?'#40c4ff':'#555',padding:'4px 10px',borderRadius:20,cursor:'pointer',fontSize:10,fontWeight:700}}>💪 LONG DRIVE</button>}
               </div>
             </div>
-          ):<div style={{fontSize:13,color:'#ffd700',fontWeight:700,textAlign:'center'}}>{wolfPick[holeIdx]==='solo'?'🐺 Wolf going SOLO — double points!':'🤝 Wolf partnered with '+PLAYERS.find(p=>p.id===wolfPick[holeIdx])?.name}</div>}
+          );
+        })}
+      </div>
+
+      {/* Quick actions */}
+      <div style={{display:'flex',gap:7}}>
+        <button onClick={()=>PLAYERS.forEach(p=>{if(!((scores[p.id]||[])[holeIdx]>0))updateScore(round.id,p.id,holeIdx,hole.par);}) } style={{flex:1,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',color:'rgba(255,255,255,.4)',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700,letterSpacing:1}}>⚡ FILL PAR</button>
+        <button onClick={()=>setShowSkins(!showSkins)} style={{flex:1,background:'rgba(155,89,182,.08)',border:'1px solid rgba(155,89,182,.25)',color:'#9b59b6',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700}}>💀 SKINS ({skinsList.filter(Boolean).length})</button>
+        {round.bet_amount>0&&<button onClick={()=>setShowBets(!showBets)} style={{flex:1,background:'rgba(0,230,118,.06)',border:'1px solid rgba(0,230,118,.2)',color:'#00e676',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700}}>💰 BETS</button>}
+      </div>
+
+      {/* Skins panel */}
+      {showSkins&&(
+        <div style={{background:'rgba(155,89,182,.06)',border:'1px solid rgba(155,89,182,.2)',borderRadius:16,padding:'14px 16px',animation:'fadeIn .3s ease'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#9b59b6',marginBottom:12}}>SKINS TRACKER · ${skinsVal}/SKIN</div>
+          <div style={{display:'flex',gap:8,marginBottom:10}}>
+            {PLAYERS.map(p=>{const sk=skinsCount(p.id);return(
+              <div key={p.id} style={{flex:1,textAlign:'center',background:'rgba(0,0,0,.3)',borderRadius:12,padding:'10px 4px'}}>
+                <div style={{fontSize:20,marginBottom:4}}>{p.avatar}</div>
+                <div style={{fontFamily:'Bebas Neue',fontSize:26,color:sk>0?'#9b59b6':'#333'}}>{sk}</div>
+                <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:1,fontWeight:700}}>SKINS</div>
+                <div style={{fontSize:12,color:'#00e676',fontWeight:900,marginTop:2}}>${sk*skinsVal}</div>
+              </div>
+            );})}
+          </div>
+          <div style={{fontSize:11,color:'rgba(255,255,255,.25)',textAlign:'center'}}>{skinsList.filter(Boolean).length} claimed · {holes.length-holesPlayed} holes left · Pot: ${PLAYERS.length*skinsVal*holesPlayed}</div>
         </div>
       )}
 
-      {/* ══ BINGO BANGO BONGO ══ */}
-      {fmt==='bingo'&&(
-        <div style={{background:'rgba(255,215,0,.06)',border:'1px solid rgba(255,215,0,.2)',borderRadius:16,padding:'14px 15px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#ffd700',marginBottom:12}}>🎯 HOLE {hole.hole} — CLAIM YOUR POINTS</div>
-          {[{key:'on',icon:'🟢',label:'BINGO — First ball on green'},{key:'closest',icon:'📍',label:'BANGO — Closest to pin (once all on)'},{key:'in',icon:'🏁',label:'BONGO — First to hole out'}].map(({key,icon,label})=>(
-            <div key={key} style={{marginBottom:12}}>
-              <div style={{fontSize:10,color:'rgba(255,255,255,.4)',letterSpacing:1,fontWeight:700,marginBottom:7}}>{icon} {label}</div>
-              <div style={{display:'flex',gap:6}}>
-                {PLAYERS.map(p=>{const sel=bingo[holeIdx]?.[key]===p.id;return(
-                  <button key={p.id} onClick={()=>saveBingo(holeIdx,key,p.id)} style={{flex:1,background:sel?p.color+'33':'rgba(255,255,255,.04)',border:'1px solid '+(sel?p.color:'rgba(255,255,255,.08)'),color:sel?p.color:'#555',borderRadius:10,padding:'10px 4px',cursor:'pointer',fontSize:12,fontWeight:700,transition:'all .15s'}}>
-                    {sel?'✓ ':''}{p.name}
-                  </button>
-                );})}
-              </div>
+      {/* Bets panel */}
+      {showBets&&round.bet_amount>0&&(
+        <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.12)',borderRadius:16,padding:'14px 16px',animation:'fadeIn .3s ease'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#00e676',marginBottom:10}}>💰 RUNNING BETS · ${round.bet_amount}/HOLE</div>
+          {getBetResults().map((p,i)=>(
+            <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+              <div style={{width:28,height:28,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:12,color:'#000'}}>{p.emoji}</div>
+              <div style={{fontWeight:700,flex:1,fontSize:13}}>{p.name}</div>
+              <div style={{fontWeight:900,fontSize:16,color:p.net>0?'#00e676':p.net<0?'#ff5252':'#555'}}>{p.net>0?`+$${p.net}`:p.net<0?`-$${Math.abs(p.net)}`:'EVEN'}</div>
             </div>
           ))}
-          <div style={{borderTop:'1px solid rgba(255,255,255,.06)',paddingTop:10,marginTop:4}}>
-            <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:6}}>RUNNING TOTALS</div>
-            <div style={{display:'flex',gap:6}}>
-              {PLAYERS.map(p=>{
-                const pts=Object.values(bingo).reduce((a,h)=>a+(h.on===p.id?1:0)+(h.closest===p.id?1:0)+(h.in===p.id?1:0),0);
-                return<div key={p.id} style={{flex:1,textAlign:'center',background:'rgba(0,0,0,.3)',borderRadius:8,padding:'6px 4px'}}><div style={{fontFamily:'Bebas Neue',fontSize:20,color:pts>0?p.color:'#333'}}>{pts}</div><div style={{fontSize:8,color:'rgba(255,255,255,.2)',fontWeight:700}}>{p.name}</div></div>;
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ══ CHAIRMAN ══ */}
-      {fmt==='chairman'&&(
-        <div style={{background:'rgba(255,215,0,.06)',border:'1px solid rgba(255,215,0,.2)',borderRadius:16,padding:'14px 15px'}}>
-          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
-            <span style={{fontSize:26}}>👑</span>
-            <div style={{flex:1}}>
-              <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#ffd700'}}>{chairman?'CHAIRMAN: '+PLAYERS.find(p=>p.id===chairman)?.name:'NO CHAIRMAN YET'}</div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>Lowest score takes / defends the throne each hole</div>
-            </div>
-          </div>
-          <div style={{fontSize:9,color:'rgba(255,215,0,.5)',letterSpacing:2,fontWeight:700,marginBottom:8}}>TAP WINNER OF HOLE {hole.hole}:</div>
-          <div style={{display:'flex',gap:6}}>
-            {PLAYERS.map(p=>{const isChair=chairman===p.id;return(
-              <button key={p.id} onClick={()=>handleChairmanWin(p.id)} style={{flex:1,background:isChair?p.color+'33':'rgba(255,255,255,.04)',border:'1px solid '+(isChair?p.color:'rgba(255,255,255,.08)'),color:isChair?p.color:'#888',borderRadius:12,padding:'10px 4px',cursor:'pointer',fontSize:11,fontWeight:700}}>
-                {isChair?'👑 ':''}{p.name}
-                {chairWins[p.id]?<div style={{fontSize:9,opacity:.6}}>{chairWins[p.id]}W</div>:null}
-              </button>
-            );})}
-          </div>
-        </div>
-      )}
-
-      {/* ══ NASSAU RUNNING BREAKDOWN ══ */}
-      {fmt==='nassau'&&isTeam&&teamCfg&&teamCfg.teams.length>=2&&(
-        <div style={{background:'rgba(255,215,0,.05)',border:'1px solid rgba(255,215,0,.15)',borderRadius:16,padding:'13px 15px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:17,letterSpacing:2,color:'#ffd700',marginBottom:10}}>💰 NASSAU · ${betAmt} PER BET</div>
-          {[{l:'FRONT 9',s:0,e:9},{l:'BACK 9',s:9,e:18},{l:'TOTAL 18',s:0,e:18}].map(({l,s,e})=>{
-            const s0=(teamScores||[])[0]?.slice(s,e).reduce((a,x)=>a+(x||0),0)||0;
-            const s1=(teamScores||[])[1]?.slice(s,e).reduce((a,x)=>a+(x||0),0)||0;
-            const lead=s0>0&&s1>0?(s0<s1?teamNames[0]:s0>s1?teamNames[1]:'TIE'):'—';
-            const clr=lead===teamNames[0]?(PLAYERS.find(p=>p.id===teamCfg.teams[0][0])?.color||'#00e676'):lead===teamNames[1]?(PLAYERS.find(p=>p.id===teamCfg.teams[1][0])?.color||'#ff9100'):'#666';
-            return<div key={l} style={{display:'flex',alignItems:'center',marginBottom:7,background:'rgba(0,0,0,.3)',borderRadius:10,padding:'8px 12px'}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.35)',fontWeight:700,letterSpacing:1,width:60}}>{l}</div>
-              <div style={{flex:1,fontSize:13,fontWeight:800,color:clr,textAlign:'center'}}>{lead}</div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,.25)'}}>{s0||'—'} v {s1||'—'}</div>
-            </div>;
-          })}
-        </div>
-      )}
-
-      {/* ══ SKINS TRACKER ══ */}
-      {fmt==='skins'&&(
-        <div style={{background:'rgba(155,89,182,.06)',border:'1px solid rgba(155,89,182,.2)',borderRadius:16,padding:'13px 15px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:17,letterSpacing:2,color:'#9b59b6',marginBottom:10}}>💀 SKINS · ${betAmt}/SKIN · POT: ${PLAYERS.length*betAmt*holesPlayed}</div>
-          <div style={{display:'flex',gap:7}}>
-            {PLAYERS.map(p=>{const sk=skinsList.filter(x=>x===p.id).length;return(
-              <div key={p.id} style={{flex:1,textAlign:'center',background:'rgba(0,0,0,.3)',borderRadius:10,padding:'10px 4px'}}>
-                <div style={{fontSize:20,marginBottom:3}}>{p.avatar}</div>
-                <div style={{fontFamily:'Bebas Neue',fontSize:24,color:sk>0?'#9b59b6':'#333'}}>{sk}</div>
-                <div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:1,fontWeight:700}}>SKINS</div>
-                <div style={{fontSize:12,color:'#00e676',fontWeight:900,marginTop:2}}>${sk*betAmt}</div>
-              </div>
-            );})}
-          </div>
-          {skinsList[holeIdx]&&<div style={{marginTop:8,textAlign:'center',fontSize:11,color:'#9b59b6',fontWeight:700}}>💀 {PLAYERS.find(p=>p.id===skinsList[holeIdx])?.name} won this skin!</div>}
-        </div>
-      )}
-
-      {/* ══ VEGAS NUMBERS ══ */}
-      {fmt==='vegas'&&isTeam&&teamCfg&&teamCfg.teams.length>=2&&(
-        <div style={{background:'rgba(255,215,0,.05)',border:'1px solid rgba(255,215,0,.15)',borderRadius:16,padding:'13px 15px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:17,letterSpacing:2,color:'#ffd700',marginBottom:10}}>🎰 HOLE {hole.hole} VEGAS NUMBERS</div>
-          {teamCfg.teams.map((team,ti)=>{
-            const ss=team.map(id=>getScore(id,holeIdx)).filter(x=>x>0).sort((a,b)=>a-b);
-            const num=ss.length>=2?ss[0]+''+ss[1]:'—';
-            const tClr=PLAYERS.find(p=>p.id===team[0])?.color||'#00e676';
-            return<div key={ti} style={{display:'flex',alignItems:'center',gap:12,marginBottom:6,background:'rgba(0,0,0,.3)',borderRadius:10,padding:'10px 14px'}}>
-              <div style={{fontSize:11,fontWeight:800,color:tClr,flex:1}}>{teamNames[ti]}</div>
-              <div style={{fontFamily:'Bebas Neue',fontSize:32,color:tClr}}>{num}</div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,.25)'}}>{ss.join(' + ')||'—'}</div>
-            </div>;
-          })}
-        </div>
-      )}
-
-      {/* ══ HANDICAP STROKES INDICATOR ══ */}
-      {fmt!=='bingo'&&fmt!=='chairman'&&(
-        <div style={{background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:12,padding:'8px 12px'}}>
-          <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:6}}>HCP STROKES THIS HOLE</div>
-          <div style={{display:'flex',gap:6}}>
-            {PLAYERS.map(p=>{const st=getStrokes(p.id);return(
-              <div key={p.id} style={{flex:1,textAlign:'center',background:st>0?p.color+'18':'rgba(255,255,255,.02)',borderRadius:8,padding:'6px 4px',border:'1px solid '+(st>0?p.color+'33':'rgba(255,255,255,.04)')}}>
-                <div style={{fontSize:9,fontWeight:700,color:st>0?p.color:'rgba(255,255,255,.2)'}}>{p.name}</div>
-                <div style={{fontFamily:'Bebas Neue',fontSize:18,color:st>0?p.color:'#333',lineHeight:1}}>{st>0?'+'+st:'—'}</div>
-              </div>
-            );})}
-          </div>
-        </div>
-      )}
-
-      {/* ══ SCORE INPUTS — TEAM (Scramble / Bloodsome) ══ */}
-      {(fmt==='scramble'||fmt==='bloodsome')&&isTeam&&teamCfg&&(
-        <div style={{display:'flex',flexDirection:'column',gap:8}}>
-          <div style={{fontSize:9,color:'rgba(0,230,118,.5)',letterSpacing:2,fontWeight:700}}>{fmt==='bloodsome'?'⚠️ WORST DRIVE MUST BE USED — ALTERNATE SHOTS':'PICK BEST SHOT — ONE TEAM SCORE'}</div>
-          {teamCfg.teams.map((team,ti)=>{
-            const tClr=PLAYERS.find(p=>p.id===team[0])?.color||'#00e676';
-            const tSc=(teamScores||[])[ti]?.[holeIdx]||null;
-            const sn=tSc?scoreName(tSc,hole.par):null;
-            return(
-              <div key={ti} style={{background:'rgba(255,255,255,.04)',borderRadius:16,padding:'16px 15px',borderLeft:'4px solid '+tClr,boxShadow:tSc?'0 0 20px '+tClr+'22':'none'}}>
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                  <div>
-                    <div style={{fontFamily:'Bebas Neue',fontSize:22,color:tClr,marginBottom:2}}>{teamNames[ti]||'Team '+(ti+1)}</div>
-                    <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginBottom:4}}>{team.map(id=>PLAYERS.find(p=>p.id===id)?.name).join(' · ')}</div>
-                    {sn&&<div style={{fontSize:14,color:sn.c,fontWeight:800}}>{sn.l}</div>}
-                  </div>
-                  <div style={{display:'flex',alignItems:'center',gap:7}}>
-                    <button onPointerDown={()=>updateTeamScore&&updateTeamScore(round.id,ti,holeIdx,(tSc||hole.par)-1)} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:44,height:50,borderRadius:12,cursor:'pointer',fontSize:26,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none'}}>−</button>
-                    <input type="number" min={1} max={15} value={tSc||''} placeholder={hole.par} onChange={e=>updateTeamScore&&updateTeamScore(round.id,ti,holeIdx,e.target.value)} style={{background:'rgba(0,0,0,.7)',border:'3px solid '+tClr,color:'#ffd700',width:64,height:60,textAlign:'center',fontSize:36,fontWeight:900,borderRadius:12,outline:'none'}}/>
-                    <button onPointerDown={()=>updateTeamScore&&updateTeamScore(round.id,ti,holeIdx,(tSc||hole.par)+1)} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:44,height:50,borderRadius:12,cursor:'pointer',fontSize:26,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none'}}>+</button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ══ SCORE INPUTS — INDIVIDUAL (all other formats) ══ */}
-      {fmt!=='bingo'&&fmt!=='chairman'&&fmt!=='scramble'&&fmt!=='bloodsome'&&(
-        <div style={{display:'flex',flexDirection:'column',gap:8}}>
-          {fmt==='bestball'&&<div style={{fontSize:9,color:'rgba(0,230,118,.5)',letterSpacing:2,fontWeight:700}}>BEST BALL — LOWEST SCORE ON YOUR TEAM COUNTS ⭐</div>}
-          {fmt==='shamble'&&<div style={{fontSize:9,color:'rgba(0,230,118,.5)',letterSpacing:2,fontWeight:700}}>SHAMBLE — BEST DRIVE CHOSEN, NOW PLAY YOUR OWN BALL IN</div>}
-          {fmt==='vegas'&&<div style={{fontSize:9,color:'rgba(255,215,0,.5)',letterSpacing:2,fontWeight:700}}>VEGAS — SCORES COMBINE INTO A 2-DIGIT NUMBER (LOW FIRST) 🎰</div>}
-          {PLAYERS.map(p=>{
-            const sc=(scores[p.id]||[])[holeIdx]||null;
-            const sn=sc?scoreName(sc,hole.par):null;
-            const strokes=getStrokes(p.id);
-            const netSc=sc?sc-strokes:null;
-            // Best ball highlight
-            let isBest=false;
-            if((fmt==='bestball'||fmt==='shamble')&&isTeam&&teamCfg){
-              const myTeamIdx=teamCfg.teams.findIndex(t=>t.includes(p.id));
-              if(myTeamIdx>=0){
-                const best=Math.min(...teamCfg.teams[myTeamIdx].map(id=>(scores[id]||[])[holeIdx]).filter(x=>x>0));
-                isBest=sc===best&&sc>0;
-              }
-            }
-            // Vegas number
-            let vegasNum='';
-            if(fmt==='vegas'&&isTeam&&teamCfg){
-              const ti=teamCfg.teams.findIndex(t=>t.includes(p.id));
-              const partner=teamCfg.teams[ti]?.find(id=>id!==p.id);
-              const partnerSc=(scores[partner]||[])[holeIdx]||0;
-              if(sc&&partnerSc){const sorted=[sc,partnerSc].sort((a,b)=>a-b);vegasNum='→ '+sorted[0]+''+sorted[1];}
-            }
-            // Skin indicator
-            const hasSkin=fmt==='skins'&&skinsList[holeIdx]===p.id;
-            return(
-              <div key={p.id} style={{background:isBest?'rgba(255,215,0,.08)':hasSkin?'rgba(155,89,182,.08)':'rgba(255,255,255,.04)',borderRadius:16,padding:'13px 14px',borderLeft:'4px solid '+(isBest?'#ffd700':hasSkin?'#9b59b6':p.color),boxShadow:sn&&(sn.type==='birdie'||sn.type==='eagle')?'0 0 20px '+p.color+'44':'none',position:'relative',transition:'all .2s'}}>
-                {isBest&&<div style={{position:'absolute',top:6,right:8,fontSize:10,color:'#ffd700',fontWeight:800}}>⭐ BEST BALL</div>}
-                {hasSkin&&<div style={{position:'absolute',top:6,right:8,fontSize:10,color:'#9b59b6',fontWeight:800}}>💀 SKIN!</div>}
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                  <div style={{display:'flex',alignItems:'center',gap:10}}>
-                    <div style={{width:40,height:40,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:17,color:'#000',flexShrink:0,animation:sn&&(sn.type==='eagle'||sn.type==='ace')?'celebrate .6s ease':'none'}}>{p.emoji}</div>
-                    <div>
-                      <div style={{fontWeight:900,fontSize:15,color:p.color}}>{p.name}</div>
-                      {sn&&<div style={{fontSize:12,color:sn.c,fontWeight:800,marginTop:1}}>{sn.l}</div>}
-                      {sc&&strokes>0&&<div style={{fontSize:9,color:'rgba(255,255,255,.2)'}}>Net {netSc} (+{strokes} stroke{strokes>1?'s':''})</div>}
-                      {vegasNum&&<div style={{fontSize:11,color:'#ffd700',fontWeight:700}}>{vegasNum}</div>}
-                    </div>
-                  </div>
-                  <div style={{display:'flex',alignItems:'center',gap:6}}>
-                    <button onPointerDown={()=>updateScore(round.id,p.id,holeIdx,(sc||hole.par)-1)} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:40,height:46,borderRadius:11,cursor:'pointer',fontSize:24,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none'}}>−</button>
-                    <input type="number" min={1} max={15} value={sc||''} placeholder={hole.par} onChange={e=>updateScore(round.id,p.id,holeIdx,e.target.value)} style={{background:'rgba(0,0,0,.7)',border:'3px solid '+(sc?p.color:'rgba(255,255,255,.1)'),color:'#ffd700',width:56,height:52,textAlign:'center',fontSize:30,fontWeight:900,borderRadius:11,outline:'none',transition:'border-color .2s'}}/>
-                    <button onPointerDown={()=>updateScore(round.id,p.id,holeIdx,(sc||hole.par)+1)} style={{background:'rgba(255,255,255,.07)',border:'none',color:'#fff',width:40,height:46,borderRadius:11,cursor:'pointer',fontSize:24,display:'flex',alignItems:'center',justifyContent:'center',userSelect:'none'}}>+</button>
-                  </div>
-                </div>
-                {mulligansAllowed>0&&(
-                  <button onClick={()=>{if(mulligans[p.id]<mulligansAllowed){setMulligans(m=>({...m,[p.id]:(m[p.id]||0)+1}));Haptic.medium();}}} disabled={mulligans[p.id]>=mulligansAllowed}
-                    style={{marginTop:7,background:'rgba(255,145,0,.08)',border:'1px solid rgba(255,145,0,.2)',color:'#ff9100',padding:'4px 10px',borderRadius:20,cursor:'pointer',fontSize:10,fontWeight:700,opacity:mulligans[p.id]>=mulligansAllowed?.3:1}}>
-                    🍀 MULLIGAN ({mulligansAllowed-(mulligans[p.id]||0)} left)
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ══ QUICK ACTIONS ══ */}
-      <div style={{display:'flex',gap:7}}>
-        {fmt!=='bingo'&&fmt!=='chairman'&&fmt!=='scramble'&&fmt!=='bloodsome'&&(
-          <button style={{flex:1,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',color:'rgba(255,255,255,.35)',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700}} onClick={()=>PLAYERS.forEach(p=>{if(!getScore(p.id,holeIdx))updateScore(round.id,p.id,holeIdx,hole.par);})}>⚡ FILL PAR</button>
-        )}
-        <button onClick={()=>setShowNote(!showNote)} style={{background:holeNotes[holeIdx]?'rgba(255,215,0,.1)':'rgba(255,255,255,.04)',border:'1px solid '+(holeNotes[holeIdx]?'rgba(255,215,0,.3)':'rgba(255,255,255,.07)'),color:holeNotes[holeIdx]?'#ffd700':'rgba(255,255,255,.3)',padding:'10px 14px',borderRadius:11,cursor:'pointer',fontSize:13}}>📝</button>
-        <button onClick={()=>setChatOpen(!chatOpen)} style={{background:chatMsgs.length>0?'rgba(64,196,255,.1)':'rgba(255,255,255,.04)',border:'1px solid '+(chatMsgs.length>0?'rgba(64,196,255,.3)':'rgba(255,255,255,.07)'),color:chatMsgs.length>0?'#40c4ff':'rgba(255,255,255,.3)',padding:'10px 14px',borderRadius:11,cursor:'pointer',fontSize:13,position:'relative'}}>
-          💬{chatMsgs.length>0&&<span style={{position:'absolute',top:-4,right:-4,background:'#ff4444',color:'#fff',borderRadius:'50%',width:16,height:16,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:700}}>{chatMsgs.length}</span>}
-        </button>
-      </div>
-
-      {/* Note input */}
-      {showNote&&(
-        <div style={{background:'rgba(255,215,0,.05)',border:'1px solid rgba(255,215,0,.18)',borderRadius:14,padding:'12px 14px'}}>
-          <div style={{fontSize:9,color:'rgba(255,215,0,.5)',letterSpacing:2,fontWeight:700,marginBottom:6}}>HOLE {hole.hole} NOTE</div>
-          <input value={noteText||holeNotes[holeIdx]||''} onChange={e=>setNoteText(e.target.value)} placeholder="e.g. Luke nearly aced this one..." style={{width:'100%',background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,215,0,.2)',color:'#fff',padding:'9px 12px',borderRadius:9,fontSize:13,marginBottom:7}}/>
-          <div style={{display:'flex',gap:7}}>
-            <button onClick={()=>{const n={...holeNotes,[holeIdx]:noteText};setHoleNotes(n);localStorage.setItem('hn_'+round.id,JSON.stringify(n));setShowNote(false);setNoteText('');}} style={{flex:1,background:'rgba(255,215,0,.1)',border:'1px solid rgba(255,215,0,.2)',color:'#ffd700',borderRadius:9,padding:'8px',cursor:'pointer',fontSize:11,fontWeight:700}}>💾 Save</button>
-            {holeNotes[holeIdx]&&<button onClick={()=>{const n={...holeNotes};delete n[holeIdx];setHoleNotes(n);localStorage.setItem('hn_'+round.id,JSON.stringify(n));setShowNote(false);}} style={{background:'rgba(255,68,68,.08)',border:'1px solid rgba(255,68,68,.18)',color:'#ff5252',borderRadius:9,padding:'8px 12px',cursor:'pointer',fontSize:12}}>🗑️</button>}
-          </div>
-        </div>
-      )}
-
-      {/* Group chat */}
-      {chatOpen&&(
-        <div style={{background:'rgba(64,196,255,.05)',border:'1px solid rgba(64,196,255,.2)',borderRadius:16,padding:'14px 15px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:17,letterSpacing:2,color:'#40c4ff',marginBottom:10}}>💬 ROUND CHAT</div>
-          <div style={{maxHeight:180,overflowY:'auto',marginBottom:10,display:'flex',flexDirection:'column',gap:6}}>
-            {chatMsgs.length===0&&<div style={{fontSize:11,color:'rgba(255,255,255,.2)',textAlign:'center',padding:10}}>No messages yet. Start the trash talk! 🎤</div>}
-            {chatMsgs.map((m,i)=>(
-              <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start'}}>
-                <div style={{width:24,height:24,borderRadius:'50%',background:m.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:'#000',fontWeight:900,flexShrink:0}}>{m.name?.[0]}</div>
-                <div style={{flex:1,background:'rgba(0,0,0,.3)',borderRadius:10,padding:'6px 10px'}}>
-                  <div style={{fontSize:9,color:m.color,fontWeight:700,marginBottom:2}}>{m.name} · Hole {m.hole}</div>
-                  <div style={{fontSize:12,color:'rgba(255,255,255,.7)'}}>{m.msg}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{display:'flex',gap:6,marginBottom:8}}>
-            {PLAYERS.map(p=><button key={p.id} onClick={()=>setChatPlayer(p.id)} style={{flex:1,background:chatPlayer===p.id?p.color+'33':'rgba(255,255,255,.04)',border:'1px solid '+(chatPlayer===p.id?p.color:'rgba(255,255,255,.08)'),color:chatPlayer===p.id?p.color:'#555',borderRadius:8,padding:'5px 4px',cursor:'pointer',fontSize:10,fontWeight:700}}>{p.name}</button>)}
-          </div>
-          <div style={{display:'flex',gap:6}}>
-            <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendChat(chatPlayer,chatInput)} placeholder="Talk trash..." style={{flex:1,background:'rgba(0,0,0,.4)',border:'1px solid rgba(64,196,255,.2)',color:'#fff',padding:'9px 12px',borderRadius:9,fontSize:13}}/>
-            <button onClick={()=>sendChat(chatPlayer,chatInput)} style={{background:'rgba(64,196,255,.15)',border:'1px solid rgba(64,196,255,.3)',color:'#40c4ff',padding:'9px 16px',borderRadius:9,cursor:'pointer',fontSize:13,fontWeight:700}}>Send</button>
-          </div>
         </div>
       )}
 
       {/* Hole progress dots */}
       <div style={{display:'flex',gap:4,justifyContent:'center',flexWrap:'wrap',padding:'4px 0'}}>
-        {holes.map((_,i)=>{
-          const done=PLAYERS.every(p=>getScore(p.id,i)>0)||(teamMode&&(teamScores||[]).some(t=>(t[i]||0)>0));
-          const hasSkin=skinsList[i]!==null;
-          return<div key={i} onClick={()=>{setHoleIdx(i);Haptic.light();}} style={{width:14,height:14,borderRadius:'50%',background:i===holeIdx?'#ffd700':done?(hasSkin&&fmt==='skins'?'#9b59b6':'#00e676'):holeNotes[i]?'rgba(255,215,0,.4)':'rgba(255,255,255,.08)',cursor:'pointer',transform:i===holeIdx?'scale(1.5)':'scale(1)',boxShadow:i===holeIdx?'0 0 8px #ffd700':'none',transition:'all .2s'}}/>;
-        })}
+        {holes.map((_,i)=>{const all=PLAYERS.every(p=>((scores[p.id]||[])[i]||0)>0);const skin=skinsList[i];return(
+          <div key={i} onClick={()=>{setHoleIdx(i);Haptic.light();}} style={{width:15,height:15,borderRadius:'50%',background:i===holeIdx?'#ffd700':all?(skin?'#9b59b6':'#00e676'):'rgba(255,255,255,.08)',cursor:'pointer',transform:i===holeIdx?'scale(1.5)':'scale(1)',boxShadow:i===holeIdx?'0 0 8px #ffd700':skin&&all?'0 0 5px #9b59b6':'none',transition:'all .2s'}}/>
+        );})}
       </div>
 
-      <button onClick={()=>setShowAll(!showAll)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.06)',color:'rgba(255,255,255,.22)',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700,letterSpacing:1}}>
+      <button onClick={()=>setShowAll(!showAll)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.06)',color:'rgba(255,255,255,.25)',padding:'10px',borderRadius:11,cursor:'pointer',fontSize:11,fontWeight:700,letterSpacing:1}}>
         {showAll?'▲ HIDE SCORECARD':'▼ FULL SCORECARD'}
       </button>
       {showAll&&<FullScorecard scores={scores} holes={holes}/>}
@@ -1640,7 +1098,9 @@ function ScorecardView({round,scores,teamScores,extras,updateScore,updateTeamSco
   );
 }
 
-
+// ══════════════════════════════════════════════
+// FULL SCORECARD
+// ══════════════════════════════════════════════
 function FullScorecard({scores,holes}){
   return(
     <div style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,255,255,.05)',borderRadius:16,padding:12,overflowX:'auto'}}>
@@ -1921,178 +1381,149 @@ function HistoryView({rounds,scores,deleteRound,setActiveRoundId,setView}){
 // ══════════════════════════════════════════════
 // LEADERBOARD VIEW
 // ══════════════════════════════════════════════
-function LeaderboardView({round,scores,teamScores,playerSettings,cfg,pName,pColor,setView}){
-  const fmt=round.format;
-  const fmtObj=FORMATS.find(f=>f.id===fmt);
+function LeaderboardView({round,scores,playerSettings,setView}){
+  const fmt=FORMATS.find(f=>f.id===round.format);
   const course=COURSES[round.course_id]||COURSES.snee;
   const holes=course.holes;
-  const teamCfg=TEAM_CONFIGS.find(t=>t.id===round.team_config);
-  const isTeam=['scramble','bestball','nassau','match','bloodsome','vegas','shamble'].includes(fmt)&&round.team_config!=='solo';
-  const teamNames=round.team_names||['Team 1','Team 2'];
-  const betAmt=round.bet_amount||5;
-  const[shareOpen,setShareOpen]=useState(false);
-  const gS=(pid,hi)=>(scores[pid]||[])[hi]||0;
-  const gT=(ti,hi)=>(teamScores||[])[ti]?.[hi]||0;
+  const[showShare,setShowShare]=useState(false);
 
-  const results=useMemo(()=>{
-    if(isTeam&&teamCfg){
-      if(fmt==='match'){
-        return teamCfg.teams.map((team,ti)=>{
-          let w=0,l=0,h=0;
-          holes.forEach((_,i)=>{const a=gT(ti,i),b=gT(ti===0?1:0,i);if(a>0&&b>0){if(a<b)w++;else if(b<a)l++;else h++;}});
-          return{id:'t'+ti,name:teamNames[ti],color:pColor(team[0]),emoji:(ti+1)+'',val:w,disp:w+'W '+l+'L '+h+'H',sub:'match play',hi:true};
-        }).sort((a,b)=>b.val-a.val);
-      }
-      if(fmt==='nassau'){
-        return teamCfg.teams.map((team,ti)=>{
-          const ts=teamScores||[];
-          const f=ts[ti]?.slice(0,9).reduce((a,x)=>a+(x||0),0)||0;
-          const b=ts[ti]?.slice(9).reduce((a,x)=>a+(x||0),0)||0;
-          const of=ts[ti===0?1:0]?.slice(0,9).reduce((a,x)=>a+(x||0),0)||0;
-          const ob=ts[ti===0?1:0]?.slice(9).reduce((a,x)=>a+(x||0),0)||0;
-          const bw=[f<of&&f>0,b<ob&&b>0,(f+b)<(of+ob)&&f+b>0].filter(Boolean).length;
-          return{id:'t'+ti,name:teamNames[ti],color:pColor(team[0]),emoji:(ti+1)+'',val:bw,disp:'$'+(bw*betAmt),sub:bw+' bets won',hi:true};
-        }).sort((a,b)=>b.val-a.val);
-      }
-      if(fmt==='vegas'){
-        const gv=(team,i)=>{const ss=team.map(id=>gS(id,i)).filter(x=>x>0).sort((a,b)=>a-b);return ss.length>=2?parseInt(''+ss[0]+ss[1]):0;};
-        let p0=0,p1=0;
-        holes.forEach((_,i)=>{const v0=gv(teamCfg.teams[0],i),v1=gv(teamCfg.teams[1],i);if(v0>0&&v1>0){if(v0<v1)p0+=v1-v0;else if(v1<v0)p1+=v0-v1;}});
-        return teamCfg.teams.map((team,ti)=>({id:'t'+ti,name:teamNames[ti],color:pColor(team[0]),emoji:(ti+1)+'',val:ti===0?p0:p1,disp:'$'+(ti===0?p0:p1),sub:'vegas pts',hi:true})).sort((a,b)=>b.val-a.val);
-      }
-      return teamCfg.teams.map((team,ti)=>{
-        let tot=0,tp=0;
-        if(fmt==='bestball'||fmt==='shamble'){
-          holes.forEach((h,i)=>{const best=Math.min(...team.map(id=>gS(id,i)).filter(x=>x>0));if(best>0&&best<99){tot+=best;tp+=best-h.par;}});
-        } else {
-          const tS=(teamScores||[])[ti]||[];
-          tot=tS.reduce((a,x)=>a+(x||0),0);
-          tp=tS.reduce((a,x,i)=>x>0&&holes[i]?a+(x-holes[i].par):a,0);
-        }
-        return{id:'t'+ti,name:teamNames[ti],color:pColor(team[0]),emoji:(ti+1)+'',val:tot||999,disp:tot>0?tot+'':'---',sub:tot>0?tpStr(tp)+' to par':'',hi:false};
-      }).sort((a,b)=>a.val-b.val);
-    }
-    if(fmt==='stableford')
-      return PLAYERS.map(p=>({...p,name:pName(p.id),color:pColor(p.id),val:holes.reduce((a,h,i)=>{const s=gS(p.id,i);return s>0?a+sfPts(s,h.par):a;},0),hi:true})).map(p=>({...p,disp:p.val+'pts',sub:'stableford'})).sort((a,b)=>b.val-a.val);
-    if(fmt==='skins'){
-      const sl=holes.map((_,i)=>{const all=PLAYERS.map(p=>({id:p.id,s:gS(p.id,i)})).filter(x=>x.s>0);if(all.length<4)return null;const mn=Math.min(...all.map(x=>x.s));const w=all.filter(x=>x.s===mn);return w.length===1?w[0].id:null;});
-      return PLAYERS.map(p=>{const sk=sl.filter(x=>x===p.id).length;return{...p,name:pName(p.id),color:pColor(p.id),val:sk,disp:sk+' skins',sub:'$'+(sk*betAmt),hi:true};}).sort((a,b)=>b.val-a.val);
-    }
-    return PLAYERS.map(p=>{
-      const tot=holes.reduce((a,h,i)=>{const s=gS(p.id,i);return s>0?a+s:a;},0);
-      const tp=holes.reduce((a,h,i)=>{const s=gS(p.id,i);return s>0?a+(s-h.par):a;},0);
-      return{...p,name:pName(p.id),color:pColor(p.id),val:tot||999,disp:tot>0?tot+'':'---',sub:tot>0?tpStr(tp)+' to par':'',hi:false};
-    }).sort((a,b)=>a.val-b.val);
-  },[]);
+  const getTotal=pid=>(scores[pid]||[]).reduce((a,b)=>a+(b||0),0);
+  const getTP=pid=>{let tp=0;(scores[pid]||[]).forEach((s,i)=>{if(s>0&&holes[i])tp+=s-holes[i].par;});return tp;};
+  const getSF=pid=>(scores[pid]||[]).reduce((a,s,i)=>a+(s>0&&holes[i]?sfPts(s,holes[i].par):0),0);
+  const getSkins=pid=>{let sk=0;holes.forEach((_,i)=>{const all=PLAYERS.map(p=>(scores[p.id]||[])[i]).filter(x=>x>0);if(all.length===4){const min=Math.min(...all);const w=PLAYERS.filter(p=>((scores[p.id]||[])[i])===min);if(w.length===1&&w[0].id===pid)sk++;}});return sk;};
 
-  const winner=results[0];
-  const medals=['1st','2nd','3rd','4th'];
+  const ranked=[...PLAYERS].map(p=>{
+    if(round.format==='stableford')return{...p,val:getSF(p.id),disp:getSF(p.id)+' pts',higher:true};
+    if(round.format==='skins')return{...p,val:getSkins(p.id),disp:getSkins(p.id)+' skins',higher:true};
+    return{...p,val:getTotal(p.id),tp:getTP(p.id),disp:getTotal(p.id)+'',higher:false};
+  }).sort((a,b)=>a.higher?b.val-a.val:a.val-b.val);
 
-  const awards=useMemo(()=>{
-    if(isTeam)return[];
-    const out=[];
-    const mb=PLAYERS.map(p=>({...p,n:holes.filter((h,i)=>gS(p.id,i)===h.par-1).length})).sort((a,b)=>b.n-a.n)[0];
-    if(mb?.n>0)out.push({icon:'BIRDIE',l:'Most Birdies',name:pName(mb.id),color:pColor(mb.id),d:mb.n+' birdies'});
-    const me=PLAYERS.map(p=>({...p,n:holes.filter((h,i)=>{const s=gS(p.id,i);return s>0&&s<=h.par-2;}).length})).sort((a,b)=>b.n-a.n)[0];
-    if(me?.n>0)out.push({icon:'EAGLE',l:'Eagle Club',name:pName(me.id),color:pColor(me.id),d:me.n+' eagle'+(me.n>1?'s':'')});
-    return out;
-  },[]);
+  const winner=ranked[0];
+  const betAmt=round.bet_amount||0;
 
-  useEffect(()=>{
-    if(fmt!=='stroke'||!betAmt||!winner)return;
-    const m=getMoney();
-    results.forEach((r,i)=>{
-      const pid=r.id;if(!PLAYERS.find(p=>p.id===pid))return;
-      if(i===0)m[pid]=(m[pid]||0)+(results.length-1)*betAmt;
-      else m[pid]=(m[pid]||0)-betAmt;
-    });
-    saveMoney(m);
-  },[]);
+  // MVP awards
+  const awards=[];
+  const mostBirdies=PLAYERS.map(p=>({...p,b:(scores[p.id]||[]).reduce((a,s,i)=>a+(s>0&&holes[i]&&s-holes[i].par===-1?1:0),0)})).sort((a,b)=>b.b-a.b)[0];
+  if(mostBirdies?.b>0)awards.push({icon:'🐦',label:'Most Birdies',player:mostBirdies,detail:`${mostBirdies.b} birdies`});
 
-  const shareText=fmtObj?.label+' - '+round.date+'\n'+course.name+'\n\n'+results.map((r,i)=>(i+1)+'. '+r.name+': '+r.disp).join('\n')+'\n\nWinner: '+winner?.name;
+  const fewestPutts=PLAYERS.map(p=>({...p,tot:getTotal(p.id)})).filter(p=>p.tot>0).sort((a,b)=>a.tot-b.tot)[0];
+  if(fewestPutts)awards.push({icon:'🎯',label:'Lowest Score',player:fewestPutts,detail:`${fewestPutts.tot} strokes`});
+
+  const mostConsistent=PLAYERS.map(p=>{const s=scores[p.id]||[];const played=s.filter(x=>x>0);if(played.length<9)return{...p,std:99};const avg=played.reduce((a,b)=>a+b,0)/played.length;const std=Math.sqrt(played.reduce((a,b)=>a+(b-avg)**2,0)/played.length);return{...p,std};}).sort((a,b)=>a.std-b.std)[0];
+  if(mostConsistent?.std<99)awards.push({icon:'📐',label:'Most Consistent',player:mostConsistent,detail:'Steadiest round'});
+
+  // Share text
+  const shareText=`⛳ Thursday Crew Golf\n${round.date} · ${course.name}\n\n${ranked.map((p,i)=>['🥇','🥈','🥉','4️⃣'][i]+' '+p.name+': '+p.disp).join('\n')}\n\nwinner: ${winner.name} 🏆`;
+
+  const medals=['🥇','🥈','🥉','💀'];
 
   return(
-    <div style={{display:'flex',flexDirection:'column',gap:13,animation:'fadeUp .4s'}}>
-      <div style={{background:'linear-gradient(160deg,rgba(255,215,0,.1),rgba(255,215,0,.02))',border:'1px solid rgba(255,215,0,.2)',borderRadius:22,padding:'22px 18px',textAlign:'center'}}>
-        <div style={{fontSize:9,color:'rgba(255,215,0,.4)',letterSpacing:4,fontWeight:800,marginBottom:6}}>ROUND COMPLETE</div>
-        <div style={{fontFamily:'Bebas Neue',fontSize:38,color:'#ffd700',lineHeight:1,marginBottom:3}}>{fmtObj?.icon} {fmtObj?.label}</div>
-        <div style={{fontSize:11,color:'rgba(255,255,255,.2)'}}>{round.date} - {course.name}</div>
-        {winner&&(
-          <div style={{marginTop:14,display:'inline-flex',gap:10,background:'rgba(0,0,0,.4)',borderRadius:20,padding:'10px 20px',alignItems:'center'}}>
-            <div style={{width:36,height:36,borderRadius:'50%',background:winner.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,color:'#000',fontWeight:900}}>{winner.emoji}</div>
-            <div style={{textAlign:'left'}}>
-              <div style={{fontFamily:'Bebas Neue',fontSize:20,color:winner.color,letterSpacing:1}}>{winner.name} WINS</div>
-              <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{winner.disp}</div>
-            </div>
+    <div style={{display:'flex',flexDirection:'column',gap:14,animation:'fadeUp .4s ease'}}>
+      {/* Trophy header */}
+      <div style={{background:'linear-gradient(160deg,rgba(255,215,0,.08),rgba(255,215,0,.02))',border:'1px solid rgba(255,215,0,.2)',borderRadius:22,padding:'22px 18px',textAlign:'center',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:-20,left:-20,fontSize:120,opacity:.04}}>🏆</div>
+        <div style={{position:'absolute',top:-20,right:-20,fontSize:120,opacity:.04}}>🏆</div>
+        <div style={{fontSize:10,color:'rgba(255,215,0,.4)',letterSpacing:4,fontWeight:800,marginBottom:8}}>ROUND COMPLETE</div>
+        <div style={{fontFamily:'Bebas Neue',fontSize:40,color:'#ffd700',lineHeight:1,marginBottom:4}}>{fmt?.icon} {fmt?.label}</div>
+        <div style={{fontSize:12,color:'rgba(255,255,255,.25)'}}>{round.date} · {course.name} · {round.tees?.toUpperCase()}</div>
+        <div style={{marginTop:14,display:'inline-flex',gap:8,background:'rgba(0,0,0,.4)',borderRadius:20,padding:'10px 20px',alignItems:'center'}}>
+          <div style={{width:36,height:36,borderRadius:'50%',background:winner.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,color:'#000',fontWeight:900}}>{winner.emoji}</div>
+          <div style={{textAlign:'left'}}>
+            <div style={{fontFamily:'Bebas Neue',fontSize:18,color:winner.color,letterSpacing:1}}>{winner.name} WINS</div>
+            <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{winner.disp}</div>
           </div>
-        )}
+        </div>
       </div>
-      {results.map((r,i)=>(
-        <div key={r.id} style={{background:i===0?'rgba(255,255,255,.04)':'rgba(255,255,255,.02)',border:(i===0?2:1)+'px solid '+(i===0?r.color+'55':'rgba(255,255,255,.05)'),borderRadius:18,padding:'16px 18px',display:'flex',alignItems:'center',gap:14}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:16,color:'rgba(255,255,255,.3)',width:32,flexShrink:0}}>{medals[i]}</div>
-          <div style={{width:44,height:44,borderRadius:'50%',background:r.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#000',flexShrink:0}}>{r.emoji}</div>
-          <div style={{flex:1}}>
-            <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:1,color:i===0?r.color:'#fff'}}>{r.name}</div>
-            {r.sub&&<div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{r.sub}</div>}
+
+      {/* Podium */}
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {ranked.map((p,i)=>(
+          <div key={p.id} style={{background:i===0?`linear-gradient(135deg,${p.color}18,${p.color}05)`:'rgba(255,255,255,.02)',border:`${i===0?2:1}px solid ${i===0?p.color+'55':'rgba(255,255,255,.05)'}`,borderRadius:18,padding:'16px 18px',display:'flex',alignItems:'center',gap:14,transform:i===0?'scale(1.02)':'scale(1)',transition:'transform .3s'}}>
+            <span style={{fontSize:26,width:32,flexShrink:0}}>{medals[i]}</span>
+            <div style={{width:44,height:44,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#000',flexShrink:0}}>{p.emoji}</div>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:1,color:i===0?p.color:'#fff'}}>{p.name}</div>
+              {p.tp!==undefined&&<div style={{fontSize:11,color:'rgba(255,255,255,.25)'}}>{tpStr(p.tp)}</div>}
+            </div>
+            <div style={{fontFamily:'Bebas Neue',fontSize:34,color:i===0?p.color:'rgba(255,255,255,.5)',lineHeight:1}}>{p.disp}</div>
           </div>
-          <div style={{fontFamily:'Bebas Neue',fontSize:32,color:i===0?r.color:'rgba(255,255,255,.4)',lineHeight:1}}>{r.disp}</div>
-        </div>
-      ))}
-      {betAmt>0&&fmt==='stroke'&&results.length>1&&(
-        <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.1)',borderRadius:18,padding:'15px 16px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#00e676',marginBottom:10}}>SETTLE UP</div>
-          {results.slice(1).map((r,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'11px 14px'}}>
-              <div style={{width:28,height:28,borderRadius:'50%',background:r.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,color:'#000',fontWeight:900}}>{r.emoji}</div>
-              <div style={{flex:1,fontSize:13}}><span style={{color:r.color,fontWeight:800}}>{r.name}</span> pays <span style={{color:winner.color,fontWeight:800}}>{winner.name}</span></div>
-              <div style={{fontFamily:'Bebas Neue',fontSize:22,color:'#00e676'}}>${betAmt}</div>
+        ))}
+      </div>
+
+      {/* Score bars */}
+      <div style={{background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.05)',borderRadius:18,padding:'16px'}}>
+        <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:3,fontWeight:800,marginBottom:12}}>TOTAL STROKES</div>
+        {[...PLAYERS].map(p=>{const total=getTotal(p.id);const max=Math.max(...PLAYERS.map(pp=>getTotal(pp.id)));return(
+          <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+            <div style={{width:30,height:30,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#000',flexShrink:0}}>{p.emoji}</div>
+            <span style={{color:p.color,fontWeight:800,width:52,fontSize:13}}>{p.name}</span>
+            <div style={{flex:1,height:10,background:'rgba(255,255,255,.05)',borderRadius:5,overflow:'hidden'}}>
+              <div style={{height:'100%',background:`linear-gradient(90deg,${p.color}88,${p.color})`,borderRadius:5,width:`${(total/max)*100}%`,transition:'width 1s ease'}}/>
+            </div>
+            <span style={{fontWeight:900,fontSize:17,color:p.color,minWidth:32,textAlign:'right'}}>{total||'—'}</span>
+          </div>
+        );})}
+      </div>
+
+      {/* Settle up */}
+      {betAmt>0&&(
+        <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.12)',borderRadius:18,padding:'16px'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:12}}>💰 SETTLE UP · ${betAmt}/HOLE</div>
+          {ranked.slice(1).map(p=>(
+            <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'12px 14px'}}>
+              <div style={{width:30,height:30,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,color:'#000',fontWeight:900}}>{p.emoji}</div>
+              <div style={{flex:1,fontSize:13}}>
+                <span style={{color:p.color,fontWeight:800}}>{p.name}</span>
+                <span style={{color:'rgba(255,255,255,.3)'}}> pays </span>
+                <span style={{color:winner.color,fontWeight:800}}>{winner.name}</span>
+              </div>
+              <div style={{fontFamily:'Bebas Neue',fontSize:24,color:'#00e676'}}>${betAmt}</div>
             </div>
           ))}
         </div>
       )}
+
+      {/* MVP Awards */}
       {awards.length>0&&(
-        <div style={{background:'rgba(255,215,0,.03)',border:'1px solid rgba(255,215,0,.1)',borderRadius:18,padding:'15px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#ffd700',marginBottom:10}}>AWARDS</div>
+        <div style={{background:'rgba(255,215,0,.03)',border:'1px solid rgba(255,215,0,.1)',borderRadius:18,padding:'16px'}}>
+          <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#ffd700',marginBottom:12}}>🏅 ROUND AWARDS</div>
           {awards.map((a,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'10px 14px'}}>
-              <div style={{flex:1}}><div style={{fontSize:9,color:'rgba(255,215,0,.4)',letterSpacing:2,fontWeight:700}}>{a.l.toUpperCase()}</div><div style={{fontSize:15,fontWeight:800,color:a.color}}>{a.name}</div></div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,.25)',fontWeight:700}}>{a.d}</div>
+            <div key={i} style={{display:'flex',alignItems:'center',gap:12,marginBottom:10,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'10px 14px'}}>
+              <span style={{fontSize:26}}>{a.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:10,color:'rgba(255,215,0,.5)',letterSpacing:2,fontWeight:700}}>{a.label.toUpperCase()}</div>
+                <div style={{fontSize:15,fontWeight:800,color:a.player.color}}>{a.player.name}</div>
+              </div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,.3)',fontWeight:700}}>{a.detail}</div>
             </div>
           ))}
         </div>
       )}
-      <button onClick={()=>navigator.share?navigator.share({title:'Thursday Crew Golf',text:shareText}):setShareOpen(!shareOpen)} style={{background:'rgba(64,196,255,.07)',border:'1px solid rgba(64,196,255,.2)',color:'#40c4ff',borderRadius:14,padding:'13px',fontSize:13,fontWeight:800,cursor:'pointer'}}>Share Results</button>
-      {shareOpen&&(
-        <div style={{background:'rgba(0,0,0,.8)',borderRadius:14,padding:14}}>
-          <textarea readOnly value={shareText} style={{width:'100%',background:'transparent',border:'none',color:'#f0f0f0',fontSize:12,lineHeight:1.8,resize:'none',outline:'none'}} rows={6}/>
-          <button onClick={()=>{if(navigator.clipboard)navigator.clipboard.writeText(shareText);setShareOpen(false);}} style={{background:'#40c4ff',color:'#000',border:'none',borderRadius:10,padding:'10px',fontSize:12,fontWeight:800,cursor:'pointer',width:'100%'}}>Copy</button>
+
+      {/* Share card */}
+      <button onClick={()=>{navigator.share?navigator.share({title:'Thursday Crew Golf',text:shareText}):setShowShare(true);}} style={{background:'rgba(64,196,255,.08)',border:'1px solid rgba(64,196,255,.2)',color:'#40c4ff',borderRadius:14,padding:'14px',fontSize:14,fontWeight:800,cursor:'pointer',letterSpacing:1}}>
+        📤 SHARE RESULTS
+      </button>
+      {showShare&&(
+        <div style={{background:'rgba(0,0,0,.8)',border:'1px solid rgba(64,196,255,.3)',borderRadius:14,padding:16}}>
+          <div style={{fontSize:10,color:'rgba(64,196,255,.5)',letterSpacing:2,marginBottom:8,fontWeight:700}}>COPY & SHARE</div>
+          <textarea readOnly value={shareText} style={{width:'100%',background:'transparent',border:'none',color:'#f0f0f0',fontSize:13,lineHeight:1.8,resize:'none',outline:'none',fontFamily:'monospace'}} rows={8}/>
+          <button onClick={()=>{navigator.clipboard.writeText(shareText);setShowShare(false);}} style={{background:'#40c4ff',color:'#000',border:'none',borderRadius:10,padding:'10px 20px',fontSize:13,fontWeight:800,cursor:'pointer',marginTop:8,width:'100%'}}>📋 COPY TO CLIPBOARD</button>
         </div>
       )}
-      <div style={{fontFamily:'Bebas Neue',fontSize:17,letterSpacing:2,color:'#00e676'}}>FULL SCORECARD</div>
+
+      {/* Full scorecard */}
+      <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#00e676'}}>FULL SCORECARD</div>
       <FullScorecard scores={scores} holes={holes}/>
-      <button onClick={()=>setView('setup')} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:16,padding:'18px 24px',fontSize:22,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue'}}>Play Again</button>
+
+      <button onClick={()=>setView('setup')} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:16,padding:'18px 24px',fontSize:22,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue',boxShadow:'0 8px 40px rgba(0,230,118,.25)'}}>
+        ⛳ PLAY AGAIN
+      </button>
     </div>
   );
 }
 
-
-class ErrorBoundary extends React.Component {
-  constructor(props){super(props);this.state={error:null};}
-  static getDerivedStateFromError(error){return{error:error.toString()};}
-  render(){
-    if(this.state.error){
-      return(
-        <div style={{padding:20,color:'#ff5252',fontFamily:'monospace',fontSize:12,background:'#1a0000',minHeight:'100vh',wordBreak:'break-all'}}>
-          <div style={{fontSize:20,marginBottom:16,color:'#ff7777'}}>APP CRASHED</div>
-          <div>{this.state.error}</div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(<ErrorBoundary><App/></ErrorBoundary>);
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
