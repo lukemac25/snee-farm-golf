@@ -27,8 +27,6 @@ input,select,button,textarea{font-family:'Inter',sans-serif}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,230,118,.3)}50%{box-shadow:0 0 50px rgba(0,230,118,.6)}}
 @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-@keyframes slideLeft{from{transform:translateX(-100%);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes celebrate{0%{transform:scale(1)}25%{transform:scale(1.3) rotate(-5deg)}50%{transform:scale(1.1) rotate(3deg)}75%{transform:scale(1.2) rotate(-2deg)}100%{transform:scale(1)}}
 @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes popIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
@@ -47,6 +45,22 @@ const{useState,useEffect,useRef,useCallback,useMemo}=React;
 const SUPABASE_URL='https://wukjeyluqkzbseuynovp.supabase.co';
 const SUPABASE_KEY='sb_publishable_3MDvGnJy46bP553PjZhZUQ_Bp8Bys-3';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const TEAM_FMTS=['scramble','bestball','nassau','match','bloodsome','vegas','shamble'];
+const isTeamFmt=id=>TEAM_FMTS.includes(id);
+const isThursday=()=>new Date().getDay()===4;
+const daysUntilThurs=()=>{const d=new Date().getDay();return d===4?0:(4-d+7)%7;};
+const SETTINGS_KEY='tcg_settings_v2';
+const getSettings=()=>{try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}catch{return{}}};
+const saveSettings=s=>localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));
+const DEFAULT_SETTINGS={theme:'dark',accentColor:'#00e676',soundOn:true,hapticOn:true,keepAwake:true,defaultBet:5,defaultCourse:'snee',defaultTees:'white',defaultMulligans:0,playerNames:{ben:'Ben',thomas:'Thomas',max:'Max',luke:'Luke'},playerColors:{ben:'#00e676',thomas:'#ff9100',max:'#40c4ff',luke:'#e74c3c'}};
+const MONEY_KEY='tcg_money_v1';
+const getMoney=()=>{try{return JSON.parse(localStorage.getItem(MONEY_KEY)||'{"ben":0,"thomas":0,"max":0,"luke":0}')}catch{return{ben:0,thomas:0,max:0,luke:0}}};
+const saveMoney=m=>localStorage.setItem(MONEY_KEY,JSON.stringify(m));
+let wakeLock=null;
+const requestWakeLock=async()=>{try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');}}catch(e){}};
+const releaseWakeLock=()=>{try{if(wakeLock)wakeLock.release();wakeLock=null;}catch(e){}};
+const TRASH_LINES=[(p,s)=>p+' shot '+s+'? My grandma plays better.',(p,s)=>p+' with a '+s+'. Bold. Terrible.',(p,s)=>s+' for '+p+'. The course wants its dignity back.',(p,s)=>p+' carded a '+s+'. Tiger is shaking his head.'];
+const FMT_TIPS={stroke:'Lowest total strokes wins.',scramble:'All tee off, pick BEST shot. One team score per hole.',bestball:'Everyone plays own ball. BEST score on team counts.',stableford:'Eagle=4, Birdie=3, Par=2, Bogey=1, Double+=0. Most points wins.',nassau:'Three bets: Front 9, Back 9, Total 18.',skins:'Lowest score wins hole outright. Ties carry over.',match:'Win HOLES not strokes.',wolf:'Rotating Wolf picks partner or goes SOLO for 2x points.',bingo:'First on green, closest to pin, first in. 1pt each.',chairman:'Low score hole 1 is Chairman. Beat them to take throne.',bloodsome:'MUST use worst drive. Alternate shots.',vegas:'Combine scores into 2-digit number. Lower wins.',quota:'Quota=36 minus HCP. Beat it with Stableford points.',shamble:'Best drive, then own ball in.'};
 
 // ══════════════════════════════════════════════
 // SOUND ENGINE
@@ -226,49 +240,24 @@ function WeatherWidget({lat,lon,courseName}){
 // MAIN APP
 // ══════════════════════════════════════════════
 
-const TEAM_FMTS=['scramble','bestball','nassau','match','bloodsome','vegas','shamble'];
-const isTeamFmt=id=>TEAM_FMTS.includes(id);
-const isThursday=()=>new Date().getDay()===4;
-const daysUntilThurs=()=>{const d=new Date().getDay();return d===4?0:(4-d+7)%7;};
-const SETTINGS_KEY='tcg_settings_v2';
-const getSettings=()=>{try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}catch{return{}}};
-const saveSettings=s=>localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));
-const DEFAULT_SETTINGS={theme:'dark',accentColor:'#00e676',soundOn:true,hapticOn:true,keepAwake:true,defaultBet:5,defaultCourse:'snee',defaultTees:'white',defaultMulligans:0,playerNames:{ben:'Ben',thomas:'Thomas',max:'Max',luke:'Luke'},playerColors:{ben:'#00e676',thomas:'#ff9100',max:'#40c4ff',luke:'#e74c3c'}};
-const MONEY_KEY='tcg_money_v1';
-const getMoney=()=>{try{return JSON.parse(localStorage.getItem(MONEY_KEY)||'{"ben":0,"thomas":0,"max":0,"luke":0}')}catch{return{ben:0,thomas:0,max:0,luke:0}}};
-const saveMoney=m=>localStorage.setItem(MONEY_KEY,JSON.stringify(m));
-let wakeLock=null;
-const requestWakeLock=async()=>{try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');}}catch(e){}};
-const releaseWakeLock=()=>{try{wakeLock?.release();wakeLock=null;}catch(e){}};
-const TRASH_LINES=[(p,s)=>p+' shot '+s+'? My grandma plays better.',(p,s)=>p+' with a '+s+'. Bold. Terrible, but bold.',(p,s)=>s+' for '+p+'. The course wants its dignity back.',(p,s)=>p+' carded a '+s+'. Tiger is shaking his head.',(p,s)=>p+' put up a '+s+". That's a zip code, not a score."];
-const FMT_TIPS={stroke:'Lowest total strokes wins. Every stroke counts.',scramble:'All tee off — pick the BEST shot, play from there. One team score per hole.',bestball:'Everyone plays their own ball. Your BEST score on the team counts each hole.',stableford:'Eagle=4pts, Birdie=3, Par=2, Bogey=1, Double+=0. Most points wins.',nassau:'THREE bets — Front 9, Back 9, Total 18. Each worth the bet amount.',skins:'Lowest score wins the hole outright. Ties CARRY to next hole.',match:'Win HOLES not strokes. Most holes won wins the match.',wolf:'Rotating Wolf picks a partner after seeing all drives — or goes SOLO for 2x.',bingo:'3 pts per hole: First on green · Closest to pin · First to hole out.',chairman:'Low score on hole 1 is Chairman. Beat them to take the throne.',bloodsome:'Like scramble but MUST use the WORST drive. Alternate shots.',vegas:'Partners combine scores into a 2-digit number. Lower number wins.',quota:'Quota = 36 minus handicap. Earn Stableford points to beat it.',shamble:'All tee off, pick BEST drive, then each plays own ball in.'};
-// ══════════════════════════════════════════════
-// FORMAT VOTE
-// ══════════════════════════════════════════════
 function FormatVote({onClose}){
   const[votes,setVotes]=useState({ben:null,thomas:null,max:null,luke:null});
-  const[phase,setPhase]=useState('voting');// voting | result
-  const castVote=(pid,fmtId)=>{setVotes(v=>({...v,[pid]:fmtId}));Haptic.light();};
+  const[phase,setPhase]=useState('voting');
   const allVoted=Object.values(votes).every(v=>v!==null);
-  const tally=()=>{
-    const counts={};
-    Object.values(votes).forEach(v=>{if(v)counts[v]=(counts[v]||0)+1;});
-    return Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  };
-  const winner=phase==='result'?tally()[0]:null;
+  const tally=()=>{const c={};Object.values(votes).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]);};
   return(
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.92)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={onClose}>
       <div style={{background:'#0d1a0d',border:'1px solid rgba(155,89,182,.4)',borderRadius:22,padding:'24px 20px',width:'100%',maxWidth:400,animation:'popIn .3s'}} onClick={e=>e.stopPropagation()}>
-        <div style={{fontFamily:'Bebas Neue',fontSize:24,letterSpacing:3,color:'#9b59b6',textAlign:'center',marginBottom:4}}>🗳️ FORMAT VOTE</div>
-        <div style={{fontSize:11,color:'rgba(255,255,255,.3)',textAlign:'center',marginBottom:16}}>Each player picks their preferred format for today</div>
+        <div style={{fontFamily:'Bebas Neue',fontSize:24,letterSpacing:3,color:'#9b59b6',textAlign:'center',marginBottom:4}}>FORMAT VOTE</div>
+        <div style={{fontSize:11,color:'rgba(255,255,255,.3)',textAlign:'center',marginBottom:16}}>Each player picks their format for today</div>
         {phase==='voting'?(
           <div>
             {PLAYERS.map(p=>(
-              <div key={p.id} style={{marginBottom:14}}>
-                <div style={{fontSize:11,color:p.color,fontWeight:800,letterSpacing:1,marginBottom:7}}>{p.name.toUpperCase()}</div>
+              <div key={p.id} style={{marginBottom:12}}>
+                <div style={{fontSize:11,color:p.color,fontWeight:800,letterSpacing:1,marginBottom:6}}>{p.name.toUpperCase()}</div>
                 <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
                   {FORMATS.map(f=>(
-                    <button key={f.id} onClick={()=>castVote(p.id,f.id)} style={{background:votes[p.id]===f.id?p.color+'33':'rgba(255,255,255,.04)',border:'1px solid '+(votes[p.id]===f.id?p.color:'rgba(255,255,255,.08)'),color:votes[p.id]===f.id?p.color:'#555',borderRadius:8,padding:'5px 8px',cursor:'pointer',fontSize:11,fontWeight:700}}>
+                    <button key={f.id} onClick={()=>setVotes(v=>({...v,[p.id]:f.id}))} style={{background:votes[p.id]===f.id?p.color+'33':'rgba(255,255,255,.04)',border:'1px solid '+(votes[p.id]===f.id?p.color:'rgba(255,255,255,.08)'),color:votes[p.id]===f.id?p.color:'#555',borderRadius:8,padding:'5px 8px',cursor:'pointer',fontSize:10,fontWeight:700}}>
                       {f.icon} {f.label}
                     </button>
                   ))}
@@ -276,22 +265,13 @@ function FormatVote({onClose}){
               </div>
             ))}
             <button onClick={()=>setPhase('result')} disabled={!allVoted} style={{width:'100%',background:allVoted?'linear-gradient(135deg,#9b59b6,#8e44ad)':'rgba(255,255,255,.06)',border:'none',color:allVoted?'#fff':'#444',borderRadius:12,padding:'14px',fontSize:16,fontWeight:900,cursor:allVoted?'pointer':'default',fontFamily:'Bebas Neue',letterSpacing:2,marginTop:8}}>
-              {allVoted?'🗳️ SEE RESULTS':'WAITING FOR ALL VOTES...'}
+              {allVoted?'See Results':'Waiting for all votes...'}
             </button>
           </div>
         ):(
           <div>
-            {tally().map(([fmtId,count],i)=>{
-              const fmt=FORMATS.find(f=>f.id===fmtId);
-              return<div key={fmtId} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:i===0?'rgba(155,89,182,.15)':'rgba(255,255,255,.04)',borderRadius:12,padding:'12px 14px',border:i===0?'1px solid rgba(155,89,182,.4)':'1px solid rgba(255,255,255,.06)'}}>
-                <span style={{fontSize:22}}>{fmt?.icon}</span>
-                <div style={{flex:1}}><div style={{fontWeight:800,color:i===0?'#9b59b6':'#fff'}}>{fmt?.label}</div><div style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{count} vote{count>1?'s':''}</div></div>
-                {i===0&&<span style={{fontSize:20}}>🏆</span>}
-              </div>;
-            })}
-            <button onClick={onClose} style={{width:'100%',background:'linear-gradient(135deg,#00c853,#00e676)',border:'none',color:'#000',borderRadius:12,padding:'14px',fontSize:16,fontWeight:900,cursor:'pointer',fontFamily:'Bebas Neue',letterSpacing:2,marginTop:8}}>
-              ⛳ START WITH {FORMATS.find(f=>f.id===winner?.[0])?.label?.toUpperCase()||'THIS FORMAT'}
-            </button>
+            {tally().map(([fid,count],i)=>{const f=FORMATS.find(x=>x.id===fid);return<div key={fid} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:i===0?'rgba(155,89,182,.15)':'rgba(255,255,255,.04)',borderRadius:12,padding:'12px 14px',border:i===0?'1px solid rgba(155,89,182,.4)':'1px solid rgba(255,255,255,.06)'}}><span style={{fontSize:22}}>{f?.icon}</span><div style={{flex:1}}><div style={{fontWeight:800,color:i===0?'#9b59b6':'#fff'}}>{f?.label}</div><div style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{count} vote{count>1?'s':''}</div></div>{i===0&&<span style={{fontSize:20}}>win</span>}</div>;})}
+            <button onClick={onClose} style={{width:'100%',background:'linear-gradient(135deg,#00c853,#00e676)',border:'none',color:'#000',borderRadius:12,padding:'14px',fontSize:16,fontWeight:900,cursor:'pointer',fontFamily:'Bebas Neue',letterSpacing:2,marginTop:8}}>Start Round</button>
           </div>
         )}
       </div>
@@ -299,9 +279,6 @@ function FormatVote({onClose}){
   );
 }
 
-// ══════════════════════════════════════════════
-// PLAYER PROFILE
-// ══════════════════════════════════════════════
 function PlayerProfile({player,rounds,scores,playerSettings,settings,onClose}){
   const completed=rounds.filter(r=>r.completed);
   const hdcp=playerSettings[player.id]??player.defaultHcp;
@@ -319,11 +296,7 @@ function PlayerProfile({player,rounds,scores,playerSettings,settings,onClose}){
     });
     streak=Math.max(streak,cur);
     const trend=completed.slice(0,6).reverse().map(r=>{const s=scores[r.id]?.[player.id];return s?s.reduce((a,x)=>a+(x||0),0):null;}).filter(Boolean);
-    // Hole difficulty
-    const holeTotals=Array(18).fill(0).map((_,i)=>{const ss=completed.map(r=>{const s=scores[r.id]?.[player.id];if(!s||!s[i])return null;const course=COURSES[r.course_id]||COURSES.snee;return s[i]-course.holes[i].par;}).filter(x=>x!==null);return ss.length?ss.reduce((a,b)=>a+b,0)/ss.length:0;});
-    const hardestHole=holeTotals.reduce((bi,v,i)=>v>holeTotals[bi]?i:bi,0);
-    const easiestHole=holeTotals.reduce((bi,v,i)=>v<holeTotals[bi]?i:bi,0);
-    return{b,e,p,bo,d,ac,best,worst,rp,avg:rp?Math.round(tot/rp):null,wins,streak,trend,hardestHole:hardestHole+1,easiestHole:easiestHole+1};
+    return{b,e,p,bo,d,ac,best,worst,rp,avg:rp?Math.round(tot/rp):null,wins,streak,trend};
   },[completed.length]);
   return(
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.9)',zIndex:400,display:'flex',alignItems:'flex-end',justifyContent:'center'}} onClick={onClose}>
@@ -331,11 +304,11 @@ function PlayerProfile({player,rounds,scores,playerSettings,settings,onClose}){
         <div style={{width:36,height:4,background:'rgba(255,255,255,.12)',borderRadius:2,margin:'0 auto 18px'}}/>
         <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:20}}>
           <div style={{width:60,height:60,borderRadius:'50%',background:pColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,color:'#000',fontWeight:900}}>{player.emoji}</div>
-          <div style={{flex:1}}><div style={{fontFamily:'Bebas Neue',fontSize:28,letterSpacing:2,color:pColor}}>{pName}</div><div style={{fontSize:11,color:'rgba(255,255,255,.25)'}}>HCP {hdcp} · {st.rp} rounds played</div></div>
-          {st.best&&<div style={{textAlign:'right'}}><div style={{fontFamily:'Bebas Neue',fontSize:38,color:pColor,lineHeight:1}}>{st.best}</div><div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:2}}>BEST ROUND</div></div>}
+          <div style={{flex:1}}><div style={{fontFamily:'Bebas Neue',fontSize:28,letterSpacing:2,color:pColor}}>{pName}</div><div style={{fontSize:11,color:'rgba(255,255,255,.25)'}}>HCP {hdcp} - {st.rp} rounds</div></div>
+          {st.best&&<div style={{textAlign:'right'}}><div style={{fontFamily:'Bebas Neue',fontSize:38,color:pColor,lineHeight:1}}>{st.best}</div><div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:2}}>BEST</div></div>}
         </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:7,marginBottom:14}}>
-          {[{n:st.wins,l:'WINS',c:'#ffd700'},{n:st.streak,l:'WIN STREAK',c:'#ff9100'},{n:st.avg||'--',l:'AVG SCORE',c:pColor}].map((s,i)=>(
+          {[{n:st.wins,l:'WINS',c:'#ffd700'},{n:st.streak,l:'STREAK',c:'#ff9100'},{n:st.avg||'--',l:'AVG',c:pColor}].map((s,i)=>(
             <div key={i} style={{background:'rgba(0,0,0,.4)',borderRadius:12,padding:'12px 6px',textAlign:'center'}}>
               <div style={{fontFamily:'Bebas Neue',fontSize:28,color:s.c,lineHeight:1}}>{s.n}</div>
               <div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:2,fontWeight:700,marginTop:3}}>{s.l}</div>
@@ -350,273 +323,69 @@ function PlayerProfile({player,rounds,scores,playerSettings,settings,onClose}){
             </div>
           ))}
         </div>
-        {st.rp>0&&(()=>{const tot=Math.max(1,st.e+st.b+st.p+st.bo+st.d);return(<div style={{height:7,borderRadius:3,overflow:'hidden',display:'flex',gap:1,marginBottom:12}}>{[{v:st.e,c:'#00e676'},{v:st.b,c:'#69f0ae'},{v:st.p,c:'#444'},{v:st.bo,c:'#ff9100'},{v:st.d,c:'#ff5252'}].map((bb,i)=>bb.v>0&&<div key={i} style={{flex:bb.v/tot,background:bb.c,minWidth:2}}/>)}</div>);})()}
-        {st.trend.length>1&&(<div style={{marginBottom:12}}><div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:3,fontWeight:700,marginBottom:6}}>SCORE TREND</div><div style={{display:'flex',gap:3,alignItems:'flex-end',height:46}}>{st.trend.map((t,i)=>{const mn=Math.min(...st.trend),mx=Math.max(...st.trend);const h=mx===mn?22:Math.round(((mx-t)/(mx-mn))*36)+10;return(<div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2}}><div style={{width:'100%',background:i===st.trend.length-1?pColor:'rgba(255,255,255,.12)',borderRadius:'3px 3px 0 0',height:h}}/><div style={{fontSize:8,color:'rgba(255,255,255,.25)',fontWeight:700}}>{t}</div></div>);})}</div></div>)}
-        {st.rp>2&&<div style={{display:'flex',gap:8,marginBottom:8}}>
-          <div style={{flex:1,background:'rgba(255,82,82,.08)',borderRadius:12,padding:'10px',textAlign:'center'}}><div style={{fontSize:9,color:'#ff5252',letterSpacing:1,fontWeight:700,marginBottom:3}}>NEMESIS HOLE</div><div style={{fontFamily:'Bebas Neue',fontSize:24,color:'#ff5252'}}>#{st.hardestHole}</div></div>
-          <div style={{flex:1,background:'rgba(0,230,118,.08)',borderRadius:12,padding:'10px',textAlign:'center'}}><div style={{fontSize:9,color:'#00e676',letterSpacing:1,fontWeight:700,marginBottom:3}}>BEST HOLE</div><div style={{fontFamily:'Bebas Neue',fontSize:24,color:'#00e676'}}>#{st.easiestHole}</div></div>
-        </div>}
-        {st.worst&&<div style={{fontSize:10,color:'rgba(255,255,255,.18)',textAlign:'center'}}>Worst round: {st.worst}</div>}
+        {st.trend.length>1&&(<div style={{marginBottom:10}}><div style={{fontSize:8,color:'rgba(255,255,255,.2)',letterSpacing:3,fontWeight:700,marginBottom:6}}>TREND</div><div style={{display:'flex',gap:3,alignItems:'flex-end',height:46}}>{st.trend.map((t,i)=>{const mn=Math.min(...st.trend),mx=Math.max(...st.trend);const h=mx===mn?22:Math.round(((mx-t)/(mx-mn))*36)+10;return(<div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2}}><div style={{width:'100%',background:i===st.trend.length-1?pColor:'rgba(255,255,255,.12)',borderRadius:'3px 3px 0 0',height:h}}/><div style={{fontSize:8,color:'rgba(255,255,255,.25)',fontWeight:700}}>{t}</div></div>);})}</div></div>)}
+        {st.worst&&<div style={{fontSize:10,color:'rgba(255,255,255,.18)',textAlign:'center'}}>Worst: {st.worst}</div>}
       </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════
-// HAMBURGER MENU (with full Settings)
-// ══════════════════════════════════════════════
 function HamburgerMenu({onClose,rounds,scores,nextRound,setNextRound,settings,updateSettings,deleteRound}){
   const[sec,setSec]=useState('main');
   const[fmtD,setFmtD]=useState(null);
   const completed=rounds.filter(r=>r.completed);
-  const money=useMemo(()=>getMoney(),[]);
-
-  const records=useMemo(()=>{
-    let best={score:999,player:null,date:null},birds={count:0,player:null,date:null},strk={n:0,player:null};
-    PLAYERS.forEach(p=>{let cur=0,mx=0;completed.forEach(r=>{const s=scores[r.id]?.[p.id];if(!s)return;const course=COURSES[r.course_id]||COURSES.snee;const tot=s.reduce((a,x)=>a+(x||0),0);if(tot>0&&tot<best.score)best={score:tot,player:p,date:r.date};const bd=s.filter((sc,i)=>sc>0&&course.holes[i]&&sc-course.holes[i].par===-1).length;if(bd>birds.count)birds={count:bd,player:p,date:r.date};const all=PLAYERS.map(pp=>({id:pp.id,t:(scores[r.id]?.[pp.id]||[]).reduce((a,x)=>a+(x||0),0)})).filter(x=>x.t>0).sort((a,x)=>a.t-x.t);if(all[0]&&all[0].id===p.id)cur++;else{mx=Math.max(mx,cur);cur=0;}mx=Math.max(mx,cur);if(mx>strk.n)strk={n:mx,player:p};});});
-    return{best,birds,strk};
-  },[completed.length]);
-
-  // Hole difficulty across all rounds
-  const holeDifficulty=useMemo(()=>{
-    const totals=Array(18).fill(0).map((_,i)=>{
-      const diffs=completed.flatMap(r=>PLAYERS.map(p=>{const s=(scores[r.id]?.[p.id]||[])[i];if(!s)return null;const course=COURSES[r.course_id]||COURSES.snee;return s-course.holes[i]?.par;}).filter(x=>x!==null));
+  const[localNames,setLocalNames]=useState({...settings?.playerNames||{}});
+  const[localColors,setLocalColors]=useState({...settings?.playerColors||{}});
+  const holeDiff=useMemo(()=>{
+    return Array(18).fill(0).map((_,i)=>{
+      const diffs=completed.flatMap(r=>PLAYERS.map(p=>{const s=(scores[r.id]?.[p.id]||[])[i];if(!s)return null;const course=COURSES[r.course_id]||COURSES.snee;return s-(course.holes[i]?.par||4);}).filter(x=>x!==null));
       return diffs.length?diffs.reduce((a,b)=>a+b,0)/diffs.length:0;
     });
-    return totals;
   },[completed.length]);
-
+  const money=useMemo(()=>getMoney(),[sec]);
   const back=()=>{setSec('main');};
   const bk={background:'transparent',border:'none',color:'rgba(255,255,255,.25)',fontSize:12,cursor:'pointer',marginBottom:14,display:'flex',alignItems:'center',gap:5};
-  const menu=[
-    {id:'records',icon:'🏆',l:'All-Time Records'},
-    {id:'difficulty',icon:'📊',l:'Hole Difficulty'},
-    {id:'money',icon:'💰',l:'Season Money Tracker'},
-    {id:'formats',icon:'📖',l:'Format Rules'},
-    {id:'schedule',icon:'📅',l:'Schedule Next Round'},
-    {id:'settings',icon:'⚙️',l:'Settings'},
-  ];
-
+  const toggle=(key)=><div onClick={()=>updateSettings({[key]:!settings?.[key]})} style={{width:44,height:24,borderRadius:12,background:settings?.[key]?'#00e676':'rgba(255,255,255,.1)',cursor:'pointer',position:'relative',transition:'background .2s',flexShrink:0}}><div style={{position:'absolute',top:3,left:settings?.[key]?22:3,width:18,height:18,borderRadius:'50%',background:'#fff',transition:'left .2s'}}/></div>;
   const exportCSV=()=>{
-    const rows=[['Date','Format','Course','Ben','Thomas','Max','Luke']];
-    completed.forEach(r=>{const course=COURSES[r.course_id]||COURSES.snee;rows.push([r.date,r.format,course.name,...PLAYERS.map(p=>(scores[r.id]?.[p.id]||[]).reduce((a,b)=>a+(b||0),0)||'')]);});
-    const csv=rows.map(r=>r.join(',')).join('\n');
-    const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='thursday_crew_golf.csv';a.click();
+    const rows=[['Date','Format','Course',...PLAYERS.map(p=>settings?.playerNames?.[p.id]||p.name)]];
+    completed.forEach(r=>{const c=COURSES[r.course_id]||COURSES.snee;rows.push([r.date,r.format,c.name,...PLAYERS.map(p=>(scores[r.id]?.[p.id]||[]).reduce((a,b)=>a+(b||0),0)||'')]);});
+    const csv=rows.map(r=>r.join(',')).join('
+');
+    const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='thursday_crew.csv';a.click();
   };
-
-  const pNames=settings?.playerNames||{ben:'Ben',thomas:'Thomas',max:'Max',luke:'Luke'};
-  const pColors=settings?.playerColors||{ben:'#00e676',thomas:'#ff9100',max:'#40c4ff',luke:'#e74c3c'};
-  const[localNames,setLocalNames]=useState({...pNames});
-  const[localColors,setLocalColors]=useState({...pColors});
-
+  const menu=[{id:'records',icon:'trophy',l:'All-Time Records'},{id:'difficulty',icon:'chart',l:'Hole Difficulty'},{id:'money',icon:'money',l:'Season Money'},{id:'formats',icon:'book',l:'Format Rules'},{id:'schedule',icon:'calendar',l:'Schedule Next Round'},{id:'settings',icon:'gear',l:'Settings'}];
   return(
     <div style={{position:'fixed',inset:0,zIndex:300,display:'flex'}} onClick={onClose}>
       <div style={{background:'#091409',width:290,height:'100%',borderRight:'1px solid rgba(0,230,118,.08)',padding:'55px 0 20px',overflowY:'auto',animation:'slideLeft .3s',flexShrink:0}} onClick={e=>e.stopPropagation()}>
-        <div style={{padding:'0 18px 16px',borderBottom:'1px solid rgba(255,255,255,.04)',marginBottom:6}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:3,color:'#00e676'}}>THURSDAY CREW</div>
-          <div style={{fontSize:9,color:'rgba(255,255,255,.18)',letterSpacing:2}}>GOLF TRACKER</div>
-        </div>
-
-        {sec==='main'&&menu.map(m=>(
-          <button key={m.id} onClick={()=>setSec(m.id)} style={{width:'100%',background:'transparent',border:'none',color:'#e8e8e8',padding:'15px 18px',cursor:'pointer',fontSize:14,fontWeight:600,display:'flex',alignItems:'center',gap:12,textAlign:'left',borderBottom:'1px solid rgba(255,255,255,.03)'}}>
-            <span style={{fontSize:18}}>{m.icon}</span>{m.l}<span style={{marginLeft:'auto',color:'rgba(255,255,255,.15)',fontSize:16}}>›</span>
-          </button>
-        ))}
-
-        {sec==='records'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={back} style={bk}>‹ Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#ffd700',marginBottom:14}}>ALL-TIME RECORDS</div>
-            {completed.length===0?<div style={{color:'rgba(255,255,255,.2)',fontSize:12}}>No completed rounds yet!</div>:(
-              [{icon:'🏌️',l:'BEST ROUND EVER',v:records.best.score!==999?records.best.score+' — '+records.best.player?.name:null,s:records.best.date},
-               {icon:'🐦',l:'MOST BIRDIES IN A ROUND',v:records.birds.count>0?records.birds.count+' — '+records.birds.player?.name:null,s:records.birds.date},
-               {icon:'🔥',l:'LONGEST WIN STREAK',v:records.strk.n>0?records.strk.n+' — '+records.strk.player?.name:null,s:null},
-               {icon:'🏆',l:'MOST ROUNDS PLAYED',v:(()=>{const mx=PLAYERS.map(p=>({p,n:completed.filter(r=>((scores[r.id]?.[p.id]||[]).reduce((a,b)=>a+(b||0),0))>0).length})).sort((a,b)=>b.n-a.n)[0];return mx?mx.n+' — '+mx.p.name:null;})(),s:null},
-              ].map((r,i)=><div key={i} style={{background:'rgba(0,0,0,.3)',borderRadius:14,padding:'13px',marginBottom:9}}>
-                <div style={{fontSize:20,marginBottom:5}}>{r.icon}</div>
-                <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:3}}>{r.l}</div>
-                <div style={{fontSize:17,fontWeight:900,color:'#ffd700'}}>{r.v||'—'}</div>
-                {r.s&&<div style={{fontSize:9,color:'rgba(255,255,255,.18)',marginTop:2}}>{r.s}</div>}
-              </div>)
-            )}
-          </div>
-        )}
-
-        {sec==='difficulty'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={back} style={bk}>‹ Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#ff5252',marginBottom:14}}>📊 HOLE DIFFICULTY</div>
-            {completed.length===0?<div style={{color:'rgba(255,255,255,.2)',fontSize:12}}>Play some rounds first!</div>:(
-              <div>
-                <div style={{fontSize:10,color:'rgba(255,255,255,.3)',marginBottom:10}}>Average score vs par across all rounds. Red = tough, green = birdie chance.</div>
-                {Array.from({length:18},(_,i)=>i).map(i=>{
-                  const avg=holeDifficulty[i];const clr=avg>0.5?'#ff5252':avg>0?'#ff9100':avg>-0.3?'#888':'#00e676';
-                  return<div key={i} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,background:'rgba(0,0,0,.3)',borderRadius:8,padding:'7px 10px'}}>
-                    <div style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,.4)',width:36}}>#{i+1}</div>
-                    <div style={{flex:1,height:6,background:'rgba(255,255,255,.08)',borderRadius:3,overflow:'hidden'}}>
-                      <div style={{height:'100%',background:clr,width:Math.min(100,Math.abs(avg)*100)+'%',borderRadius:3}}/>
-                    </div>
-                    <div style={{fontSize:12,fontWeight:800,color:clr,width:44,textAlign:'right'}}>{avg>=0?'+':''}{avg.toFixed(2)}</div>
-                  </div>;
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {sec==='money'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={back} style={bk}>‹ Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:14}}>💰 SEASON MONEY</div>
-            <div style={{fontSize:10,color:'rgba(255,255,255,.3)',marginBottom:14}}>Running total across all rounds. Positive = you're up, negative = you owe.</div>
-            {PLAYERS.map(p=>{
-              const amt=money[p.id]||0;
-              return<div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'12px 14px'}}>
-                <div style={{width:32,height:32,borderRadius:'50%',background:p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:14,color:'#000'}}>{p.emoji}</div>
-                <div style={{flex:1,fontWeight:700,color:p.color}}>{settings?.playerNames?.[p.id]||p.name}</div>
-                <div style={{fontFamily:'Bebas Neue',fontSize:24,color:amt>0?'#00e676':amt<0?'#ff5252':'#888'}}>{amt>0?'+$'+amt:amt<0?'-$'+Math.abs(amt):'EVEN'}</div>
-              </div>;
-            })}
-            <div style={{display:'flex',gap:8,marginTop:10}}>
-              <button onClick={()=>saveMoney({ben:0,thomas:0,max:0,luke:0})} style={{flex:1,background:'rgba(255,68,68,.08)',border:'1px solid rgba(255,68,68,.2)',color:'#ff5252',borderRadius:10,padding:'10px',cursor:'pointer',fontSize:11,fontWeight:700}}>Reset Season</button>
-            </div>
-          </div>
-        )}
-
-        {sec==='formats'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={()=>{back();setFmtD(null);}} style={bk}>‹ Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:14}}>FORMAT RULES</div>
-            {fmtD?(
-              <div>
-                <button onClick={()=>setFmtD(null)} style={bk}>‹ All formats</button>
-                <div style={{fontSize:26,marginBottom:6}}>{fmtD.icon}</div>
-                <div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:10}}>{fmtD.label}</div>
-                <div style={{fontSize:13,color:'rgba(255,255,255,.65)',lineHeight:1.8}}>{fmtD.desc}</div>
-              </div>
-            ):FORMATS.map(f=>(
-              <button key={f.id} onClick={()=>setFmtD(f)} style={{width:'100%',background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.04)',borderRadius:11,padding:'11px 12px',cursor:'pointer',marginBottom:5,display:'flex',alignItems:'center',gap:9,textAlign:'left'}}>
-                <span style={{fontSize:18,flexShrink:0}}>{f.icon}</span>
-                <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:'#fff'}}>{f.label}</div><div style={{fontSize:9,color:'rgba(255,255,255,.22)',marginTop:1}}>{f.desc}</div></div>
-                <span style={{color:'rgba(255,255,255,.15)',fontSize:14}}>›</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {sec==='schedule'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={back} style={bk}>‹ Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:14}}>NEXT ROUND</div>
-            {[{l:'DATE',type:'date',k:'date'},{l:'TEE TIME',type:'time',k:'teeTime'}].map(o=>(
-              <div key={o.k} style={{marginBottom:12}}>
-                <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:5}}>{o.l}</div>
-                <input type={o.type} value={nextRound[o.k]||''} onChange={e=>setNextRound(n=>({...n,[o.k]:e.target.value}))} style={{width:'100%',background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.09)',color:'#fff',padding:'10px 12px',borderRadius:10,fontSize:14}}/>
-              </div>
-            ))}
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:5}}>COURSE</div>
-              <select value={nextRound.courseId||'snee'} onChange={e=>setNextRound(n=>({...n,courseId:e.target.value}))} style={{width:'100%',background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.09)',color:'#fff',padding:'10px 12px',borderRadius:10,fontSize:13}}>
-                {Object.entries(COURSES).map(([id,c])=><option key={id} value={id}>{c.name}</option>)}
-              </select>
-            </div>
-            <button onClick={()=>{back();onClose();}} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:12,padding:'13px',fontSize:14,fontWeight:900,cursor:'pointer',letterSpacing:2,fontFamily:'Bebas Neue',width:'100%'}}>SAVE</button>
-          </div>
-        )}
-
-        {sec==='settings'&&(
-          <div style={{padding:'0 18px'}}>
-            <button onClick={back} style={bk}>‹ Back</button>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#00e676',marginBottom:16}}>⚙️ SETTINGS</div>
-
-            {/* Theme */}
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>APPEARANCE</div>
-              <div style={{display:'flex',gap:6}}>
-                {[{id:'dark',label:'🌙 Dark',bg:'#030806'},{id:'green',label:'🌿 Green',bg:'#061a06'},{id:'light',label:'☀️ Light',bg:'#f0f0eb'}].map(t=>(
-                  <button key={t.id} onClick={()=>updateSettings({theme:t.id})} style={{flex:1,background:settings?.theme===t.id?'rgba(0,230,118,.2)':'rgba(255,255,255,.04)',border:'1px solid '+(settings?.theme===t.id?'rgba(0,230,118,.5)':'rgba(255,255,255,.08)'),color:settings?.theme===t.id?'#00e676':'#888',borderRadius:10,padding:'10px 4px',cursor:'pointer',fontSize:10,fontWeight:700}}>{t.label}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Accent color */}
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>ACCENT COLOR</div>
-              <div style={{display:'flex',gap:6}}>
-                {['#00e676','#40c4ff','#ffd700','#ff9100','#9b59b6','#e74c3c'].map(c=>(
-                  <button key={c} onClick={()=>updateSettings({accentColor:c})} style={{width:36,height:36,borderRadius:'50%',background:c,border:settings?.accentColor===c?'3px solid #fff':'3px solid transparent',cursor:'pointer'}}/>
-                ))}
-              </div>
-            </div>
-
-            {/* Player names */}
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>PLAYER NICKNAMES</div>
-              {PLAYERS.map(p=>(
-                <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
-                  <div style={{width:24,height:24,borderRadius:'50%',background:pColors[p.id]||p.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,color:'#000',fontWeight:900,flexShrink:0}}>{p.emoji}</div>
-                  <input value={localNames[p.id]||''} onChange={e=>setLocalNames(n=>({...n,[p.id]:e.target.value}))} onBlur={()=>updateSettings({playerNames:localNames})} style={{flex:1,background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'7px 10px',borderRadius:8,fontSize:13}}/>
-                </div>
-              ))}
-            </div>
-
-            {/* Player colors */}
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>PLAYER COLORS</div>
-              {PLAYERS.map(p=>(
-                <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
-                  <div style={{fontSize:11,color:'rgba(255,255,255,.4)',width:56}}>{settings?.playerNames?.[p.id]||p.name}</div>
-                  <div style={{display:'flex',gap:5}}>
-                    {['#00e676','#ff9100','#40c4ff','#e74c3c','#9b59b6','#ffd700','#ff6b9d','#00bcd4'].map(c=>(
-                      <button key={c} onClick={()=>{const nc={...localColors,[p.id]:c};setLocalColors(nc);updateSettings({playerColors:nc});}} style={{width:22,height:22,borderRadius:'50%',background:c,border:(localColors[p.id]||p.color)===c?'2px solid #fff':'2px solid transparent',cursor:'pointer'}}/>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Toggles */}
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>PREFERENCES</div>
-              {[
-                {k:'soundOn',l:'🔊 Sound Effects',d:'Birdie cheers, bogey sad trombone'},
-                {k:'hapticOn',l:'📳 Haptic Vibration',d:'Buzz on score entry'},
-                {k:'keepAwake',l:'📱 Keep Screen Awake',d:'Screen stays on during round'},
-              ].map(t=>(
-                <div key={t.k} style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10,background:'rgba(255,255,255,.03)',borderRadius:10,padding:'10px 12px'}}>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:700}}>{t.l}</div>
-                    <div style={{fontSize:9,color:'rgba(255,255,255,.25)',marginTop:1}}>{t.d}</div>
-                  </div>
-                  <div onClick={()=>updateSettings({[t.k]:!settings?.[t.k]})} style={{width:44,height:24,borderRadius:12,background:settings?.[t.k]?'#00e676':'rgba(255,255,255,.1)',cursor:'pointer',position:'relative',transition:'background .2s',flexShrink:0}}>
-                    <div style={{position:'absolute',top:3,left:settings?.[t.k]?'22px':'3px',width:18,height:18,borderRadius:'50%',background:'#fff',transition:'left .2s'}}/>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Defaults */}
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>DEFAULTS</div>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8,background:'rgba(255,255,255,.03)',borderRadius:10,padding:'10px 12px'}}>
-                <div style={{fontSize:12,fontWeight:700}}>Default Bet/Hole ($)</div>
-                <input type="number" value={settings?.defaultBet||5} min={0} max={100} onChange={e=>updateSettings({defaultBet:parseInt(e.target.value)||0})} style={{background:'rgba(0,0,0,.4)',border:'1px solid rgba(0,230,118,.3)',color:'#00e676',padding:'5px 8px',borderRadius:8,width:60,textAlign:'center',fontSize:16,fontWeight:900}}/>
-              </div>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(255,255,255,.03)',borderRadius:10,padding:'10px 12px'}}>
-                <div style={{fontSize:12,fontWeight:700}}>Default Mulligans</div>
-                <input type="number" value={settings?.defaultMulligans||0} min={0} max={6} onChange={e=>updateSettings({defaultMulligans:parseInt(e.target.value)||0})} style={{background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,145,0,.3)',color:'#ff9100',padding:'5px 8px',borderRadius:8,width:60,textAlign:'center',fontSize:16,fontWeight:900}}/>
-              </div>
-            </div>
-
-            {/* Data */}
-            <div>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>DATA</div>
-              <button onClick={exportCSV} style={{width:'100%',background:'rgba(64,196,255,.08)',border:'1px solid rgba(64,196,255,.2)',color:'#40c4ff',borderRadius:10,padding:'10px',cursor:'pointer',fontSize:12,fontWeight:700,marginBottom:7}}>📊 Export Rounds as CSV</button>
-              <button onClick={()=>{if(confirm('Reset ALL app data? This cannot be undone.')){localStorage.clear();window.location.reload();}}} style={{width:'100%',background:'rgba(255,68,68,.07)',border:'1px solid rgba(255,68,68,.18)',color:'#ff5252',borderRadius:10,padding:'10px',cursor:'pointer',fontSize:11,fontWeight:700}}>🗑️ Reset All Data</button>
-              <div style={{fontSize:9,color:'rgba(255,255,255,.15)',textAlign:'center',marginTop:10}}>Thursday Crew Golf · Mount Pleasant, SC ⛳</div>
-            </div>
-          </div>
-        )}
+        <div style={{padding:'0 18px 16px',borderBottom:'1px solid rgba(255,255,255,.04)',marginBottom:6}}><div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:3,color:'#00e676'}}>THURSDAY CREW</div><div style={{fontSize:9,color:'rgba(255,255,255,.18)',letterSpacing:2}}>GOLF TRACKER</div></div>
+        {sec==='main'&&menu.map(m=><button key={m.id} onClick={()=>setSec(m.id)} style={{width:'100%',background:'transparent',border:'none',color:'#e8e8e8',padding:'15px 18px',cursor:'pointer',fontSize:14,fontWeight:600,display:'flex',alignItems:'center',gap:12,textAlign:'left',borderBottom:'1px solid rgba(255,255,255,.03)'}}>{m.l}<span style={{marginLeft:'auto',color:'rgba(255,255,255,.15)',fontSize:16}}>></span></button>)}
+        {sec==='records'&&<div style={{padding:'0 18px'}}><button onClick={back} style={bk}>&lt; Back</button><div style={{fontFamily:'Bebas Neue',fontSize:20,letterSpacing:2,color:'#ffd700',marginBottom:14}}>ALL-TIME RECORDS</div>{completed.length===0?<div style={{color:'rgba(255,255,255,.2)',fontSize:12}}>No rounds yet</div>:(()=>{
+          let best={score:999,name:''},birds={count:0,name:''},strk={n:0,name:''};
+          PLAYERS.forEach(p=>{let cur=0,mx=0;completed.forEach(r=>{const s=scores[r.id]?.[p.id];if(!s)return;const course=COURSES[r.course_id]||COURSES.snee;const tot=s.reduce((a,x)=>a+(x||0),0);if(tot>0&&tot<best.score)best={score:tot,name:settings?.playerNames?.[p.id]||p.name,date:r.date};const bd=s.filter((sc,i)=>sc>0&&course.holes[i]&&sc-course.holes[i].par===-1).length;if(bd>birds.count)birds={count:bd,name:settings?.playerNames?.[p.id]||p.name,date:r.date};const all=PLAYERS.map(pp=>({id:pp.id,t:(scores[r.id]?.[pp.id]||[]).reduce((a,x)=>a+(x||0),0)})).filter(x=>x.t>0).sort((a,x)=>a.t-x.t);if(all[0]&&all[0].id===p.id)cur++;else{mx=Math.max(mx,cur);cur=0;}mx=Math.max(mx,cur);if(mx>strk.n)strk={n:mx,name:settings?.playerNames?.[p.id]||p.name};});});
+          return [{l:'BEST ROUND EVER',v:best.score!==999?best.score+' - '+best.name:null,s:best.date},{l:'MOST BIRDIES IN A ROUND',v:birds.count>0?birds.count+' - '+birds.name:null,s:birds.date},{l:'LONGEST WIN STREAK',v:strk.n>0?strk.n+' - '+strk.name:null}].map((r,i)=><div key={i} style={{background:'rgba(0,0,0,.3)',borderRadius:14,padding:'13px',marginBottom:9}}><div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:3}}>{r.l}</div><div style={{fontSize:17,fontWeight:900,color:'#ffd700'}}>{r.v||'---'}</div>{r.s&&<div style={{fontSize:9,color:'rgba(255,255,255,.18)',marginTop:2}}>{r.s}</div>}</div>);
+        })()}</div>}
+        {sec==='difficulty'&&<div style={{padding:'0 18px'}}><button onClick={back} style={bk}>&lt; Back</button><div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#ff5252',marginBottom:14}}>HOLE DIFFICULTY</div>{completed.length===0?<div style={{fontSize:12,color:'rgba(255,255,255,.2)'}}>Play rounds first</div>:Array.from({length:18},(_,i)=>i).map(i=>{const avg=holeDiff[i];const clr=avg>0.5?'#ff5252':avg>0?'#ff9100':avg>-0.3?'#888':'#00e676';return<div key={i} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,background:'rgba(0,0,0,.3)',borderRadius:8,padding:'7px 10px'}}><div style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,.4)',width:32}}>#{i+1}</div><div style={{flex:1,height:6,background:'rgba(255,255,255,.08)',borderRadius:3,overflow:'hidden'}}><div style={{height:'100%',background:clr,width:Math.min(100,Math.abs(avg)*80+5)+'%',borderRadius:3}}/></div><div style={{fontSize:12,fontWeight:800,color:clr,width:44,textAlign:'right'}}>{avg>=0?'+':''}{avg.toFixed(2)}</div></div>;})}
+        </div>}
+        {sec==='money'&&<div style={{padding:'0 18px'}}><button onClick={back} style={bk}>&lt; Back</button><div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:14}}>SEASON MONEY</div>{PLAYERS.map(p=>{const amt=money[p.id]||0;return<div key={p.id} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'12px 14px'}}><div style={{width:32,height:32,borderRadius:'50%',background:settings?.playerColors?.[p.id]||p.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:14,color:'#000'}}>{p.emoji}</div><div style={{flex:1,fontWeight:700}}>{settings?.playerNames?.[p.id]||p.name}</div><div style={{fontFamily:'Bebas Neue',fontSize:24,color:amt>0?'#00e676':amt<0?'#ff5252':'#888'}}>{amt>0?'+$'+amt:amt<0?'-$'+Math.abs(amt):'EVEN'}</div></div>;})}
+          <button onClick={()=>saveMoney({ben:0,thomas:0,max:0,luke:0})} style={{width:'100%',background:'rgba(255,68,68,.08)',border:'1px solid rgba(255,68,68,.2)',color:'#ff5252',borderRadius:10,padding:'10px',cursor:'pointer',fontSize:11,fontWeight:700,marginTop:8}}>Reset Season Money</button>
+        </div>}
+        {sec==='formats'&&<div style={{padding:'0 18px'}}><button onClick={()=>{back();setFmtD(null);}} style={bk}>&lt; Back</button><div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:14}}>FORMAT RULES</div>{fmtD?<div><button onClick={()=>setFmtD(null)} style={bk}>&lt; All</button><div style={{fontSize:26,marginBottom:6}}>{fmtD.icon}</div><div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:10}}>{fmtD.label}</div><div style={{fontSize:13,color:'rgba(255,255,255,.65)',lineHeight:1.8}}>{fmtD.desc}</div></div>:FORMATS.map(f=><button key={f.id} onClick={()=>setFmtD(f)} style={{width:'100%',background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.04)',borderRadius:11,padding:'11px 12px',cursor:'pointer',marginBottom:5,display:'flex',alignItems:'center',gap:9,textAlign:'left'}}><span style={{fontSize:18,flexShrink:0}}>{f.icon}</span><div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:'#fff'}}>{f.label}</div><div style={{fontSize:9,color:'rgba(255,255,255,.22)',marginTop:1}}>{f.desc}</div></div></button>)}</div>}
+        {sec==='schedule'&&<div style={{padding:'0 18px'}}><button onClick={back} style={bk}>&lt; Back</button><div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:14}}>NEXT ROUND</div>
+          <div style={{marginBottom:12}}><div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:5}}>DATE</div><input type="date" value={nextRound.date||''} onChange={e=>setNextRound(n=>({...n,date:e.target.value}))} style={{width:'100%',background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.09)',color:'#fff',padding:'10px 12px',borderRadius:10,fontSize:14}}/></div>
+          <div style={{marginBottom:12}}><div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:5}}>TEE TIME</div><input type="time" value={nextRound.teeTime||''} onChange={e=>setNextRound(n=>({...n,teeTime:e.target.value}))} style={{width:'100%',background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.09)',color:'#fff',padding:'10px 12px',borderRadius:10,fontSize:14}}/></div>
+          <div style={{marginBottom:14}}><div style={{fontSize:9,color:'rgba(255,255,255,.25)',letterSpacing:2,fontWeight:700,marginBottom:5}}>COURSE</div><select value={nextRound.courseId||'snee'} onChange={e=>setNextRound(n=>({...n,courseId:e.target.value}))} style={{width:'100%',background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.09)',color:'#fff',padding:'10px 12px',borderRadius:10,fontSize:13}}>{Object.entries(COURSES).map(([id,c])=><option key={id} value={id}>{c.name}</option>)}</select></div>
+          <button onClick={()=>{back();onClose();}} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:12,padding:'13px',fontSize:14,fontWeight:900,cursor:'pointer',letterSpacing:2,fontFamily:'Bebas Neue',width:'100%'}}>Save</button>
+        </div>}
+        {sec==='settings'&&<div style={{padding:'0 18px'}}><button onClick={back} style={bk}>&lt; Back</button><div style={{fontFamily:'Bebas Neue',fontSize:20,color:'#00e676',marginBottom:16}}>SETTINGS</div>
+          <div style={{marginBottom:14}}><div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>THEME</div><div style={{display:'flex',gap:6}}>{[{id:'dark',l:'Dark'},{id:'green',l:'Green'},{id:'light',l:'Light'}].map(t=><button key={t.id} onClick={()=>updateSettings({theme:t.id})} style={{flex:1,background:settings?.theme===t.id?'rgba(0,230,118,.2)':'rgba(255,255,255,.04)',border:'1px solid '+(settings?.theme===t.id?'rgba(0,230,118,.5)':'rgba(255,255,255,.08)'),color:settings?.theme===t.id?'#00e676':'#888',borderRadius:10,padding:'10px 4px',cursor:'pointer',fontSize:11,fontWeight:700}}>{t.l}</button>)}</div></div>
+          <div style={{marginBottom:14}}><div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>ACCENT COLOR</div><div style={{display:'flex',gap:6}}>{['#00e676','#40c4ff','#ffd700','#ff9100','#9b59b6','#e74c3c'].map(c=><button key={c} onClick={()=>updateSettings({accentColor:c})} style={{width:34,height:34,borderRadius:'50%',background:c,border:settings?.accentColor===c?'3px solid #fff':'3px solid transparent',cursor:'pointer'}}/>)}</div></div>
+          <div style={{marginBottom:14}}><div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>PLAYER NICKNAMES</div>{PLAYERS.map(p=><div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}><div style={{width:24,height:24,borderRadius:'50%',background:localColors[p.id]||p.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,color:'#000',fontWeight:900,flexShrink:0}}>{p.emoji}</div><input value={localNames[p.id]||''} onChange={e=>setLocalNames(n=>({...n,[p.id]:e.target.value}))} onBlur={()=>updateSettings({playerNames:{...localNames}})} style={{flex:1,background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,255,255,.1)',color:'#fff',padding:'7px 10px',borderRadius:8,fontSize:13}}/></div>)}</div>
+          <div style={{marginBottom:14}}><div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>PLAYER COLORS</div>{PLAYERS.map(p=><div key={p.id} style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}><div style={{fontSize:11,color:'rgba(255,255,255,.35)',width:52}}>{localNames[p.id]||p.name}</div><div style={{display:'flex',gap:4}}>{['#00e676','#ff9100','#40c4ff','#e74c3c','#9b59b6','#ffd700','#ff6b9d','#00bcd4'].map(c=><button key={c} onClick={()=>{const nc={...localColors,[p.id]:c};setLocalColors(nc);updateSettings({playerColors:nc});}} style={{width:22,height:22,borderRadius:'50%',background:c,border:(localColors[p.id]||p.color)===c?'2px solid #fff':'2px solid transparent',cursor:'pointer'}}/>)}</div></div>)}</div>
+          <div style={{marginBottom:14}}>{[{k:'soundOn',l:'Sound Effects'},{k:'hapticOn',l:'Haptic Vibration'},{k:'keepAwake',l:'Keep Screen Awake'}].map(t=><div key={t.k} style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10,background:'rgba(255,255,255,.03)',borderRadius:10,padding:'10px 12px'}}><div style={{fontSize:12,fontWeight:700}}>{t.l}</div>{toggle(t.k)}</div>)}</div>
+          <div style={{marginBottom:14}}><div style={{fontSize:9,color:'rgba(255,255,255,.4)',letterSpacing:2,fontWeight:700,marginBottom:8}}>DEFAULTS</div><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8,background:'rgba(255,255,255,.03)',borderRadius:10,padding:'10px 12px'}}><div style={{fontSize:12,fontWeight:700}}>Default Bet ($)</div><input type="number" value={settings?.defaultBet||5} min={0} max={100} onChange={e=>updateSettings({defaultBet:parseInt(e.target.value)||0})} style={{background:'rgba(0,0,0,.4)',border:'1px solid rgba(0,230,118,.3)',color:'#00e676',padding:'5px 8px',borderRadius:8,width:60,textAlign:'center',fontSize:16,fontWeight:900}}/></div><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(255,255,255,.03)',borderRadius:10,padding:'10px 12px'}}><div style={{fontSize:12,fontWeight:700}}>Default Mulligans</div><input type="number" value={settings?.defaultMulligans||0} min={0} max={6} onChange={e=>updateSettings({defaultMulligans:parseInt(e.target.value)||0})} style={{background:'rgba(0,0,0,.4)',border:'1px solid rgba(255,145,0,.3)',color:'#ff9100',padding:'5px 8px',borderRadius:8,width:60,textAlign:'center',fontSize:16,fontWeight:900}}/></div></div>
+          <button onClick={exportCSV} style={{width:'100%',background:'rgba(64,196,255,.08)',border:'1px solid rgba(64,196,255,.2)',color:'#40c4ff',borderRadius:10,padding:'10px',cursor:'pointer',fontSize:12,fontWeight:700,marginBottom:7}}>Export Rounds CSV</button>
+          <button onClick={()=>{if(confirm('Reset ALL data?')){localStorage.clear();window.location.reload();}}} style={{width:'100%',background:'rgba(255,68,68,.07)',border:'1px solid rgba(255,68,68,.18)',color:'#ff5252',borderRadius:10,padding:'10px',cursor:'pointer',fontSize:11,fontWeight:700}}>Reset All Data</button>
+        </div>}
       </div>
       <div style={{flex:1,background:'rgba(0,0,0,.5)'}}/>
     </div>
@@ -636,14 +405,14 @@ function App(){
   const[profileModal,setProfileModal]=useState(null);
   const[trashPop,setTrashPop]=useState(null);
   const[nextRound,setNextRound]=useState({date:'',teeTime:'08:00',courseId:'snee'});
-  const[teamScores,setTeamScores]=useState(()=>{try{return JSON.parse(localStorage.getItem('tcg_ts8')||'{}')}catch{return{}}});
+  const[teamScores,setTeamScores]=useState(()=>{try{return JSON.parse(localStorage.getItem('tcg_ts9')||'{}')}catch{return{}}});
   const[settings,setSettings]=useState(()=>({...DEFAULT_SETTINGS,...getSettings()}));
   const[voteOpen,setVoteOpen]=useState(false);
   useEffect(()=>{document.body.className=settings.theme==='light'?'light':settings.theme==='green'?'green':'';},[settings.theme]);
   useEffect(()=>{if(settings.keepAwake)requestWakeLock();else releaseWakeLock();},[settings.keepAwake]);
-  const updateSettings=(u)=>{const ns={...settings,...u};setSettings(ns);saveSettings(ns);};
-  const getPlayerName=(id)=>settings.playerNames?.[id]||PLAYERS.find(p=>p.id===id)?.name||id;
-  const getPlayerColor=(id)=>settings.playerColors?.[id]||PLAYERS.find(p=>p.id===id)?.color||'#00e676';
+  const updateSettings=u=>{const ns={...settings,...u};setSettings(ns);saveSettings(ns);};
+  const getPN=id=>settings.playerNames?.[id]||PLAYERS.find(p=>p.id===id)?.name||id;
+  const getPC=id=>settings.playerColors?.[id]||PLAYERS.find(p=>p.id===id)?.color||'#00e676';
 
   const showToast=(msg,type='success',duration=3000)=>{
     setToast({msg,type});
@@ -702,7 +471,10 @@ function App(){
       await sb.from('scores').insert(PLAYERS.map(p=>({round_id:round.id,player_id:p.id,holes:Array(18).fill(0)})));
       // Init extras
       setExtras(prev=>({...prev,[round.id]:{mulligans:{ben:0,thomas:0,max:0,luke:0},closestPin:{},longDrive:{}}}));
-      if(isTeamFmt(setup.format)&&setup.teamConfig!=='solo'){const tc=TEAM_CONFIGS.find(t=>t.id===setup.teamConfig);if(tc){const nts={...teamScores,[round.id]:tc.teams.map(()=>Array(18).fill(0))};setTeamScores(nts);localStorage.setItem('tcg_ts8',JSON.stringify(nts));}}
+      if(isTeamFmt(setup.format)&&setup.teamConfig!=='solo'){
+        const tc=TEAM_CONFIGS.find(t=>t.id===setup.teamConfig);
+        if(tc){const nts={...teamScores,[round.id]:tc.teams.map(()=>Array(18).fill(0))};setTeamScores(nts);localStorage.setItem('tcg_ts9',JSON.stringify(nts));}
+      }
       setActiveRoundId(round.id);
       setView('scorecard');
       showToast('Round started! Good luck 🏌️');
@@ -727,15 +499,21 @@ function App(){
     const hole=course.holes[holeIdx];
     if(hole&&newVal>0&&newVal!==oldVal){
       const d=newVal-hole.par;
-      if(newVal===1){if(settings?.soundOn!==false)Sound.play('ace');if(settings?.hapticOn!==false)Haptic.celebrate();showToast('HOLE IN ONE!!! 🎉🎉🎉','success',5000);}
-      else if(d<=-2){if(settings?.soundOn!==false)Sound.play('eagle');if(settings?.hapticOn!==false)Haptic.celebrate();showToast(`EAGLE! 🦅🦅`,'success');}
-      else if(d===-1){if(settings?.soundOn!==false)Sound.play('birdie');if(settings?.hapticOn!==false)Haptic.medium();}
-      else if(d>=2){if(settings?.soundOn!==false)Sound.play('bogey');if(settings?.hapticOn!==false)Haptic.light();const pl=PLAYERS.find(p=>p.id===playerId);if(pl){setTrashPop({line:TRASH_LINES[Math.floor(Math.random()*TRASH_LINES.length)](pl.name,newVal)});setTimeout(()=>setTrashPop(null),4000);}}
-      else{if(settings?.soundOn!==false)Sound.play('click');if(settings?.hapticOn!==false)Haptic.light();}
+      if(newVal===1){if(settings.soundOn!==false)Sound.play('ace');if(settings.hapticOn!==false)Haptic.celebrate();showToast('HOLE IN ONE!!! 🎉🎉🎉','success',5000);}
+      else if(d<=-2){if(settings.soundOn!==false)Sound.play('eagle');if(settings.hapticOn!==false)Haptic.celebrate();showToast(`EAGLE! 🦅🦅`,'success');}
+      else if(d===-1){if(settings.soundOn!==false)Sound.play('birdie');if(settings.hapticOn!==false)Haptic.medium();}
+      else if(d>=2){if(settings.soundOn!==false)Sound.play('bogey');if(settings.hapticOn!==false)Haptic.light();const pl=PLAYERS.find(p=>p.id===playerId);if(pl){setTrashPop({line:TRASH_LINES[Math.floor(Math.random()*TRASH_LINES.length)](pl.name,newVal)});setTimeout(()=>setTrashPop(null),4000);}}
+      else{if(settings.soundOn!==false)Sound.play('click');if(settings.hapticOn!==false)Haptic.light();}
     }
   };
 
-  const updateTeamScore=(roundId,ti,hi,val)=>{const cur=JSON.parse(JSON.stringify(teamScores[roundId]||[]));if(!cur[ti])return;cur[ti][hi]=Math.max(1,parseInt(val)||0);const nts={...teamScores,[roundId]:cur};setTeamScores(nts);localStorage.setItem('tcg_ts8',JSON.stringify(nts));};
+  const updateTeamScore=(roundId,ti,hi,val)=>{
+    const cur=JSON.parse(JSON.stringify(teamScores[roundId]||[]));
+    if(!cur[ti])return;
+    cur[ti][hi]=Math.max(1,parseInt(val)||0);
+    const nts={...teamScores,[roundId]:cur};
+    setTeamScores(nts);localStorage.setItem('tcg_ts9',JSON.stringify(nts));
+  };
   const finishRound=async(roundId)=>{
     await sb.from('rounds').update({completed:true}).eq('id',roundId);
     setActiveRoundId(null);
@@ -777,13 +555,17 @@ function App(){
       {profileModal&&<PlayerProfile player={profileModal} rounds={rounds} scores={scores} playerSettings={playerSettings} settings={settings} onClose={()=>setProfileModal(null)}/>}
       {menuOpen&&<HamburgerMenu onClose={()=>setMenuOpen(false)} rounds={rounds} scores={scores} nextRound={nextRound} setNextRound={setNextRound} settings={settings} updateSettings={updateSettings} deleteRound={deleteRound}/>}
       {voteOpen&&<FormatVote onClose={()=>setVoteOpen(false)}/>}
-      {trashPop&&<div style={{position:'fixed',bottom:100,left:14,right:14,zIndex:990,background:'rgba(20,10,0,.96)',border:'1px solid rgba(255,145,0,.4)',borderRadius:18,padding:'14px 16px',animation:'fadeUp .4s'}}><div style={{fontSize:9,color:'rgba(255,145,0,.5)',letterSpacing:2,fontWeight:700,marginBottom:4}}>🎤 ROAST</div><div style={{fontSize:13,color:'rgba(255,255,255,.75)',lineHeight:1.6,fontStyle:'italic'}}>'{trashPop.line}'</div></div>}
+      {trashPop&&<div style={{position:'fixed',bottom:100,left:14,right:14,zIndex:990,background:'rgba(20,10,0,.96)',border:'1px solid rgba(255,145,0,.4)',borderRadius:18,padding:'14px 16px',animation:'fadeUp .4s'}}><div style={{fontSize:9,color:'rgba(255,145,0,.5)',letterSpacing:2,fontWeight:700,marginBottom:4}}>ROAST</div><div style={{fontSize:13,color:'rgba(255,255,255,.75)',lineHeight:1.6,fontStyle:'italic'}}>'{trashPop.line}'</div></div>}
       {toast&&(
         <div style={{position:'fixed',top:16,left:'50%',transform:'translateX(-50%)',zIndex:9999,background:toast.type==='error'?'#c62828':'#00e676',color:toast.type==='error'?'#fff':'#000',padding:'11px 22px',borderRadius:30,fontSize:13,fontWeight:800,boxShadow:'0 8px 32px rgba(0,0,0,.6)',whiteSpace:'nowrap',animation:'slideDown .3s ease',letterSpacing:.5}}>{toast.msg}</div>
       )}
 
       <header style={{position:'sticky',top:0,zIndex:100,background:'rgba(3,8,6,.97)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(0,230,118,.08)',padding:'11px 15px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <button onClick={()=>setMenuOpen(true)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.08)',color:'rgba(255,255,255,.4)',width:36,height:36,borderRadius:10,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,flexShrink:0}}><div style={{width:15,height:2,background:'currentColor',borderRadius:1}}/><div style={{width:15,height:2,background:'currentColor',borderRadius:1}}/><div style={{width:15,height:2,background:'currentColor',borderRadius:1}}/></button>
+        <button onClick={()=>setMenuOpen(true)} style={{background:'transparent',border:'1px solid rgba(255,255,255,.08)',color:'rgba(255,255,255,.4)',width:36,height:36,borderRadius:10,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,flexShrink:0}}>
+          <div style={{width:15,height:2,background:'currentColor',borderRadius:1}}/>
+          <div style={{width:15,height:2,background:'currentColor',borderRadius:1}}/>
+          <div style={{width:15,height:2,background:'currentColor',borderRadius:1}}/>
+        </button>
         <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer',flex:1}} onClick={()=>setView('home')}>
           <span style={{fontSize:22}}>⛳</span>
           <div>
@@ -839,8 +621,8 @@ function HomeView({rounds,scores,playerSettings,activeRound,updateHandicap,setVi
 
   return(
     <div style={{display:'flex',flexDirection:'column',gap:16,animation:'fadeUp .4s ease'}}>
-      {isThursday()&&<div style={{background:'linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,145,0,.08))',border:'2px solid rgba(255,215,0,.35)',borderRadius:20,padding:'18px 20px',textAlign:'center',marginBottom:4}}><div style={{fontFamily:'Bebas Neue',fontSize:36,letterSpacing:3,color:'#ffd700',lineHeight:1}}>🏌️ GAME DAY!</div><div style={{fontSize:13,color:'rgba(255,255,255,.5)',marginTop:6}}>It's Thursday — tee it up!</div>{nextRound&&nextRound.teeTime&&<div style={{fontSize:13,color:'#ffd700',fontWeight:700,marginTop:4}}>Tee time: {nextRound.teeTime}</div>}</div>}
-      {!isThursday()&&<div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.1)',borderRadius:14,padding:'12px 15px',display:'flex',alignItems:'center',gap:14,marginBottom:4}}><div style={{fontFamily:'Bebas Neue',fontSize:38,color:'#00e676',lineHeight:1,minWidth:36,textAlign:'center'}}>{daysUntilThurs()}</div><div><div style={{fontWeight:800,fontSize:13}}>DAYS UNTIL THURSDAY</div>{nextRound&&nextRound.teeTime&&<div style={{fontSize:10,color:'rgba(255,255,255,.3)',marginTop:1}}>{COURSES[nextRound.courseId]?.name||'Snee Farm'} · {nextRound.teeTime}</div>}</div></div>}
+      {isThursday()&&<div style={{background:'linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,145,0,.08))',border:'2px solid rgba(255,215,0,.35)',borderRadius:20,padding:'18px 20px',textAlign:'center',marginBottom:4}}><div style={{fontFamily:'Bebas Neue',fontSize:36,letterSpacing:3,color:'#ffd700',lineHeight:1}}>GAME DAY!</div><div style={{fontSize:13,color:'rgba(255,255,255,.5)',marginTop:6}}>It is Thursday. Tee it up!</div>{nextRound&&nextRound.teeTime&&<div style={{fontSize:13,color:'#ffd700',fontWeight:700,marginTop:4}}>Tee time: {nextRound.teeTime}</div>}</div>}
+      {!isThursday()&&<div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.1)',borderRadius:14,padding:'12px 15px',display:'flex',alignItems:'center',gap:14,marginBottom:4}}><div style={{fontFamily:'Bebas Neue',fontSize:38,color:'#00e676',lineHeight:1,minWidth:36,textAlign:'center'}}>{daysUntilThurs()}</div><div><div style={{fontWeight:800,fontSize:13}}>DAYS UNTIL THURSDAY</div>{nextRound&&nextRound.teeTime&&<div style={{fontSize:10,color:'rgba(255,255,255,.3)',marginTop:1}}>{COURSES[nextRound.courseId]?.name||'Snee Farm'} {nextRound.teeTime}</div>}</div></div>}
       {/* Hero */}
       <div style={{background:'linear-gradient(160deg,#071407,#0d2a0d,#071407)',border:'1px solid rgba(0,230,118,.15)',borderRadius:22,padding:'24px 20px',overflow:'hidden',position:'relative'}}>
         <div style={{position:'absolute',top:-30,right:-30,fontSize:160,opacity:.04,transform:'rotate(-15deg)'}}>⛳</div>
@@ -1638,6 +1420,8 @@ function ScorecardView({round,scores,teamScores,extras,updateScore,updateTeamSco
     </div>
   );
 }
+
+
 function FullScorecard({scores,holes}){
   return(
     <div style={{background:'rgba(0,0,0,.5)',border:'1px solid rgba(255,255,255,.05)',borderRadius:16,padding:12,overflowX:'auto'}}>
@@ -1679,7 +1463,7 @@ function FullScorecard({scores,holes}){
 // ══════════════════════════════════════════════
 // STATS VIEW
 // ══════════════════════════════════════════════
-function StatsView({rounds,scores,playerSettings,settings}){
+function StatsView({rounds,scores,playerSettings}){
   const completed=rounds.filter(r=>r.completed);
   const[selectedPlayer,setSelectedPlayer]=useState('all');
 
@@ -1918,7 +1702,6 @@ function HistoryView({rounds,scores,deleteRound,setActiveRoundId,setView}){
 // ══════════════════════════════════════════════
 // LEADERBOARD VIEW
 // ══════════════════════════════════════════════
-
 function LeaderboardView({round,scores,teamScores,playerSettings,settings,setView}){
   const fmt=round.format;
   const fmtObj=FORMATS.find(f=>f.id===fmt);
@@ -1931,8 +1714,8 @@ function LeaderboardView({round,scores,teamScores,playerSettings,settings,setVie
   const[showShare,setShowShare]=useState(false);
   const getScore=(pid,hi)=>(scores[pid]||[])[hi]||0;
   const getTScore=(ti,hi)=>(teamScores||[])[ti]?.[hi]||0;
-  const pName=(id)=>settings?.playerNames?.[id]||PLAYERS.find(p=>p.id===id)?.name||id;
-  const pColor=(id)=>settings?.playerColors?.[id]||PLAYERS.find(p=>p.id===id)?.color||'#00e676';
+  const pN=id=>settings?.playerNames?.[id]||PLAYERS.find(p=>p.id===id)?.name||id;
+  const pC=id=>settings?.playerColors?.[id]||PLAYERS.find(p=>p.id===id)?.color||'#00e676';
 
   const buildResults=()=>{
     if(isTeam&&teamCfg){
@@ -1940,165 +1723,118 @@ function LeaderboardView({round,scores,teamScores,playerSettings,settings,setVie
         return teamCfg.teams.map((team,ti)=>{
           let w=0,l=0,h=0;
           holes.forEach((_,i)=>{const ms=getTScore(ti,i);const os=getTScore(ti===0?1:0,i);if(ms>0&&os>0){if(ms<os)w++;else if(os<ms)l++;else h++;}});
-          const tClr=pColor(team[0]);
-          return{id:'t'+ti,name:teamNames[ti],color:tClr,emoji:(ti+1)+'',val:w,display:w+'W '+l+'L '+h+'H',sub:'match play',higher:true,tp:null};
+          return{id:'t'+ti,name:teamNames[ti],color:pC(team[0]),emoji:(ti+1)+'',val:w,display:w+'W '+l+'L '+h+'H',sub:'match play',higher:true};
         }).sort((a,b)=>b.val-a.val);
       }
       if(fmt==='nassau'){
         return teamCfg.teams.map((team,ti)=>{
-          const f=(teamScores||[])[ti]?.slice(0,9).reduce((a,x)=>a+(x||0),0)||0;
-          const b=(teamScores||[])[ti]?.slice(9).reduce((a,x)=>a+(x||0),0)||0;
-          const of=((teamScores||[])[ti===0?1:0]?.slice(0,9).reduce((a,x)=>a+(x||0),0))||0;
-          const ob=((teamScores||[])[ti===0?1:0]?.slice(9).reduce((a,x)=>a+(x||0),0))||0;
+          const ts=teamScores||[];
+          const f=ts[ti]?.slice(0,9).reduce((a,x)=>a+(x||0),0)||0;
+          const b=ts[ti]?.slice(9).reduce((a,x)=>a+(x||0),0)||0;
+          const of=ts[ti===0?1:0]?.slice(0,9).reduce((a,x)=>a+(x||0),0)||0;
+          const ob=ts[ti===0?1:0]?.slice(9).reduce((a,x)=>a+(x||0),0)||0;
           const bw=[f<of&&f>0,b<ob&&b>0,(f+b)<(of+ob)&&(f+b)>0].filter(Boolean).length;
-          return{id:'t'+ti,name:teamNames[ti],color:pColor(team[0]),emoji:(ti+1)+'',val:bw,display:'$'+(bw*betAmt),sub:bw+' bets won',higher:true,tp:null};
+          return{id:'t'+ti,name:teamNames[ti],color:pC(team[0]),emoji:(ti+1)+'',val:bw,display:'$'+(bw*betAmt),sub:bw+' bets won',higher:true};
         }).sort((a,b)=>b.val-a.val);
       }
       if(fmt==='vegas'){
         const gv=(team,i)=>{const ss=team.map(id=>getScore(id,i)).filter(x=>x>0).sort((a,b)=>a-b);return ss.length>=2?parseInt(''+ss[0]+ss[1]):0;};
-        let p0=0,p1=0;holes.forEach((_,i)=>{const v0=gv(teamCfg.teams[0],i),v1=gv(teamCfg.teams[1],i);if(v0>0&&v1>0){if(v0<v1)p0+=v1-v0;else if(v1<v0)p1+=v0-v1;}});
-        return teamCfg.teams.map((team,ti)=>({id:'t'+ti,name:teamNames[ti],color:pColor(team[0]),emoji:(ti+1)+'',val:ti===0?p0:p1,display:'$'+(ti===0?p0:p1),sub:'vegas pts',higher:true,tp:null})).sort((a,b)=>b.val-a.val);
+        let p0=0,p1=0;
+        holes.forEach((_,i)=>{const v0=gv(teamCfg.teams[0],i),v1=gv(teamCfg.teams[1],i);if(v0>0&&v1>0){if(v0<v1)p0+=v1-v0;else if(v1<v0)p1+=v0-v1;}});
+        return teamCfg.teams.map((team,ti)=>({id:'t'+ti,name:teamNames[ti],color:pC(team[0]),emoji:(ti+1)+'',val:ti===0?p0:p1,display:'$'+(ti===0?p0:p1),sub:'vegas pts',higher:true})).sort((a,b)=>b.val-a.val);
       }
-      // scramble/bestball/bloodsome/shamble
       return teamCfg.teams.map((team,ti)=>{
         let total=0,tp=0;
         if(fmt==='bestball'||fmt==='shamble'){
-          holes.forEach((h,i)=>{const best=Math.min(...team.map(id=>getScore(id,i)).filter(x=>x>0));if(best<99&&best>0){total+=best;tp+=best-h.par;}});
+          holes.forEach((h,i)=>{const best=Math.min(...team.map(id=>getScore(id,i)).filter(x=>x>0));if(best>0&&best<99){total+=best;tp+=best-h.par;}});
         } else {
           const tS=(teamScores||[])[ti]||[];
           total=tS.reduce((a,x)=>a+(x||0),0);
           tp=tS.reduce((a,x,i)=>x>0&&holes[i]?a+(x-holes[i].par):a,0);
         }
-        return{id:'t'+ti,name:teamNames[ti],color:pColor(team[0]),emoji:(ti+1)+'',val:total,display:total>0?total+'':'—',sub:total>0?tpStr(tp)+' to par':'',higher:false,tp:total>0?tp:null};
-      }).sort((a,b)=>a.val-b.val);
+        return{id:'t'+ti,name:teamNames[ti],color:pC(team[0]),emoji:(ti+1)+'',val:total,display:total>0?total+'':'---',sub:total>0?tpStr(tp)+' to par':'',higher:false};
+      }).sort((a,b)=>(a.val||999)-(b.val||999));
     }
-    // Individual
     switch(fmt){
-      case 'stableford':return PLAYERS.map(p=>({...p,name:pName(p.id),color:pColor(p.id),val:holes.reduce((a,h,i)=>{const s=getScore(p.id,i);return s>0?a+sfPts(s,h.par):a;},0),higher:true,tp:null})).map(p=>({...p,display:p.val+'pts',sub:'stableford pts'})).sort((a,b)=>b.val-a.val);
+      case 'stableford':
+        return PLAYERS.map(p=>({...p,name:pN(p.id),color:pC(p.id),val:holes.reduce((a,h,i)=>{const s=getScore(p.id,i);return s>0?a+sfPts(s,h.par):a;},0),higher:true})).map(p=>({...p,display:p.val+'pts',sub:'stableford pts'})).sort((a,b)=>b.val-a.val);
       case 'skins':{
-        const sl=holes.map((_,i)=>{const all=PLAYERS.map(p=>({id:p.id,s:getScore(p.id,i)})).filter(x=>x.s>0);if(all.length<4)return null;const min=Math.min(...all.map(x=>x.s));const w=all.filter(x=>x.s===min);return w.length===1?w[0].id:null;});
-        return PLAYERS.map(p=>{const sk=sl.filter(x=>x===p.id).length;return{...p,name:pName(p.id),color:pColor(p.id),val:sk,display:sk+' skins',sub:'$'+(sk*betAmt),higher:true,tp:null};}).sort((a,b)=>b.val-a.val);
+        const sl=holes.map((_,i)=>{const all=PLAYERS.map(p=>({id:p.id,s:getScore(p.id,i)})).filter(x=>x.s>0);if(all.length<4)return null;const mn=Math.min(...all.map(x=>x.s));const w=all.filter(x=>x.s===mn);return w.length===1?w[0].id:null;});
+        return PLAYERS.map(p=>{const sk=sl.filter(x=>x===p.id).length;return{...p,name:pN(p.id),color:pC(p.id),val:sk,display:sk+' skins',sub:'$'+(sk*betAmt),higher:true};}).sort((a,b)=>b.val-a.val);
       }
-      case 'quota':return PLAYERS.map(p=>{const hdcp=playerSettings[p.id]??p.defaultHcp;const quota=36-Math.min(hdcp,36);const pts=holes.reduce((a,h,i)=>{const s=getScore(p.id,i);return s>0?a+sfPts(s,h.par):a;},0);const diff=pts-quota;return{...p,name:pName(p.id),color:pColor(p.id),val:diff,display:pts+'pts',sub:(diff>=0?'+':'')+diff+' vs quota '+quota,higher:true,tp:null};}).sort((a,b)=>b.val-a.val);
-      case 'bingo':{
-        const bg=JSON.parse(localStorage.getItem('bg_'+round.id)||'{}');
-        return PLAYERS.map(p=>{const pts=Object.values(bg).reduce((a,h)=>a+(h.on===p.id?1:0)+(h.closest===p.id?1:0)+(h.in===p.id?1:0),0);return{...p,name:pName(p.id),color:pColor(p.id),val:pts,display:pts+'pts',sub:'bingo pts',higher:true,tp:null};}).sort((a,b)=>b.val-a.val);
-      }
+      case 'quota':
+        return PLAYERS.map(p=>{const hdcp=playerSettings[p.id]??p.defaultHcp;const quota=36-Math.min(hdcp,36);const pts=holes.reduce((a,h,i)=>{const s=getScore(p.id,i);return s>0?a+sfPts(s,h.par):a;},0);return{...p,name:pN(p.id),color:pC(p.id),val:pts-quota,display:pts+'pts',sub:(pts-quota>=0?'+':'')+(pts-quota)+' vs quota',higher:true};}).sort((a,b)=>b.val-a.val);
       default:{
         return PLAYERS.map(p=>{
           const total=holes.reduce((a,h,i)=>{const s=getScore(p.id,i);return s>0?a+s:a;},0);
           const tp=holes.reduce((a,h,i)=>{const s=getScore(p.id,i);return s>0?a+(s-h.par):a;},0);
-          return{...p,name:pName(p.id),color:pColor(p.id),val:total,display:total>0?total+'':'—',sub:total>0?tpStr(tp)+' to par':'',higher:false,tp:total>0?tp:null};
-        }).sort((a,b)=>a.val-b.val);
+          return{...p,name:pN(p.id),color:pC(p.id),val:total,display:total>0?total+'':'---',sub:total>0?tpStr(tp)+' to par':'',higher:false};
+        }).sort((a,b)=>(a.val||999)-(b.val||999));
       }
     }
   };
 
   const results=buildResults();
   const winner=results[0];
-  const medals=['🥇','🥈','🥉','💀'];
+  const medals=['1st','2nd','3rd','4th'];
+  const shareText=(fmtObj?.label||fmt)+' - '+round.date+' - '+course.name+'
+'+results.map((r,i)=>medals[i]+' '+r.name+': '+r.display).join('
+');
 
-  // Awards
   const awards=[];
   if(!isTeam){
-    const mb=PLAYERS.map(p=>({...p,n:holes.filter((h,i)=>getScore(p.id,i)===h.par-1).length})).sort((a,b)=>b.n-a.n)[0];
-    if(mb?.n>0)awards.push({icon:'🐦',label:'Most Birdies',name:pName(mb.id),color:pColor(mb.id),detail:mb.n+' birdies'});
+    const mb=PLAYERS.map(p=>({...p,n:holes.filter((h,i)=>{const s=getScore(p.id,i);return s>0&&s-h.par===-1;}).length})).sort((a,b)=>b.n-a.n)[0];
+    if(mb?.n>0)awards.push({icon:'BIRDIE',label:'Most Birdies',name:pN(mb.id),color:pC(mb.id),detail:mb.n+' birdies'});
     const me=PLAYERS.map(p=>({...p,n:holes.filter((h,i)=>{const s=getScore(p.id,i);return s>0&&s<=h.par-2;}).length})).sort((a,b)=>b.n-a.n)[0];
-    if(me?.n>0)awards.push({icon:'🦅',label:'Eagle Club',name:pName(me.id),color:pColor(me.id),detail:me.n+' eagle'+(me.n>1?'s':'')});
-    const par3s=holes.filter(h=>h.par===3);
-    if(par3s.length>0){const mc=PLAYERS.map(p=>({...p,avg:par3s.reduce((a,h)=>{const s=getScore(p.id,h.hole-1);return s>0?a+(s-h.par):a;},0)/par3s.length})).sort((a,b)=>a.avg-b.avg)[0];if(mc)awards.push({icon:'📍',label:'Par 3 King',name:pName(mc.id),color:pColor(mc.id),detail:(mc.avg>=0?'+':'')+mc.avg.toFixed(1)+' avg'});}
-    // Most bogeys/above
-    const mbo=PLAYERS.map(p=>({...p,n:holes.filter((h,i)=>{const s=getScore(p.id,i);return s>0&&s-h.par>=2;}).length})).sort((a,b)=>b.n-a.n)[0];
-    if(mbo?.n>0)awards.push({icon:'💩',label:'Double Trouble',name:pName(mbo.id),color:pColor(mbo.id),detail:mbo.n+' double+'});
+    if(me?.n>0)awards.push({icon:'EAGLE',label:'Eagle Club',name:pN(me.id),color:pC(me.id),detail:me.n+' eagle'+(me.n>1?'s':'')});
   }
 
-  // Auto update season money
   useEffect(()=>{
-    if(!winner||!betAmt)return;
+    if(!winner||!betAmt||fmt!=='stroke')return;
     const money=getMoney();
-    if(!isTeam&&fmt!=='skins'&&fmt!=='nassau'&&fmt!=='bingo'){
-      results.forEach((r,i)=>{if(i===0)money[r.id]=(money[r.id]||0)+(results.length-1)*betAmt;else money[r.id]=(money[r.id]||0)-betAmt;});
-      saveMoney(money);
-    }
+    results.forEach((r,i)=>{
+      const pid=r.id;
+      if(!PLAYERS.find(p=>p.id===pid))return;
+      if(i===0)money[pid]=(money[pid]||0)+(results.length-1)*betAmt;
+      else money[pid]=(money[pid]||0)-betAmt;
+    });
+    saveMoney(money);
   },[]);
-
-  const shareText=(fmtObj?.icon||'⛳')+' '+fmtObj?.label+' — '+round.date+'
-'+course.name+'
-
-'+results.map((r,i)=>(medals[i]||'#'+(i+1))+' '+r.name+': '+r.display).join('
-')+'
-
-🏆 '+(winner?.name)+' wins!';
 
   return(
     <div style={{display:'flex',flexDirection:'column',gap:13,animation:'fadeUp .4s'}}>
-      {/* Trophy header */}
       <div style={{background:'linear-gradient(160deg,rgba(255,215,0,.1),rgba(255,215,0,.02))',border:'1px solid rgba(255,215,0,.2)',borderRadius:22,padding:'22px 18px',textAlign:'center',position:'relative',overflow:'hidden'}}>
-        <div style={{position:'absolute',top:-20,left:-20,fontSize:110,opacity:.04}}>🏆</div>
-        <div style={{position:'absolute',top:-20,right:-20,fontSize:110,opacity:.04}}>🏆</div>
+        <div style={{position:'absolute',top:-20,left:-20,fontSize:110,opacity:.04}}>trophy</div>
         <div style={{fontSize:9,color:'rgba(255,215,0,.4)',letterSpacing:4,fontWeight:800,marginBottom:6}}>ROUND COMPLETE</div>
         <div style={{fontFamily:'Bebas Neue',fontSize:38,color:'#ffd700',lineHeight:1,marginBottom:3}}>{fmtObj?.icon} {fmtObj?.label}</div>
-        <div style={{fontSize:11,color:'rgba(255,255,255,.2)'}}>{round.date} · {course.name}{round.conditions?' · '+round.conditions:''}</div>
+        <div style={{fontSize:11,color:'rgba(255,255,255,.2)'}}>{round.date} - {course.name}</div>
         {winner&&<div style={{marginTop:14,display:'inline-flex',gap:10,background:'rgba(0,0,0,.4)',borderRadius:20,padding:'10px 20px',alignItems:'center'}}>
           <div style={{width:36,height:36,borderRadius:'50%',background:winner.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,color:'#000',fontWeight:900}}>{winner.emoji}</div>
-          <div style={{textAlign:'left'}}>
-            <div style={{fontFamily:'Bebas Neue',fontSize:20,color:winner.color,letterSpacing:1}}>{winner.name} WINS</div>
-            <div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{winner.display}</div>
-          </div>
+          <div style={{textAlign:'left'}}><div style={{fontFamily:'Bebas Neue',fontSize:20,color:winner.color,letterSpacing:1}}>{winner.name} WINS</div><div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{winner.display}</div></div>
         </div>}
       </div>
-
-      {/* Results */}
       {results.map((r,i)=>(
-        <div key={r.id||r.name} style={{background:i===0?`linear-gradient(135deg,${r.color}18,${r.color}05)`:'rgba(255,255,255,.02)',border:(i===0?2:1)+'px solid '+(i===0?r.color+'55':'rgba(255,255,255,.05)'),borderRadius:18,padding:'16px 18px',display:'flex',alignItems:'center',gap:14,transform:i===0?'scale(1.02)':'scale(1)'}}>
-          <span style={{fontSize:24,width:30,flexShrink:0}}>{medals[i]||'#'+(i+1)}</span>
+        <div key={r.id||r.name} style={{background:i===0?'linear-gradient(135deg,'+r.color+'18,'+r.color+'05)':'rgba(255,255,255,.02)',border:(i===0?2:1)+'px solid '+(i===0?r.color+'55':'rgba(255,255,255,.05)'),borderRadius:18,padding:'16px 18px',display:'flex',alignItems:'center',gap:14}}>
+          <div style={{width:32,height:32,borderRadius:'50%',background:'rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:900,color:'rgba(255,255,255,.4)',flexShrink:0}}>{medals[i]||i+1}</div>
           <div style={{width:44,height:44,borderRadius:'50%',background:r.color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#000',flexShrink:0}}>{r.emoji}</div>
-          <div style={{flex:1}}>
-            <div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:1,color:i===0?r.color:'#fff'}}>{r.name}</div>
-            {r.sub&&<div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{r.sub}</div>}
-          </div>
+          <div style={{flex:1}}><div style={{fontFamily:'Bebas Neue',fontSize:22,letterSpacing:1,color:i===0?r.color:'#fff'}}>{r.name}</div>{r.sub&&<div style={{fontSize:11,color:'rgba(255,255,255,.3)'}}>{r.sub}</div>}</div>
           <div style={{fontFamily:'Bebas Neue',fontSize:32,color:i===0?r.color:'rgba(255,255,255,.5)',lineHeight:1}}>{r.display}</div>
         </div>
       ))}
-
-      {/* Settle up */}
-      {betAmt>0&&!isTeam&&fmt==='stroke'&&results.length>1&&(
-        <div style={{background:'rgba(0,230,118,.04)',border:'1px solid rgba(0,230,118,.1)',borderRadius:18,padding:'15px 16px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#00e676',marginBottom:10}}>💰 SETTLE UP · ${betAmt}/HOLE</div>
-          {results.slice(1).map((r,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'11px 14px'}}>
-              <div style={{width:30,height:30,borderRadius:'50%',background:r.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,color:'#000',fontWeight:900}}>{r.emoji}</div>
-              <div style={{flex:1,fontSize:13}}><span style={{color:r.color,fontWeight:800}}>{r.name}</span><span style={{color:'rgba(255,255,255,.3)'}}> pays </span><span style={{color:winner.color,fontWeight:800}}>{winner.name}</span></div>
-              <div style={{fontFamily:'Bebas Neue',fontSize:24,color:'#00e676'}}>${betAmt}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Awards */}
-      {awards.length>0&&(
-        <div style={{background:'rgba(255,215,0,.03)',border:'1px solid rgba(255,215,0,.1)',borderRadius:18,padding:'15px'}}>
-          <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#ffd700',marginBottom:10}}>🏅 ROUND AWARDS</div>
-          {awards.map((a,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'10px 14px'}}>
-              <span style={{fontSize:22}}>{a.icon}</span>
-              <div style={{flex:1}}><div style={{fontSize:9,color:'rgba(255,215,0,.4)',letterSpacing:2,fontWeight:700}}>{a.label.toUpperCase()}</div><div style={{fontSize:15,fontWeight:800,color:a.color}}>{a.name}</div></div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,.25)',fontWeight:700}}>{a.detail}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Share */}
-      <button onClick={()=>navigator.share?navigator.share({title:'Thursday Crew Golf',text:shareText}):setShowShare(!showShare)} style={{background:'rgba(64,196,255,.07)',border:'1px solid rgba(64,196,255,.2)',color:'#40c4ff',borderRadius:14,padding:'13px',fontSize:13,fontWeight:800,cursor:'pointer',letterSpacing:1}}>📤 SHARE RESULTS</button>
-      {showShare&&<div style={{background:'rgba(0,0,0,.8)',border:'1px solid rgba(64,196,255,.25)',borderRadius:14,padding:14}}><textarea readOnly value={shareText} style={{width:'100%',background:'transparent',border:'none',color:'#f0f0f0',fontSize:12,lineHeight:1.8,resize:'none',outline:'none',fontFamily:'monospace'}} rows={8}/><button onClick={()=>{navigator.clipboard?.writeText(shareText);setShowShare(false);}} style={{background:'#40c4ff',color:'#000',border:'none',borderRadius:10,padding:'10px 20px',fontSize:12,fontWeight:800,cursor:'pointer',marginTop:6,width:'100%'}}>📋 COPY</button></div>}
-
+      {awards.length>0&&<div style={{background:'rgba(255,215,0,.03)',border:'1px solid rgba(255,215,0,.1)',borderRadius:18,padding:'15px'}}>
+        <div style={{fontFamily:'Bebas Neue',fontSize:18,letterSpacing:2,color:'#ffd700',marginBottom:10}}>ROUND AWARDS</div>
+        {awards.map((a,i)=>(
+          <div key={i} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,background:'rgba(0,0,0,.3)',borderRadius:12,padding:'10px 14px'}}>
+            <div style={{flex:1}}><div style={{fontSize:9,color:'rgba(255,215,0,.4)',letterSpacing:2,fontWeight:700}}>{a.label.toUpperCase()}</div><div style={{fontSize:15,fontWeight:800,color:a.color}}>{a.name}</div></div>
+            <div style={{fontSize:10,color:'rgba(255,255,255,.25)',fontWeight:700}}>{a.detail}</div>
+          </div>
+        ))}
+      </div>}
+      <button onClick={()=>navigator.share?navigator.share({title:'Thursday Crew Golf',text:shareText}):setShowShare(!showShare)} style={{background:'rgba(64,196,255,.07)',border:'1px solid rgba(64,196,255,.2)',color:'#40c4ff',borderRadius:14,padding:'13px',fontSize:13,fontWeight:800,cursor:'pointer'}}>Share Results</button>
+      {showShare&&<div style={{background:'rgba(0,0,0,.8)',borderRadius:14,padding:14}}><textarea readOnly value={shareText} style={{width:'100%',background:'transparent',border:'none',color:'#f0f0f0',fontSize:12,lineHeight:1.8,resize:'none',outline:'none'}} rows={6}/><button onClick={()=>{navigator.clipboard?.writeText(shareText);setShowShare(false);}} style={{background:'#40c4ff',color:'#000',border:'none',borderRadius:10,padding:'10px',fontSize:12,fontWeight:800,cursor:'pointer',width:'100%'}}>Copy</button></div>}
       <div style={{fontFamily:'Bebas Neue',fontSize:17,letterSpacing:2,color:'#00e676'}}>FULL SCORECARD</div>
       <FullScorecard scores={scores} holes={holes}/>
-
-      <button onClick={()=>setView('setup')} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:16,padding:'18px 24px',fontSize:22,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue',boxShadow:'0 8px 40px rgba(0,230,118,.25)'}}>
-        ⛳ PLAY AGAIN
-      </button>
+      <button onClick={()=>setView('setup')} style={{background:'linear-gradient(135deg,#00c853,#00e676)',color:'#000',border:'none',borderRadius:16,padding:'18px 24px',fontSize:22,fontWeight:900,cursor:'pointer',letterSpacing:3,fontFamily:'Bebas Neue'}}>Play Again</button>
     </div>
   );
 }
